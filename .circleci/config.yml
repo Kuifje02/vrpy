@@ -24,7 +24,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            cd ~/vrpy/tests
+            cd ~/tests
             pytest
   
 workflows:
