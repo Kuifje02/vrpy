@@ -1,0 +1,8 @@
+###### Requirements without Version Specifiers ######
+cspy
+networkx
+pulp
+pytest
+
+###### Requirements with Version Specifiers ######
+
