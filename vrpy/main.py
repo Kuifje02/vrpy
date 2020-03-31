@@ -4,10 +4,10 @@ from sub_solve_pulp import sub_solve_lp
 from sub_solve_cspy import sub_solve_cspy
 
 # Parameters
-CSPY = False  # use cspy for subproblem, otherwise use LP
+CSPY = True  # use cspy for subproblem, otherwise use LP
 MAX_STOP = True  # max 3 stops per vehicle
-MAX_LOAD = True  # max 10 units per vehicle
-MAX_TIME = True  # max 60 minutes per vehicle
+MAX_LOAD = False  # max 10 units per vehicle
+MAX_TIME = False  # max 60 minutes per vehicle
 
 
 def main(G, initial_routes, cspy=False, max_stop=True, max_load=False, max_time=False):
