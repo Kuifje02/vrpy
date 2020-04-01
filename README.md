@@ -29,6 +29,7 @@ CSPY = True  # use cspy for subproblem, otherwise use LP
 MAX_STOP = True  # max 3 stops per vehicle
 MAX_LOAD = False  # max 10 units per vehicle
 MAX_TIME = False  # max 60 minutes per vehicle
+TIME_WINDOWS = True  # time window constraints on each node
 ```
 
 Then run the main script :
