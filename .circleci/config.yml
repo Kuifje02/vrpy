@@ -56,9 +56,6 @@ jobs:
             pytest --cov
             codecov
       - coverage-reporter/send_report
-orbs:
-  coverage-reporter: codacy/coverage-reporter@7.6.7
-version: 2.1
   
 workflows:
   version: 2
