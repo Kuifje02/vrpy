@@ -1,23 +1,17 @@
 import networkx as nx
 from master_solve_pulp import master_solve
-from sub_solve_pulp import sub_solve_lp
+# from sub_solve_pulp import sub_solve_lp
+from subproblem_lp import SubProblemLP
 from sub_solve_cspy import sub_solve_cspy
-
-# Parameters
-CSPY = False  # use cspy for subproblem, otherwise use LP
-MAX_STOP = True  # max 3 stops per vehicle
-MAX_LOAD = True  # max 10 units per vehicle
-MAX_TIME = False  # max 60 minutes per vehicle
-TIME_WINDOWS = True  # time window constraints on each node
 
 
 def main(
     G,
     initial_routes,
     cspy=False,
-    max_stop=True,
-    max_load=False,
-    max_time=False,
+    num_stops=None,
+    load_capacity=None,
+    duration=None,
     time_windows=False,
 ):
     """Iteratively generates columns with negative reduced cost and solves as MIP
@@ -27,11 +21,19 @@ def main(
         initial_routes {list of routes} -- Feasible solution for first iteration
 
     Keyword Arguments:
-        cspy {bool} -- True if cspy is used for solving subproblem
-        max_stop {bool} -- True if stop constraints activated
-        max_load {bool} -- True if capacity constraints activated
-        max_time {bool} -- True if time constraints activated 
-        time_windows {bool} -- True if time windows activated
+        cspy {bool} 
+            True if cspy is used for solving subproblem
+        num_stops {int} 
+            Maximum number of stops. Optional. 
+            If not provided, constraint not enforced.
+        load_capacity {int} 
+            Maximum capacity. Optional.
+            If not provided, constraint not enforced.
+        duration {int} 
+            Maximum duration. Optional.
+            If not provided, constraint not enforced.
+        time_windows {bool} 
+            True if time windows activated
 
     Returns:
         best_value -- Optimal solution of MIP based on generated columns
@@ -54,8 +56,9 @@ def main(
             routes, more_routes = sub_solve_cspy(G, duals, routes)
         else:
             # as LP
-            routes, more_routes = sub_solve_lp(G, duals, routes, max_stop,
-                                               max_load, max_time, time_windows)
+            subproblem = SubProblemLP(G, duals, routes, num_stops,
+                                      load_capacity, duration, time_windows)
+            routes, more_routes = subproblem.solve()
 
     # solve as MIP
     print("")
@@ -66,34 +69,15 @@ def main(
     return best_value
 
 
-def initialize_routes(G):
-    """Sets the initial routes for first iteration
-    
-    Arguments:
-        G {networkx DiGraph} -- The graph representing the network
-    
-    Returns:
-        routes -- A list of initial routes as network DiGraphs
-    """
-    routes = []
-    for v in G.nodes():
-        if v not in ["Source", "Sink"]:
-            route = nx.DiGraph(name=v, cost=20)
-            route.add_edge("Source", v, cost=10)
-            route.add_edge(v, "Sink", cost=10)
-            routes.append(route)
-    return routes
-
-
-if __name__ == "__main__":
-    G = create_graph()
-    initial_routes = initialize_routes(G)
-    main(
-        G,
-        initial_routes,
-        cspy=CSPY,
-        max_stop=MAX_STOP,
-        max_load=MAX_LOAD,
-        max_time=MAX_TIME,
-        time_windows=TIME_WINDOWS,
-    )
+# if __name__ == "__main__":
+#     G = create_graph()
+#     initial_routes = initialize_routes(G)
+#     main(
+#         G,
+#         initial_routes,
+#         cspy=CSPY,
+#         max_stop=MAX_STOP,
+#         max_load=MAX_LOAD,
+#         max_time=MAX_TIME,
+#         time_windows=TIME_WINDOWS,
+#     )

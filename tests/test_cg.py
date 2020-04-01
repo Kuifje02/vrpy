@@ -9,7 +9,7 @@ class TestsToy:
 
     def setup(self):
         """
-        Creates a toy graph 
+        Creates a toy graph and sets the initial routes for first iteration
         """
         self.G = DiGraph()
         for v in [1, 2, 3, 4, 5]:
@@ -28,22 +28,37 @@ class TestsToy:
         self.G.add_edge(2, 3, cost=10, time=20)
         self.G.add_edge(3, 4, cost=15, time=20)
         self.G.add_edge(4, 5, cost=10, time=25)
+        # Create routes
+        self.initial_routes = []
+        for v in self.G.nodes():
+            if v not in ["Source", "Sink"]:
+                route = DiGraph(name=v, cost=20)
+                route.add_edge("Source", v, cost=10)
+                route.add_edge(v, "Sink", cost=10)
+                self.initial_routes.append(route)
 
     def test_missing_node(self):
         """Tests column generation procedure on toy graph"""
         self.G.remove_node(5)
-        initial_routes = main.initialize_routes(self.G)
-        best_value = main.main(self.G, initial_routes)
-        assert best_value == 60
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               num_stops=4,
+                               load_capacity=10)
+        assert best_value == 65
 
     def test_sub_cspy(self):
         """Tests column generation procedure on toy graph"""
-        initial_routes = main.initialize_routes(self.G)
-        best_value = main.main(self.G, initial_routes, cspy=True)
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               cspy=True,
+                               num_stops=4,
+                               load_capacity=10)
         assert best_value == 80
 
     def test_sub_pulp(self):
         """Tests column generation procedure on toy graph"""
-        initial_routes = main.initialize_routes(self.G)
-        best_value = main.main(self.G, initial_routes, max_load=True)
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               num_stops=4,
+                               load_capacity=10)
         assert best_value == 80
