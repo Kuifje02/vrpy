@@ -2,9 +2,7 @@ import networkx as nx
 import pulp
 
 
-def sub_solve_lp(
-    G, duals, routes, route_id, max_stop=True, max_load=False, max_time=False
-):
+def sub_solve_lp(G, duals, routes, max_stop=True, max_load=False, max_time=False):
     """Solves the sub problem for the column generation procedure ; attemps
     to find routes with negative reduced cost
     
@@ -12,7 +10,6 @@ def sub_solve_lp(
         G {networkx.DiGraph} -- Graph representing the network
         duals {dict} -- Dictionary of dual values of master problem
         routes {list} -- List of current routes/variables/columns
-        route_id {int} -- Last route ID number used
 
     Keyword Arguments:
         max_stop {bool} -- True if stop constraints activated
@@ -20,7 +17,7 @@ def sub_solve_lp(
         max_time {bool} -- True if time constraints activated
     
     Returns:
-        routes, more_routes, route_id -- updated routes, boolean as True if new route was found, route ID number of found route
+        routes, more_routes -- updated routes, boolean as True if new route was found
     """
     # create problem
     prob = pulp.LpProblem("SubProblem", pulp.LpMinimize)
@@ -77,7 +74,8 @@ def sub_solve_lp(
 
     if pulp.value(prob.objective) < -(10 ** -5):
         more_routes = True
-        new_route = nx.DiGraph(name=route_id + 1)
+        route_id = len(routes) + 1
+        new_route = nx.DiGraph(name=route_id)
         total_cost = 0
         for (i, j) in G.edges():
             if pulp.value(x[(i, j)]) > 0.5:
@@ -90,7 +88,7 @@ def sub_solve_lp(
         print("new route", new_route.edges())
         print("new route cost =", total_cost)
 
-        return routes, more_routes, route_id + 1
+        return routes, more_routes
     else:
         more_routes = False
-        return routes, more_routes, route_id
+        return routes, more_routes

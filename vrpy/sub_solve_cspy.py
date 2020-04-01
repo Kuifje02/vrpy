@@ -33,17 +33,16 @@ def add_dual_cost(G, duals):
     return G
 
 
-def sub_solve_cspy(G, duals, routes, route_id):
+def sub_solve_cspy(G, duals, routes):
     """Solves subproblem with cspy bidirectional algorithm
     
     Arguments:
         G {networkx.DiGraph} -- Graph representing the network
         duals {dict} -- Dictionary of dual values of master problem
         routes {list} -- List of current routes/variables/columns
-        route_id {int} -- Last route ID number used
     
     Returns:
-        routes, more_routes, route_id -- updated routes, boolean as True if new route was found, route ID number of found route
+        routes, more_routes -- updated routes, boolean as True if new route was found
     """
     G = add_cspy_edge_attributes(G)
     G = add_dual_cost(G, duals)
@@ -52,16 +51,17 @@ def sub_solve_cspy(G, duals, routes, route_id):
     min_res = [0, 0]
     bidirect = cspy.BiDirectional(G, max_res, min_res)
     bidirect.run()
-    print("")
-    for (u, v) in G.edges():
-        print(u, v, G.edges[u, v])
+    # print("")
+    # for (u, v) in G.edges():
+    #    print(u, v, G.edges[u, v])
     print("subproblem")
-    print(bidirect.path)
+    # print(bidirect.path)
     print("cost =", bidirect.total_cost)
     print("resources =", bidirect.consumed_resources)
     if bidirect.total_cost < -(10 ** -5):
         more_routes = True
-        new_route = nx.DiGraph(name=route_id + 1)
+        route_id = len(routes) + 1
+        new_route = nx.DiGraph(name=route_id)
         nx.add_path(new_route, bidirect.path)
         # new_route = nx.relabel_nodes({"Source": 0, "Sink": 0})
         total_cost = 0
@@ -71,7 +71,7 @@ def sub_solve_cspy(G, duals, routes, route_id):
             new_route.edges[i, j]["cost"] = edge_cost
         new_route.graph["cost"] = total_cost
         routes.append(new_route)
-        print("new route", new_route.edges())
+        print("new route", bidirect.path)
         print("new route cost =", total_cost)
         return routes, more_routes, route_id + 1
     else:

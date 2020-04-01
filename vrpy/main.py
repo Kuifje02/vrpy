@@ -4,9 +4,9 @@ from sub_solve_pulp import sub_solve_lp
 from sub_solve_cspy import sub_solve_cspy
 
 # Parameters
-CSPY = True  # use cspy for subproblem, otherwise use LP
+CSPY = False  # use cspy for subproblem, otherwise use LP
 MAX_STOP = True  # max 3 stops per vehicle
-MAX_LOAD = False  # max 10 units per vehicle
+MAX_LOAD = True  # max 10 units per vehicle
 MAX_TIME = False  # max 60 minutes per vehicle
 
 
@@ -29,7 +29,6 @@ def main(G, initial_routes, cspy=False, max_stop=True, max_load=False, max_time=
     # initialization
     more_routes = True
     routes = initial_routes
-    route_id = len(routes)
     k = 0
     # generate interesting columns
     while more_routes:
@@ -45,8 +44,8 @@ def main(G, initial_routes, cspy=False, max_stop=True, max_load=False, max_time=
             routes, more_routes, route_id = sub_solve_cspy(G, duals, routes, route_id)
         else:
             # as LP
-            routes, more_routes, route_id = sub_solve_lp(
-                G, duals, routes, route_id, max_stop, max_load, max_time
+            routes, more_routes = sub_solve_lp(
+                G, duals, routes, max_stop, max_load, max_time
             )
 
     # solve as MIP
