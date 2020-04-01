@@ -55,10 +55,34 @@ class TestsToy:
                                load_capacity=10)
         assert best_value == 80
 
-    def test_sub_pulp(self):
+    def test_LP_stops(self):
+        """Tests column generation procedure on toy graph"""
+        best_value = main.main(self.G, self.initial_routes, num_stops=4)
+        assert best_value == 70
+
+    def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
         best_value = main.main(self.G,
                                self.initial_routes,
                                num_stops=4,
                                load_capacity=10)
+        assert best_value == 80
+
+    def test_LP_stops_capacity_duration(self):
+        """Tests column generation procedure on toy graph"""
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               num_stops=4,
+                               load_capacity=10,
+                               duration=60)
+        assert best_value == 85
+
+    def test_LP_stops_capacity_duration_time_windows(self):
+        """Tests column generation procedure on toy graph"""
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               num_stops=4,
+                               load_capacity=10,
+                               duration=60,
+                               time_windows=True)
         assert best_value == 80
