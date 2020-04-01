@@ -30,13 +30,39 @@ jobs:
             pytest --cov
             codecov
             bash <(curl -s https://codecov.io/bash)
-      - coverage-reporter/send_report
       - store_artifacts:
           path: test-reports
           destination: test-reports
+
+  codacy-coverage-report:
+    docker:
+      - image: 'circleci/openjdk:8-jdk'
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            pip install pytest-cov
+            pip install codecov
+      - run:
+          name: run tests
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            cd ~/vrpy/tests/
+            pytest --cov
+            codecov
+      - coverage-reporter/send_report
+orbs:
+  coverage-reporter: codacy/coverage-reporter@7.6.7
+version: 2.1
   
 workflows:
   version: 2
   build:
     jobs:
       - "python-3.8"
+      - codacy-coverage-report
