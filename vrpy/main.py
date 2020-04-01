@@ -80,6 +80,7 @@ def create_graph():
         G.nodes[v]["demand"] = 5
         G.nodes[v]["upper"] = 100
         G.nodes[v]["lower"] = 0
+    G.nodes[2]["upper"] = 20
     G.nodes["Sink"]["demand"] = 0
     G.nodes["Sink"]["lower"] = 0
     G.nodes["Sink"]["upper"] = 100

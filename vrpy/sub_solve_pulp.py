@@ -103,6 +103,9 @@ def sub_solve_lp(
         new_route.graph["cost"] = total_cost
         routes.append(new_route)
         print("new route", route_id, new_route.edges())
+        if time_windows:
+            for v in new_route.nodes():
+                print(v, "departure time", pulp.value(t[v]))
         print("new route cost =", total_cost)
 
         return routes, more_routes
