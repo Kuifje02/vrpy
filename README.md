@@ -38,8 +38,6 @@ cd ~/vrpy
 python main.py
 ```
 
-
-
 ## Running the tests
 
 ```sh
