@@ -66,7 +66,7 @@ def sub_solve_lp(
             "max_duration_60",
         )
 
-    # time windows constraints
+    # time windows on nodes
     if time_windows:
         M = 1000  # this needs a better value
         for (i, j) in G.edges():
