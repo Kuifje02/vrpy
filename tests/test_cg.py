@@ -1,4 +1,3 @@
-import networkx as nx
 import sys
 
 sys.path.append("../vrpy")
