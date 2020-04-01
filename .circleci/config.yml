@@ -30,6 +30,7 @@ jobs:
             pytest --cov
             codecov
             bash <(curl -s https://codecov.io/bash)
+      - coverage-reporter/send_report
       - store_artifacts:
           path: test-reports
           destination: test-reports
