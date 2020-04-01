@@ -13,6 +13,10 @@ jobs:
     working_directory: ~/vrpy
     steps:
       - checkout
+      - run: install cspy dev
+        command: |
+            git clone https://github.com/torressa/cspy.git
+            git checkout dev
       - run:
           name: install dependencies
           command: |
