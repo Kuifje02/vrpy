@@ -4,14 +4,14 @@ import pulp
 
 def master_solve(G, routes, relax=True):
     """Solves the Master Problem for the column generation procedure
-    
+
     Arguments:
         G: A networkx DiGraph
         routes: A list or routes/columns/variables
-    
+
     Keyword Arguments:
         relax {bool} -- True if variables are continuous, False if binary (default: True)
-    
+
     Returns:
         tuple -- A dict of duals and the objective function value
     """
@@ -38,7 +38,7 @@ def master_solve(G, routes, relax=True):
     for v in G.nodes():
         if v not in ["Source", "Sink"]:  # v > 0:
             prob += (
-                pulp.lpSum([y[r.graph["name"]] for r in routes if v in r.nodes()]) == 1,
+                pulp.lpSum([y[r.graph["name"]] for r in routes if v in r.nodes()]) >= 1,
                 "visit_node_%s" % v,
             )
 
@@ -72,11 +72,11 @@ def master_solve(G, routes, relax=True):
 
 def get_duals(prob, G):
     """Gets the dual values of each constraint of the Master Problem
-    
+
     Arguments:
         prob {pulp.LpProblem} -- The Master Problem
-        G {networkx.DiGraph} 
-    
+        G {networkx.DiGraph}
+
     Returns:
         duals -- A dictionary of duals with constraint names as keys and duals as values
     """
