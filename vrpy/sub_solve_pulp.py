@@ -2,7 +2,9 @@ import networkx as nx
 import pulp
 
 
-def sub_solve_lp(G, duals, routes, max_stop=True, max_load=False, max_time=False):
+def sub_solve_lp(
+    G, duals, routes, max_stop=True, max_load=False, max_time=False, time_windows=False
+):
     """Solves the sub problem for the column generation procedure ; attemps
     to find routes with negative reduced cost
     
@@ -15,6 +17,7 @@ def sub_solve_lp(G, duals, routes, max_stop=True, max_load=False, max_time=False
         max_stop {bool} -- True if stop constraints activated
         max_load {bool} -- True if capacity constraints activated
         max_time {bool} -- True if time constraints activated
+        time_windows {bool} -- True if time windows activated
     
     Returns:
         routes, more_routes -- updated routes, boolean as True if new route was found
@@ -23,6 +26,8 @@ def sub_solve_lp(G, duals, routes, max_stop=True, max_load=False, max_time=False
     prob = pulp.LpProblem("SubProblem", pulp.LpMinimize)
     # flow variables
     x = pulp.LpVariable.dicts("x", G.edges(), cat=pulp.LpBinary)
+    if time_windows:
+        t = pulp.LpVariable.dicts("t", G.nodes(), lowBound=0, cat=pulp.LpContinuous)
     # minimize reduced cost
     edge_cost = pulp.lpSum([G.edges[i, j]["cost"] * x[(i, j)] for (i, j) in G.edges()])
     dual_cost = pulp.lpSum(
@@ -61,6 +66,18 @@ def sub_solve_lp(G, duals, routes, max_stop=True, max_load=False, max_time=False
             "max_duration_60",
         )
 
+    # time windows constraints
+    if time_windows:
+        M = 1000  # this needs a better value
+        for (i, j) in G.edges():
+            prob += (
+                t[i] + G.edges[i, j]["time"] <= t[j] + M * (1 - x[(i, j)]),
+                "time_window_%s_%s" % (i, j),
+            )
+        for v in G.nodes():
+            prob += t[v] <= G.nodes[v]["upper"], "node_%s_up" % v
+            prob += t[v] >= G.nodes[v]["lower"], "node_%s_low" % v
+
     # solve problem
     # print(prob)
     # prob.writeLP("prob.lp")
@@ -85,7 +102,7 @@ def sub_solve_lp(G, duals, routes, max_stop=True, max_load=False, max_time=False
                 new_route.add_edge(i, j, cost=edge_cost)
         new_route.graph["cost"] = total_cost
         routes.append(new_route)
-        print("new route", new_route.edges())
+        print("new route", route_id, new_route.edges())
         print("new route cost =", total_cost)
 
         return routes, more_routes
