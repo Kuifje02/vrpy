@@ -29,6 +29,9 @@ jobs:
             cd ~/vrpy/tests/
             pytest --cov
             codecov
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
   
 workflows:
   version: 2
