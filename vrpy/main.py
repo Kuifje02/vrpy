@@ -21,16 +21,16 @@ def main(
     time_windows=False,
 ):
     """Iteratively generates columns with negative reduced cost and solves as MIP
-    
+
     Arguments:
-        G {networkx DiGraph} 
+        G {networkx DiGraph}
         initial_routes {list of routes} -- Feasible solution for first iteration
 
     Keyword Arguments:
         cspy {bool} -- True if cspy is used for solving subproblem
         max_stop {bool} -- True if stop constraints activated
         max_load {bool} -- True if capacity constraints activated
-        max_time {bool} -- True if time constraints activated 
+        max_time {bool} -- True if time constraints activated
         time_windows {bool} -- True if time windows activated
 
     Returns:
@@ -69,7 +69,7 @@ def main(
 
 def create_graph():
     """Creates a toy graph
-    
+
     Returns:
         G -- A networkx DiGraph
     """
@@ -98,7 +98,7 @@ def initialize_routes(G):
     
     Arguments:
         G {networkx DiGraph} -- The graph representing the network
-    
+
     Returns:
         routes -- A list of initial routes as network DiGraphs
     """
