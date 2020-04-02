@@ -47,7 +47,7 @@ def sub_solve_cspy(G, duals, routes):
     G = add_cspy_edge_attributes(G)
     G = add_dual_cost(G, duals)
     n_edges = len(G.edges())
-    max_res = [n_edges, 3]
+    max_res = [n_edges, 4]
     min_res = [0, 0]
     bidirect = cspy.BiDirectional(G, max_res, min_res)
     bidirect.run()
@@ -73,7 +73,7 @@ def sub_solve_cspy(G, duals, routes):
         routes.append(new_route)
         print("new route", bidirect.path)
         print("new route cost =", total_cost)
-        return routes, more_routes, route_id + 1
+        return routes, more_routes
     else:
         more_routes = False
-        return routes, more_routes, route_id
+        return routes, more_routes
