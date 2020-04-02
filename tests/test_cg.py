@@ -1,7 +1,8 @@
 import sys
 
-sys.path.append("../vrpy")
-from vrpy.vrpy import main
+sys.path.append("../")
+sys.path.append("../vrpy/")
+from vrpy import main
 
 
 def test_main_lp():
