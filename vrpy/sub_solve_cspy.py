@@ -1,5 +1,8 @@
 import networkx as nx
 import numpy as np
+# Local imports to use cspy-dev
+import sys
+sys.path.append("../../cspy/")
 import cspy
 
 
@@ -58,7 +61,7 @@ def sub_solve_cspy(G, duals, routes):
     # print(bidirect.path)
     print("cost =", bidirect.total_cost)
     print("resources =", bidirect.consumed_resources)
-    if bidirect.total_cost < -(10 ** -5):
+    if bidirect.total_cost < -(10**-5):
         more_routes = True
         route_id = len(routes) + 1
         new_route = nx.DiGraph(name=route_id)
