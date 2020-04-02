@@ -5,7 +5,7 @@ import cspy
 
 def add_cspy_edge_attributes(G):
     """
-    Set edge attributes required for cspy
+    Sets edge attributes required for cspy.
     """
     # Iterate through edges to specify 'weight' and 'res_cost' attributes
     G.graph["n_res"] = 2
@@ -18,13 +18,13 @@ def add_cspy_edge_attributes(G):
 
 def add_dual_cost(G, duals):
     """Updates edge weight attribute with dual values
-    
+
     Arguments:
-        G {networkx.digraph} 
-        duals {dict} 
-    
+        G {networkx.digraph}
+        duals {dict}
+
     Returns:
-        G 
+        G
     """
     for edge in G.edges(data=True):
         for v in duals:
@@ -35,12 +35,12 @@ def add_dual_cost(G, duals):
 
 def sub_solve_cspy(G, duals, routes):
     """Solves subproblem with cspy bidirectional algorithm
-    
+
     Arguments:
         G {networkx.DiGraph} -- Graph representing the network
         duals {dict} -- Dictionary of dual values of master problem
         routes {list} -- List of current routes/variables/columns
-    
+
     Returns:
         routes, more_routes -- updated routes, boolean as True if new route was found
     """
