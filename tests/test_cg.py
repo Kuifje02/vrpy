@@ -1,12 +1,12 @@
 from networkx import DiGraph
 import sys
 
-sys.path.append("../vrpy")
-from vrpy.vrpy import main
+sys.path.append("../")
+sys.path.append("../vrpy/")
+from vrpy import main
 
 
 class TestsToy:
-
     def setup(self):
         """
         Creates a toy graph and sets the initial routes for first iteration
@@ -40,20 +40,17 @@ class TestsToy:
     def test_missing_node(self):
         """Tests column generation procedure on toy graph"""
         self.G.remove_node(5)
-        best_value = main.main(self.G,
-                               self.initial_routes,
-                               num_stops=4,
-                               load_capacity=10)
+        best_value = main.main(
+            self.G, self.initial_routes, num_stops=4, load_capacity=10
+        )
         assert best_value == 65
 
     def test_sub_cspy(self):
         """Tests column generation procedure on toy graph"""
-        best_value = main.main(self.G,
-                               self.initial_routes,
-                               cspy=True,
-                               num_stops=4,
-                               load_capacity=10)
-        assert best_value == 80
+        best_value = main.main(
+            self.G, self.initial_routes, cspy=True, num_stops=4, load_capacity=10
+        )
+        assert best_value == 70
 
     def test_LP_stops(self):
         """Tests column generation procedure on toy graph"""
@@ -62,27 +59,26 @@ class TestsToy:
 
     def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
-        best_value = main.main(self.G,
-                               self.initial_routes,
-                               num_stops=4,
-                               load_capacity=10)
+        best_value = main.main(
+            self.G, self.initial_routes, num_stops=4, load_capacity=10
+        )
         assert best_value == 80
 
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
-        best_value = main.main(self.G,
-                               self.initial_routes,
-                               num_stops=4,
-                               load_capacity=10,
-                               duration=60)
+        best_value = main.main(
+            self.G, self.initial_routes, num_stops=4, load_capacity=10, duration=60
+        )
         assert best_value == 85
 
     def test_LP_stops_capacity_duration_time_windows(self):
         """Tests column generation procedure on toy graph"""
-        best_value = main.main(self.G,
-                               self.initial_routes,
-                               num_stops=4,
-                               load_capacity=10,
-                               duration=60,
-                               time_windows=True)
-        assert best_value == 80
+        best_value = main.main(
+            self.G,
+            self.initial_routes,
+            num_stops=4,
+            load_capacity=10,
+            duration=60,
+            time_windows=True,
+        )
+        assert best_value == 85
