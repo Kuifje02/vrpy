@@ -37,6 +37,28 @@ class TestsToy:
                 route.add_edge(v, "Sink", cost=10)
                 self.initial_routes.append(route)
 
+    #################
+    # subsolve cspy #
+    #################
+
+    def test_sub_cspy_stops(self):
+        """Tests column generation procedure on toy graph with stop constraints"""
+        best_value = main.main(self.G, self.initial_routes, cspy=True, num_stops=4)
+        assert best_value == 70
+
+    def test_sub_cspy_capacity(self):
+        """Tests column generation procedure on toy graph
+           with stop and capacity constraints
+        """
+        best_value = main.main(
+            self.G, self.initial_routes, cspy=True, num_stops=4, load_capacity=10
+        )
+        assert best_value == 80
+
+    ###############
+    # subsolve lp #
+    ###############
+
     def test_missing_node(self):
         """Tests column generation procedure on toy graph"""
         self.G.remove_node(5)
@@ -44,18 +66,6 @@ class TestsToy:
             self.G, self.initial_routes, num_stops=4, load_capacity=10
         )
         assert best_value == 65
-
-    def test_sub_cspy(self):
-        """Tests column generation procedure on toy graph"""
-        best_value = main.main(
-            self.G, self.initial_routes, cspy=True, num_stops=4, load_capacity=10
-        )
-        assert best_value == 70
-
-    def test_LP_stops(self):
-        """Tests column generation procedure on toy graph"""
-        best_value = main.main(self.G, self.initial_routes, num_stops=4)
-        assert best_value == 70
 
     def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
