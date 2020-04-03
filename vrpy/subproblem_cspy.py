@@ -7,7 +7,7 @@ from subproblem import SubProblemBase
 class SubProblemCSPY(SubProblemBase):
     """
     Solves the sub problem for the column generation procedure with cspy; attemps
-    to find routes with negative reduced cost
+    to find routes with negative reduced cost.
 
     Inherits problem parameters from `SubproblemBase`
     """

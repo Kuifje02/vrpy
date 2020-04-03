@@ -6,8 +6,8 @@ from subproblem import SubProblemBase
 class SubProblemLP(SubProblemBase):
     """
     Solves the sub problem for the column generation procedure ; attemps
-    to find routes with negative reduced cost 
-    
+    to find routes with negative reduced cost.
+
     Inherits problem parameters from `SubproblemBase`
     """
 
