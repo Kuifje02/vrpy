@@ -2,19 +2,17 @@ import pulp
 
 
 def master_solve(G, routes, relax=True):
-    """Solves the Master Problem for the column generation procedure
+    """Solves the master problem for the column generation procedure.
 
-    Arguments:
-        G: A networkx DiGraph
-        routes: A list or routes/columns/variables
-
-    Keyword Arguments:
-        relax {bool} -- True if variables are continuous, False if binary (default: True)
+    Args:
+        G (DiGraph): Underlying network
+        routes (list): Routes/columns/variables of the master problem
+        relax (bool, optional): True if variables are continuous. Defaults to True.
 
     Returns:
-        tuple -- A dict of duals and the objective function value
+        dict: Duals with constraint names as keys and dual variables as values (if relax is True)
+        float: Objective function value
     """
-
     # create problem
     prob = pulp.LpProblem("MasterProblem", pulp.LpMinimize)
 
@@ -35,7 +33,7 @@ def master_solve(G, routes, relax=True):
 
     # visit each node once
     for v in G.nodes():
-        if v not in ["Source", "Sink"]:  # v > 0:
+        if v not in ["Source", "Sink"]:
             prob += (
                 pulp.lpSum([y[r.graph["name"]] for r in routes if v in r.nodes()]) >= 1,
                 "visit_node_%s" % v,
@@ -64,24 +62,24 @@ def master_solve(G, routes, relax=True):
         for r in routes:
             val = pulp.value(y[r.graph["name"]])
             if val > 0:
-                print(r.edges(), "cost", r.graph["cost"])
+                print(r.nodes(), "cost", r.graph["cost"])
         # print(pulp.value(prob.objective))
         return pulp.value(prob.objective)
 
 
 def get_duals(prob, G):
-    """Gets the dual values of each constraint of the Master Problem
+    """Gets the dual values of each constraint of the master problem
 
-    Arguments:
-        prob {pulp.LpProblem} -- The Master Problem
-        G {networkx.DiGraph}
+    Args:
+        prob (LpProblem): Master problem
+        G (DiGraph): Underlying network
 
     Returns:
-        duals -- A dictionary of duals with constraint names as keys and duals as values
+        dict: Duals with constraint names as keys and dual variables as values
     """
     duals = {}
     for v in G.nodes():
-        if v not in ["Source", "Sink"]:  # v > 0:
+        if v not in ["Source", "Sink"]:
             constr_name = "visit_node_%s" % v
             duals[v] = prob.constraints[constr_name].pi
     return duals
