@@ -64,7 +64,7 @@ def master_solve(G, routes, relax=True):
         for r in routes:
             val = pulp.value(y[r.graph["name"]])
             if val > 0:
-                print(r.edges(), "cost", r.graph["cost"])
+                print(r.nodes(), "cost", r.graph["cost"])
         # print(pulp.value(prob.objective))
         return pulp.value(prob.objective)
 

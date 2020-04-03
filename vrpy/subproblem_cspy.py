@@ -62,11 +62,11 @@ class SubProblemCSPY(SubProblemBase):
             self.add_max_stops()
         if self.load_capacity:
             self.add_max_load()
+        if self.duration:
+            self.add_max_duration()
         """
         if self.time_windows:
             self.add_time_windows()
-        if self.duration:
-            self.add_max_duration()
         """
         self.G.graph["n_res"] = self.n_res
         print("n resources =", self.n_res)
@@ -101,8 +101,17 @@ class SubProblemCSPY(SubProblemBase):
             demand = self.G.nodes[j]["demand"]
             self.G.edges[i, j]["res_cost"] = np.append(edge_array, [demand])
 
-    """
     def add_max_duration(self):
+        # Increase number of resources by one unit
+        self.n_res += 1
+        # Set lower and upper bounds of stop resource
+        self.max_res.append(self.duration)
+        self.min_res.append(0)
+        for (i, j) in self.G.edges():
+            edge_array = self.G.edges[i, j]["res_cost"]
+            travel_time = self.G.edges[i, j]["time"]
+            self.G.edges[i, j]["res_cost"] = np.append(edge_array, [travel_time])
 
+    """
     def add_time_windows(self):
     """
