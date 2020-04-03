@@ -71,9 +71,9 @@ def main(
     return best_value
 
 
-"""
 if __name__ == "__main__":
     import networkx as nx
+
     G = nx.DiGraph()
     for v in [1, 2, 3, 4, 5]:
         G.add_edge("Source", v, cost=10, time=20)
@@ -108,4 +108,3 @@ if __name__ == "__main__":
         duration=None,
         time_windows=False,
     )
-"""

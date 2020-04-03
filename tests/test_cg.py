@@ -18,6 +18,7 @@ class TestsToy:
             self.G.nodes[v]["demand"] = 5
             self.G.nodes[v]["upper"] = 100
             self.G.nodes[v]["lower"] = 0
+        self.G.nodes[2]["upper"] = 20
         self.G.nodes["Sink"]["demand"] = 0
         self.G.nodes["Sink"]["lower"] = 0
         self.G.nodes["Sink"]["upper"] = 100
@@ -69,6 +70,22 @@ class TestsToy:
         )
         assert best_value == 85
 
+    '''
+    def test_sub_cspy_stops_capacity_time_windows(self):
+        """Tests column generation procedure on toy graph
+           with stop, capacity and time_window constraints
+        """
+        best_value = main.main(
+            self.G,
+            self.initial_routes,
+            cspy=True,
+            num_stops=4,
+            load_capacity=10,
+            duration=60,
+        )
+        assert best_value == 80
+    '''
+
     ###############
     # subsolve lp #
     ###############
@@ -95,14 +112,14 @@ class TestsToy:
         )
         assert best_value == 85
 
-    def test_LP_stops_capacity_duration_time_windows(self):
+    def test_LP_stops_time_windows(self):
         """Tests column generation procedure on toy graph"""
         best_value = main.main(
             self.G,
             self.initial_routes,
             num_stops=4,
-            load_capacity=10,
-            duration=60,
+            load_capacity=None,
+            duration=None,
             time_windows=True,
         )
-        assert best_value == 85
+        assert best_value == 80
