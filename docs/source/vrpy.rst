@@ -4,18 +4,18 @@ vrpy package
 Submodules
 ----------
 
-vrpy.conf module
-----------------
-
-.. automodule:: vrpy.conf
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 vrpy.main module
 ----------------
 
 .. automodule:: vrpy.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+vrpy.main\_local module
+-----------------------
+
+.. automodule:: vrpy.main_local
    :members:
    :undoc-members:
    :show-inheritance:
@@ -28,18 +28,26 @@ vrpy.master\_solve\_pulp module
    :undoc-members:
    :show-inheritance:
 
-vrpy.sub\_solve\_cspy module
-----------------------------
+vrpy.subproblem module
+----------------------
 
-.. automodule:: vrpy.sub_solve_cspy
+.. automodule:: vrpy.subproblem
    :members:
    :undoc-members:
    :show-inheritance:
 
-vrpy.sub\_solve\_pulp module
+vrpy.subproblem\_cspy module
 ----------------------------
 
-.. automodule:: vrpy.sub_solve_pulp
+.. automodule:: vrpy.subproblem_cspy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+vrpy.subproblem\_lp module
+--------------------------
+
+.. automodule:: vrpy.subproblem_lp
    :members:
    :undoc-members:
    :show-inheritance:
