@@ -14,29 +14,37 @@ A python framework for solving the VRP and its variants with column generation.
 
 [pulp](https://pypi.org/project/PuLP/)
 
-[ortools](https://developers.google.com/optimization/install/python)
+<!--[ortools](https://developers.google.com/optimization/install/python)-->
 
-## Usage
+## Documentation (work in progress)
 
-Right now, only a [toy example](https://fr.overleaf.com/read/zmqqdbgtmmnv
-) is considered. 
+[toy example](https://fr.overleaf.com/read/zmqqdbgtmmnv
+)
 
-Go to ~/vrpy/main.py and modify the following options to activate the different constraints. 
+## Usage (work in progress)
 
 ```python
-# Parameters
-CSPY = True  # use cspy for subproblem, otherwise use LP
-MAX_STOP = True  # max 3 stops per vehicle
-MAX_LOAD = False  # max 10 units per vehicle
-MAX_TIME = False  # max 60 minutes per vehicle
-TIME_WINDOWS = True  # time window constraints on each node
-```
+from networkx import DiGraph
+from vrpy import main
 
-Then run the main script :
+# Define the graph, must contain "Source" and "Sink" nodes
+G = DiGraph()
+G.add_edge("Source",1,cost=1,time=2)
+G.add_edge("Source",2,cost=2,time=1)
+G.add_edge(1,"Sink",cost=0,time=2)
+G.add_edge(2,"Sink",cost=2,time=3)
+G.add_edge(1,2,cost=1,time=1)
 
-```sh
-cd ~/vrpy
-python main.py
+# Define a list of initial_routes
+route_1 = DiGraph(cost=1)
+route_1.add_path(["Source",1,"Sink"])
+route_2 = DiGraph(cost=4)
+route_2.add_path(["Source",2,"Sink"])
+initial_routes=[route_1,route_2]
+
+# Solve the VRP
+# Optional values define constraints
+main.main(G, initial_routes, cspy=True, num_stops=4)
 ```
 
 ## Running the tests
