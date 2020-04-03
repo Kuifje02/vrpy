@@ -1,9 +1,6 @@
-import networkx as nx
 from master_solve_pulp import master_solve
-
-# from sub_solve_pulp import sub_solve_lp
 from subproblem_lp import SubProblemLP
-from sub_solve_cspy import sub_solve_cspy
+from subproblem_cspy import SubProblemCSPY
 
 
 def main(
@@ -16,24 +13,24 @@ def main(
     time_windows=False,
 ):
     """Iteratively generates columns with negative reduced cost and solves as MIP
-    
+
     Arguments:
-        G {networkx DiGraph} 
+        G {networkx DiGraph}
         initial_routes {list of routes} -- Feasible solution for first iteration
 
     Keyword Arguments:
-        cspy {bool} 
+        cspy {bool}
             True if cspy is used for solving subproblem
-        num_stops {int} 
-            Maximum number of stops. Optional. 
+        num_stops {int}
+            Maximum number of stops. Optional.
             If not provided, constraint not enforced.
-        load_capacity {int} 
+        load_capacity {int}
             Maximum capacity. Optional.
             If not provided, constraint not enforced.
-        duration {int} 
+        duration {int}
             Maximum duration. Optional.
             If not provided, constraint not enforced.
-        time_windows {bool} 
+        time_windows {bool}
             True if time windows activated
 
     Returns:
@@ -54,7 +51,10 @@ def main(
         # solve sub problem
         if cspy:
             # with cspy
-            routes, more_routes = sub_solve_cspy(G, duals, routes)
+            subproblem = SubProblemCSPY(
+                G, duals, routes, num_stops, load_capacity, duration, time_windows
+            )
+            routes, more_routes = subproblem.solve()
         else:
             # as LP
             subproblem = SubProblemLP(
@@ -71,15 +71,41 @@ def main(
     return best_value
 
 
-# if __name__ == "__main__":
-#     G = create_graph()
-#     initial_routes = initialize_routes(G)
-#     main(
-#         G,
-#         initial_routes,
-#         cspy=CSPY,
-#         max_stop=MAX_STOP,
-#         max_load=MAX_LOAD,
-#         max_time=MAX_TIME,
-#         time_windows=TIME_WINDOWS,
-#     )
+"""
+if __name__ == "__main__":
+    import networkx as nx
+    G = nx.DiGraph()
+    for v in [1, 2, 3, 4, 5]:
+        G.add_edge("Source", v, cost=10, time=20)
+        G.add_edge(v, "Sink", cost=10, time=20)
+        G.nodes[v]["demand"] = 5
+        G.nodes[v]["upper"] = 100
+        G.nodes[v]["lower"] = 0
+    G.nodes["Sink"]["demand"] = 0
+    G.nodes["Sink"]["lower"] = 0
+    G.nodes["Sink"]["upper"] = 100
+    G.nodes["Source"]["demand"] = 0
+    G.nodes["Source"]["lower"] = 0
+    G.nodes["Source"]["upper"] = 100
+    G.add_edge(1, 2, cost=10, time=20)
+    G.add_edge(2, 3, cost=10, time=20)
+    G.add_edge(3, 4, cost=15, time=20)
+    G.add_edge(4, 5, cost=10, time=25)
+    # Create routes
+    initial_routes = []
+    for v in G.nodes():
+        if v not in ["Source", "Sink"]:
+            route = nx.DiGraph(name=v, cost=20)
+            route.add_edge("Source", v, cost=10)
+            route.add_edge(v, "Sink", cost=10)
+            initial_routes.append(route)
+    main(
+        G,
+        initial_routes,
+        cspy=True,
+        num_stops=3,
+        load_capacity=None,
+        duration=None,
+        time_windows=False,
+    )
+"""
