@@ -1,7 +1,7 @@
-from cspy import BiDirectional
-from networkx import DiGraph, add_path
 import numpy as np
+from cspy import BiDirectional
 from subproblem import SubProblemBase
+from networkx import DiGraph, add_path
 
 
 class SubProblemCSPY(SubProblemBase):
@@ -30,15 +30,14 @@ class SubProblemCSPY(SubProblemBase):
             self.max_res,
             self.min_res,
             direction="both",
-            preprocess=True,
-            REF_forward=None,  # self.REF_forward,
-            REF_backward=None,  # self.REF_backward,
+            REF_forward=self.REF_forward(),
+            REF_backward=self.REF_backward(),
         )
         self.bidirect.run()
         print("subproblem")
         print("cost =", self.bidirect.total_cost)
         print("resources =", self.bidirect.consumed_resources)
-        if self.bidirect.total_cost < -(10 ** -5):
+        if self.bidirect.total_cost < -(10**-5):
             more_routes = True
             self.add_new_route()
             print("new route", self.bidirect.path)
@@ -76,7 +75,7 @@ class SubProblemCSPY(SubProblemBase):
                 # time resource is needed for time windows
                 self.add_max_duration()
                 # update upper bound for duration
-                self.max_res[-1] = 1e10  # this is probably not the right way
+                self.max_res[-1] = len(self.G.edges())
             self.add_time_windows()
         self.G.graph["n_res"] = self.n_res
 
@@ -106,7 +105,8 @@ class SubProblemCSPY(SubProblemBase):
         for (i, j) in self.G.edges():
             edge_array = self.G.edges[i, j]["res_cost"]
             demand_head_node = self.G.nodes[j]["demand"]
-            self.G.edges[i, j]["res_cost"] = np.append(edge_array, [demand_head_node])
+            self.G.edges[i, j]["res_cost"] = np.append(edge_array,
+                                                       [demand_head_node])
 
     def add_max_duration(self):
         # Increase number of resources by one unit
@@ -117,7 +117,8 @@ class SubProblemCSPY(SubProblemBase):
         for (i, j) in self.G.edges():
             edge_array = self.G.edges[i, j]["res_cost"]
             travel_time = self.G.edges[i, j]["time"]
-            self.G.edges[i, j]["res_cost"] = np.append(edge_array, [travel_time])
+            self.G.edges[i, j]["res_cost"] = np.append(edge_array,
+                                                       [travel_time])
 
     def add_time_windows(self):
         # Increase number of resources by one unit
@@ -129,76 +130,94 @@ class SubProblemCSPY(SubProblemBase):
             edge_array = self.G.edges[i, j]["res_cost"]
             self.G.edges[i, j]["res_cost"] = np.append(edge_array, [0])
 
-    """
-    def REF_forward(self, cumulative_res, edge):
+    def REF_forward(self):
         if self.time_windows:
-            return self.REF_forward_time_windows(cumulative_res, edge)
+            return self.REF_forward_time_windows
+        else:
+            return
 
-    def REF_backward(self, cumulative_res, edge):
+    def REF_backward(self):
         if self.time_windows:
-            return self.REF_backward_time_windows(cumulative_res, edge)
-    """
+            return self.REF_backward_time_windows
+        else:
+            return
 
-    def REF_forward(self, cumulative_res, edge):
-        """Resource extension function based on Righini and Salani's paper
+    def REF_forward_time_windows(self, cumulative_res, edge):
         """
-        # extract data
+        Resource extension function based on Righini and Salani's paper
+        """
         new_res = np.array(cumulative_res)
+        # extract data
         head_node, tail_node, edge_data = edge[0:3]
-
         # monotone resource
         new_res[0] += 1
 
-        # other resources
-        # need help !
-        # not sure how to deal with the fact that new_res has variable length
-        # as is depends on which constraints are activated
+        # Other resources (ugly fix)
+        if self.num_stops and self.load_capacity:
+            # index 1 has stops and index 2 has capacity
+            new_res[1] += 1
+            new_res[2] += self.G.nodes[tail_node]["demand"]
+        elif self.num_stops:
+            # index 1 has stops
+            new_res[1] += 1
+        elif self.load_capacity:
+            # index 1 has load_capacity
+            new_res[1] += self.G.nodes[tail_node]["demand"]
 
         # time resource
         # we assume that time is always the penultimate resource (rank[-2])
         # and that time window feasibility is last (rank[-1])
-        arrival_time = cumulative_res[-2] + edge_data["time"]
+        arrival_time = new_res[-2] + edge_data["time"]
         service_time = 0  # undefined for now
-        inf_time_window = self.G.nodes[head_node]["lower"]
+        inf_time_window = self.G.nodes[tail_node]["lower"]
+        sup_time_window = self.G.nodes[tail_node]["upper"]
         new_res[-2] += max(arrival_time + service_time, inf_time_window)
         # time-window feasibility resource
-        sup_time_window = self.G.nodes[head_node]["lower"]
         if new_res[-2] <= sup_time_window:
             new_res[-1] = 0
         else:
             new_res[-1] = 1
         return new_res
 
-    def REF_backward(self, cumulative_res, edge):
+    def REF_backward_time_windows(self, cumulative_res, edge):
         """Resource extension function based on Righini and Salani's paper
         """
         new_res = np.array(cumulative_res)
         head_node, tail_node, edge_data = edge[0:3]
         # monotone resource
-        new_res[0] += 1
-        # other resources
-        # need help !
-
+        new_res[0] -= 1
+        # Other resources
+        if self.num_stops and self.load_capacity:
+            # index 1 has stops and index 2 has capacity
+            new_res[1] -= 1
+            new_res[2] -= self.G.nodes[tail_node]["demand"]
+        elif self.num_stops:
+            # index 1 has stops
+            new_res[1] -= 1
+        elif self.load_capacity:
+            # index 1 has load_capacity
+            new_res[1] -= self.G.nodes[tail_node]["demand"]
         # time resource
         # we assume that time is always the penultimate resource (rank[-2])
         # and that time window feasibility is last (rank[-1])
-        arrival_time = cumulative_res[-2] + edge_data["time"]
+        arrival_time = new_res[-2] - edge_data["time"]
         service_time = 0  # undefined for now
-        inf_time_window = self.G.nodes[head_node]["lower"]
-        sup_time_window = self.G.nodes[head_node]["lower"]
-        max_feasible_arrival_time = max(
-            [
-                self.G.nodes[v]["upper"] + self.G.edges[v, "Sink"]["time"]
-                for v in self.G.predecessors("Sink")
-            ]
-        )
-        new_res[-2] += max(
+        inf_time_window = self.G.nodes[tail_node]["lower"]
+        sup_time_window = self.G.nodes[tail_node]["upper"]
+        max_feasible_arrival_time = max([
+            self.G.nodes[v]["upper"] + self.G.edges[v, "Sink"]["time"]
+            for v in self.G.predecessors("Sink")
+        ])
+
+        new_res[-2] -= max(
             arrival_time + service_time,
             max_feasible_arrival_time - sup_time_window - service_time,
         )
         # time-window feasibility resource
-        if new_res[-2] <= max_feasible_arrival_time - inf_time_window - service_time:
+        if (new_res[-2] <=
+                max_feasible_arrival_time - inf_time_window - service_time):
             new_res[-1] = 0
         else:
             new_res[-1] = 1
+        print(new_res)
         return new_res

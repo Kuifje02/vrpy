@@ -7,6 +7,7 @@ from vrpy import main
 
 
 class TestsToy:
+
     def setup(self):
         """
         Creates a toy graph and sets the initial routes for first iteration
@@ -44,16 +45,21 @@ class TestsToy:
 
     def test_sub_cspy_stops(self):
         """Tests column generation procedure on toy graph with stop constraints"""
-        best_value = main.main(self.G, self.initial_routes, cspy=True, num_stops=4)
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               cspy=True,
+                               num_stops=4)
         assert best_value == 70
 
     def test_sub_cspy_stops_capacity(self):
         """Tests column generation procedure on toy graph
            with stop and capacity constraints
         """
-        best_value = main.main(
-            self.G, self.initial_routes, cspy=True, num_stops=4, load_capacity=10
-        )
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               cspy=True,
+                               num_stops=4,
+                               load_capacity=10)
         assert best_value == 80
 
     def test_sub_cspy_stops_capacity_duration(self):
@@ -70,21 +76,17 @@ class TestsToy:
         )
         assert best_value == 85
 
-    '''
-    def test_sub_cspy_stops_capacity_time_windows(self):
+    def test_sub_cspy_stops_time_windows(self):
         """Tests column generation procedure on toy graph
            with stop, capacity and time_window constraints
         """
-        best_value = main.main(
-            self.G,
-            self.initial_routes,
-            cspy=True,
-            num_stops=4,
-            load_capacity=10,
-            duration=60,
-        )
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               cspy=True,
+                               num_stops=4,
+                               duration=60,
+                               time_windows=True)
         assert best_value == 80
-    '''
 
     ###############
     # subsolve lp #
@@ -93,23 +95,27 @@ class TestsToy:
     def test_missing_node(self):
         """Tests column generation procedure on toy graph"""
         self.G.remove_node(5)
-        best_value = main.main(
-            self.G, self.initial_routes, num_stops=4, load_capacity=10
-        )
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               num_stops=4,
+                               load_capacity=10)
         assert best_value == 65
 
     def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
-        best_value = main.main(
-            self.G, self.initial_routes, num_stops=4, load_capacity=10
-        )
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               num_stops=4,
+                               load_capacity=10)
         assert best_value == 80
 
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
-        best_value = main.main(
-            self.G, self.initial_routes, num_stops=4, load_capacity=10, duration=60
-        )
+        best_value = main.main(self.G,
+                               self.initial_routes,
+                               num_stops=4,
+                               load_capacity=10,
+                               duration=60)
         assert best_value == 85
 
     def test_LP_stops_time_windows(self):
@@ -118,8 +124,6 @@ class TestsToy:
             self.G,
             self.initial_routes,
             num_stops=4,
-            load_capacity=None,
-            duration=None,
             time_windows=True,
         )
         assert best_value == 80
