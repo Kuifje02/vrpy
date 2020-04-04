@@ -9,9 +9,11 @@ A python framework for solving the VRP and its variants with column generation.
 
 ## Requirements
 
+[cspy](https://pypi.org/project/cspy/)
+
 [networkx](https://pypi.org/project/networkx/)
 
-[cspy](https://pypi.org/project/cspy/)
+[numpy](https://pypi.org/project/numpy/)
 
 [pulp](https://pypi.org/project/PuLP/)
 
@@ -40,7 +42,7 @@ G.nodes[2]["demand"] = 4
 
 # Solve the VRP
 # Optional values define constraints
-prob = VRPSolver(G, cspy=True, num_stops=4, load_capacity = 10)
+prob = VRPSolver(G, cspy=True, num_stops=4, load_capacity=10, duration=4)
 prob.solve()
 ```
 
