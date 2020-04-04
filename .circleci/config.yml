@@ -13,10 +13,6 @@ jobs:
     working_directory: ~/vrpy
     steps:
       - checkout
-      #- name: install cspy dev
-      #  command: |
-      #      git clone https://github.com/torressa/cspy.git
-      #      git checkout dev
       - run:
           name: install dependencies
           command: |
@@ -38,9 +34,54 @@ jobs:
           path: test-reports
           destination: test-reports
 
+  "python-3.7":
+    docker:
+      - image: circleci/python:3.7
+    working_directory: ~/vrpy
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            pip install pytest-cov
+            pip install codecov
+      - run:
+          name: run tests
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            cd ~/vrpy/tests/
+            pytest
+
+  "python-3.6":
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/vrpy
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            pip install pytest-cov
+            pip install codecov
+      - run:
+          name: run tests
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            cd ~/vrpy/tests/
+            pytest       
   
 workflows:
   version: 2
   build:
     jobs:
       - "python-3.8"
+      - "python-3.7"
+      - "python-3.6"

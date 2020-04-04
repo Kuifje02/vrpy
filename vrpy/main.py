@@ -42,15 +42,13 @@ def main(
         # solve sub problem
         if cspy:
             # with cspy
-            subproblem = SubProblemCSPY(
-                G, duals, routes, num_stops, load_capacity, duration, time_windows
-            )
+            subproblem = SubProblemCSPY(G, duals, routes, num_stops,
+                                        load_capacity, duration, time_windows)
             routes, more_routes = subproblem.solve()
         else:
             # as LP
-            subproblem = SubProblemLP(
-                G, duals, routes, num_stops, load_capacity, duration, time_windows
-            )
+            subproblem = SubProblemLP(G, duals, routes, num_stops,
+                                      load_capacity, duration, time_windows)
             routes, more_routes = subproblem.solve()
 
     # solve as MIP
