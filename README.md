@@ -4,7 +4,6 @@
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![Documentation Status](https://readthedocs.org/projects/vrpy/badge/?version=latest)](https://vrpy.readthedocs.io/en/latest/?badge=latest)
 
-
 # VRPy
 A python framework for solving the VRP and its variants with column generation.
 
@@ -27,7 +26,7 @@ A python framework for solving the VRP and its variants with column generation.
 
 ```python
 from networkx import DiGraph
-from vrpy import main
+from vrpy.main import VRPSolver
 
 # Define the graph, must contain "Source" and "Sink" nodes
 G = DiGraph()
@@ -36,17 +35,13 @@ G.add_edge("Source",2,cost=2,time=1)
 G.add_edge(1,"Sink",cost=0,time=2)
 G.add_edge(2,"Sink",cost=2,time=3)
 G.add_edge(1,2,cost=1,time=1)
-
-# Define a list of initial_routes
-route_1 = DiGraph(cost=1)
-route_1.add_path(["Source",1,"Sink"])
-route_2 = DiGraph(cost=4)
-route_2.add_path(["Source",2,"Sink"])
-initial_routes=[route_1,route_2]
+G.nodes[1]["demand"] = 5
+G.nodes[2]["demand"] = 4
 
 # Solve the VRP
 # Optional values define constraints
-main.main(G, initial_routes, cspy=True, num_stops=4)
+prob = VRPSolver(G, cspy=True, num_stops=4, load_capacity = 10)
+prob.solve()
 ```
 
 ## Running the tests
