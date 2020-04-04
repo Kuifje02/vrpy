@@ -102,9 +102,11 @@ class SubProblemLP(SubProblemBase):
 
     def add_max_stops(self):
         # Add max stop constraint
+        # S stops => S+1 arcs
         self.prob += (
-            pulp.lpSum([self.x[(i, j)] for (i, j) in self.G.edges()]) <= self.num_stops,
-            "max_{}".format(self.num_stops - 1),
+            pulp.lpSum([self.x[(i, j)] for (i, j) in self.G.edges()])
+            <= self.num_stops + 1,
+            "max_{}".format(self.num_stops),
         )
 
     def add_max_load(self):

@@ -36,21 +36,21 @@ class TestsToy:
 
     def test_sub_cspy_stops(self):
         """Tests column generation procedure on toy graph with stop constraints"""
-        prob = VRPSolver(self.G, cspy=True, num_stops=4)
+        prob = VRPSolver(self.G, cspy=True, num_stops=3)
         assert prob.column_generation() == 70
 
     def test_sub_cspy_stops_capacity(self):
         """Tests column generation procedure on toy graph
            with stop and capacity constraints
         """
-        prob = VRPSolver(self.G, cspy=True, num_stops=4, load_capacity=10)
+        prob = VRPSolver(self.G, cspy=True, num_stops=3, load_capacity=10)
         assert prob.column_generation() == 80
 
     def test_sub_cspy_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph
            with stop, capacity and duration constraints
         """
-        prob = VRPSolver(self.G, cspy=True, num_stops=4, load_capacity=10, duration=60,)
+        prob = VRPSolver(self.G, cspy=True, num_stops=3, load_capacity=10, duration=60,)
         assert prob.column_generation() == 85
 
     def test_sub_cspy_stops_time_windows(self):
@@ -58,7 +58,7 @@ class TestsToy:
            with stop, capacity and time_window constraints
         """
         prob = VRPSolver(
-            self.G, cspy=True, num_stops=4, duration=60, time_windows=True,
+            self.G, cspy=True, num_stops=3, duration=60, time_windows=True,
         )
         assert prob.column_generation() == 80
 
@@ -66,23 +66,22 @@ class TestsToy:
     # subsolve lp #
     ###############
 
-    def test_missing_node(self):
-        """Tests column generation procedure on toy graph"""
-        self.G.remove_node(5)
-        prob = VRPSolver(self.G, num_stops=4, load_capacity=10)
-        assert prob.column_generation() == 65
+    def test_LP_stops(self):
+        """Tests column generation procedure on toy graph with stop constraints"""
+        prob = VRPSolver(self.G, num_stops=3)
+        assert prob.column_generation() == 70
 
     def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
-        prob = VRPSolver(self.G, num_stops=4, load_capacity=10)
+        prob = VRPSolver(self.G, num_stops=3, load_capacity=10)
         assert prob.column_generation() == 80
 
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
-        prob = VRPSolver(self.G, num_stops=4, load_capacity=10, duration=60)
+        prob = VRPSolver(self.G, num_stops=3, load_capacity=10, duration=60)
         assert prob.column_generation() == 85
 
     def test_LP_stops_time_windows(self):
         """Tests column generation procedure on toy graph"""
-        prob = VRPSolver(self.G, num_stops=4, time_windows=True,)
+        prob = VRPSolver(self.G, num_stops=3, time_windows=True,)
         assert prob.column_generation() == 80
