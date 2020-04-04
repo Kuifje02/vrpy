@@ -1,4 +1,4 @@
-from master_solve_pulp import master_solve
+from master_solve_pulp import MasterSolvePulp
 from subproblem_lp import SubProblemLP
 from subproblem_cspy import SubProblemCSPY
 
@@ -38,23 +38,27 @@ def main(
         print("iteration", k)
         print("===========")
         # solve restricted relaxed master problem
-        duals, relaxed_cost = master_solve(G, routes, relax=True)
+        masterproblem = MasterSolvePulp(G, routes, relax=True)
+        duals, relaxed_cost = masterproblem.solve()
         # solve sub problem
         if cspy:
             # with cspy
-            subproblem = SubProblemCSPY(G, duals, routes, num_stops,
-                                        load_capacity, duration, time_windows)
+            subproblem = SubProblemCSPY(
+                G, duals, routes, num_stops, load_capacity, duration, time_windows
+            )
             routes, more_routes = subproblem.solve()
         else:
             # as LP
-            subproblem = SubProblemLP(G, duals, routes, num_stops,
-                                      load_capacity, duration, time_windows)
+            subproblem = SubProblemLP(
+                G, duals, routes, num_stops, load_capacity, duration, time_windows
+            )
             routes, more_routes = subproblem.solve()
 
     # solve as MIP
     print("")
     print("solve as MIP")
     print("============")
-    best_value = master_solve(G, routes, relax=False)
+    masterproblem_mip = MasterSolvePulp(G, routes, relax=False)
+    best_value = masterproblem_mip.solve()
 
     return best_value
