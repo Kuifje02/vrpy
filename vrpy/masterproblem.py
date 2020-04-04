@@ -1,13 +1,5 @@
-from networkx import DiGraph
-
-
 class MasterProblemBase:
     """Base class for the master problems.
-
-    Attributes:
-        G (DiGraph): Underlying network.
-        routes (list): Current routes/variables/columns.
-        relax (bool, optional): True if variables are continuous. Defaults to True.
 
     Args:
         G (DiGraph): Underlying network.
