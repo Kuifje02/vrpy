@@ -1,3 +1,6 @@
+from networkx import DiGraph
+
+
 class MasterProblemBase:
     """Base class for the master problems.
 
