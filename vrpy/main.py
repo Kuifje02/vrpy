@@ -15,9 +15,6 @@ class VRPSolver:
             List of Digraphs.
             Feasible solution for first iteration.
             Defaults to None.
-        cspy (bool, optional):
-            True if cspy is used for subproblem.
-            Defaults to False.
         num_stops (int, optional):
             Maximum number of stops.
             Defaults to None.
@@ -36,7 +33,6 @@ class VRPSolver:
         self,
         G,
         initial_routes=None,
-        cspy=False,
         num_stops=None,
         load_capacity=None,
         duration=None,
@@ -44,15 +40,16 @@ class VRPSolver:
     ):
         self.G = G
         self.initial_routes = initial_routes
-        self.cspy = cspy
         self.num_stops = num_stops
         self.load_capacity = load_capacity
         self.duration = duration
         self.time_windows = time_windows
 
-    def column_generation(self):
+    def column_generation(self, cspy=True):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
+        Args:
+            cspy (bool, optional): True if cspy is used for subproblem. Defaults to True.
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
@@ -74,7 +71,7 @@ class VRPSolver:
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
             duals, relaxed_cost = masterproblem.solve()
             # solve sub problem
-            if self.cspy:
+            if cspy:
                 # with cspy
                 subproblem = SubProblemCSPY(
                     self.G,

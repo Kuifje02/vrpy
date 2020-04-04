@@ -1,7 +1,7 @@
 [![CircleCI](https://circleci.com/gh/Kuifje02/vrpy.svg?style=svg)](https://circleci.com/gh/Kuifje02/vrpy)
 [![codecov](https://codecov.io/gh/Kuifje02/vrpy/branch/master/graph/badge.svg)](https://codecov.io/gh/Kuifje02/vrpy)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6f27b9ccd1c2446aa1dba15e701aa9b0)](https://app.codacy.com/manual/Kuifje02/vrpy?utm_source=github.com&utm_medium=referral&utm_content=Kuifje02/vrpy&utm_campaign=Badge_Grade_Dashboard)
-[![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.8](https://img.shields.io/badge/python-3.6|3.7|3.8-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![Documentation Status](https://readthedocs.org/projects/vrpy/badge/?version=latest)](https://vrpy.readthedocs.io/en/latest/?badge=latest)
 
 # VRPy
@@ -42,8 +42,8 @@ G.nodes[2]["demand"] = 4
 
 # Solve the VRP
 # Optional values define constraints
-prob = VRPSolver(G, cspy=True, num_stops=4, load_capacity=10, duration=4)
-prob.solve()
+prob = VRPSolver(G, num_stops=4, load_capacity=10, duration=4)
+prob.column_generation()
 ```
 
 ## Running the tests
