@@ -15,7 +15,7 @@ def main(
     """Iteratively generates columns with negative reduced cost and solves as MIP.
 
     Args:
-        G (DiGraph): [description]
+        G (DiGraph): Underlying network
         initial_routes (list): List of Digraphs ; feasible solution for first iteration.
         cspy (bool, optional): True if cspy is used for subproblem. Defaults to False.
         num_stops (int, optional): Maximum number of stops. Defaults to None.

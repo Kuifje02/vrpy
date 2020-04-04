@@ -7,10 +7,12 @@ def master_solve(G, routes, relax=True):
     Args:
         G (DiGraph): Underlying network
         routes (list): Routes/columns/variables of the master problem
+
         relax (bool, optional): True if variables are continuous. Defaults to True.
 
     Returns:
         dict: Duals with constraint names as keys and dual variables as values (if relax is True)
+
         float: Objective function value
     """
     # create problem
@@ -68,10 +70,11 @@ def master_solve(G, routes, relax=True):
 
 
 def get_duals(prob, G):
-    """Gets the dual values of each constraint of the master problem
+    """Gets the dual values of each constraint of the master problem.
 
     Args:
         prob (LpProblem): Master problem
+
         G (DiGraph): Underlying network
 
     Returns:

@@ -2,9 +2,9 @@ class SubProblemBase:
     """Base class for the subproblems.
 
     Args:
-        G (DiGraph) -- Underlying network
-        duals (dict) -- Dual values of master problem
-        routes (list) -- Current routes/variables/columns
+        G (DiGraph): Underlying network
+        duals (dict): Dual values of master problem
+        routes (list): Current routes/variables/columns
 
     Attributes:
         num_stops (int):
