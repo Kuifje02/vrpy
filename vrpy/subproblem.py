@@ -43,10 +43,14 @@ class SubProblemBase:
         # remove infeasible arcs
         if time_windows:
             infeasible_arcs = []
-            for v in G.successors("Source"):
-                travel_time = G.edges["Source", v]["time"]
+            for (i, j) in G.edges():
+                travel_time = G.edges[i, j]["time"]
                 service_time = 0  # for now
-                sup_time_window = G.nodes[v]["upper"]
-                if travel_time + service_time > sup_time_window:
-                    infeasible_arcs.append(("Source", v))
+                tail_inf_time_window = G.nodes[i]["lower"]
+                head_sup_time_window = G.nodes[j]["upper"]
+                if (
+                    tail_inf_time_window + travel_time + service_time
+                    > head_sup_time_window
+                ):
+                    infeasible_arcs.append((i, j))
             G.remove_edges_from(infeasible_arcs)
