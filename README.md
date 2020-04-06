@@ -43,7 +43,7 @@ G.nodes[2]["demand"] = 4
 # Solve the VRP
 # Optional values define constraints
 prob = VehicleRoutingProblem(G, num_stops=4, load_capacity=10, duration=4)
-prob.column_generation()
+prob.solve()
 ```
 
 ## Running the tests
