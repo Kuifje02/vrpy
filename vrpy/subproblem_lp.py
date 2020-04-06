@@ -1,6 +1,9 @@
 from networkx import DiGraph
 import pulp
 from subproblem import SubProblemBase
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SubProblemLP(SubProblemBase):
@@ -22,10 +25,10 @@ class SubProblemLP(SubProblemBase):
         self.prob.solve()
         # if you have CPLEX
         # prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
-        print("")
-        print("Solving subproblem using LP")
-        print("Status:", pulp.LpStatus[self.prob.status])
-        print("Objective:", pulp.value(self.prob.objective))
+        logger.debug("")
+        logger.debug("Solving subproblem using LP")
+        logger.debug("Status:", pulp.LpStatus[self.prob.status])
+        logger.debug("Objective:", pulp.value(self.prob.objective))
         if pulp.value(self.prob.objective) < -(10 ** -5):
             more_routes = True
             self.add_new_route()
@@ -45,8 +48,8 @@ class SubProblemLP(SubProblemBase):
                 new_route.add_edge(i, j, cost=edge_cost)
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
-        print("new route", route_id, new_route.edges())
-        print("new route cost =", self.total_cost)
+        logger.debug("new route", route_id, new_route.edges())
+        logger.debug("new route cost =", self.total_cost)
 
     def formulate(self):
         # create problem

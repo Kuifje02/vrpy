@@ -1,5 +1,8 @@
 import pulp
+import logging
 from masterproblem import MasterProblemBase
+
+logger = logging.getLogger(__name__)
 
 
 class MasterSolvePulp(MasterProblemBase):
@@ -15,25 +18,24 @@ class MasterSolvePulp(MasterProblemBase):
         self.prob.solve()
         # if you have CPLEX
         # prob.solve(pulp.solvers.CPLEX_CMD(msg=0)))
-        print("master problem")
-        print("Status:", pulp.LpStatus[self.prob.status])
-        print("Objective:", pulp.value(self.prob.objective))
+        logger.debug("master problem")
+        logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
+        logger.debug("Objective: %s" % pulp.value(self.prob.objective))
 
         if self.relax:
             for r in self.routes:
                 if pulp.value(self.y[r.graph["name"]]) > 0.5:
-                    print("route", r.graph["name"], "selected")
+                    logger.debug("route %s selected" % r.graph["name"])
             duals = self.get_duals()
-            print(duals)
-            # print(pulp.value(prob.objective))
+            logger.debug("duals %s :" % duals)
             return duals, pulp.value(self.prob.objective)
 
         else:
             for r in self.routes:
                 val = pulp.value(self.y[r.graph["name"]])
                 if val > 0:
-                    print(r.nodes(), "cost", r.graph["cost"])
-            # print(pulp.value(prob.objective))
+                    logger.info("%s cost %s" % (r.nodes, r.graph["cost"]))
+            logger.info("total cost = %s" % pulp.value(self.prob.objective))
             return pulp.value(self.prob.objective)
 
     def formulate(self):

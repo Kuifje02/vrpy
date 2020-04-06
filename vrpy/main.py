@@ -1,8 +1,11 @@
 from networkx import DiGraph
-
+import logging
+from conf_logger import setup_logger
 from master_solve_pulp import MasterSolvePulp
 from subproblem_lp import SubProblemLP
 from subproblem_cspy import SubProblemCSPY
+
+logger = logging.getLogger(__name__)
 
 
 class VRPSolver:
@@ -53,7 +56,8 @@ class VRPSolver:
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
-
+        # Setup the logger
+        setup_logger()
         # initialization
         more_routes = True
         if not self.initial_routes:
@@ -64,9 +68,7 @@ class VRPSolver:
         # generate interesting columns
         while more_routes:
             k += 1
-            print("")
-            print("iteration", k)
-            print("===========")
+            logger.debug("\niteration %s" % k)
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
             duals, relaxed_cost = masterproblem.solve()
@@ -96,9 +98,7 @@ class VRPSolver:
             self.routes, more_routes = subproblem.solve()
 
         # solve as MIP
-        print("")
-        print("solve as MIP")
-        print("============")
+        logger.info("MIP solution")
         masterproblem_mip = MasterSolvePulp(self.G, self.routes, relax=False)
         best_value = masterproblem_mip.solve()
 
