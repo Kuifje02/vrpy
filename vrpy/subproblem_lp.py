@@ -1,4 +1,4 @@
-from networkx import DiGraph
+from networkx import DiGraph, negative_edge_cycle
 import pulp
 from subproblem import SubProblemBase
 import logging
@@ -27,8 +27,8 @@ class SubProblemLP(SubProblemBase):
         # prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("")
         logger.debug("Solving subproblem using LP")
-        logger.debug("Status:", pulp.LpStatus[self.prob.status])
-        logger.debug("Objective:", pulp.value(self.prob.objective))
+        logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
+        logger.debug("Objective %s" % pulp.value(self.prob.objective))
         if pulp.value(self.prob.objective) < -(10 ** -5):
             more_routes = True
             self.add_new_route()
@@ -48,8 +48,8 @@ class SubProblemLP(SubProblemBase):
                 new_route.add_edge(i, j, cost=edge_cost)
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
-        logger.debug("new route", route_id, new_route.edges())
-        logger.debug("new route cost =", self.total_cost)
+        logger.debug("new route %s %s" % (route_id, new_route.edges()))
+        logger.debug("new route cost = %s" % self.total_cost)
 
     def formulate(self):
         # create problem
@@ -57,6 +57,7 @@ class SubProblemLP(SubProblemBase):
         # flow variables
         self.x = pulp.LpVariable.dicts("x", self.G.edges(), cat=pulp.LpBinary)
         # minimize reduced cost
+        """
         edge_cost = pulp.lpSum(
             [self.G.edges[i, j]["cost"] * self.x[(i, j)] for (i, j) in self.G.edges()]
         )
@@ -69,12 +70,27 @@ class SubProblemLP(SubProblemBase):
             ]
         )
         self.prob += edge_cost - dual_cost
+        """
+        self.prob += pulp.lpSum(
+            [self.G.edges[i, j]["weight"] * self.x[(i, j)] for (i, j) in self.G.edges()]
+        )
         # flow balance
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
                 in_flow = pulp.lpSum([self.x[(i, v)] for i in self.G.predecessors(v)])
                 out_flow = pulp.lpSum([self.x[(v, j)] for j in self.G.successors(v)])
                 self.prob += in_flow == out_flow, "flow_balance_%s" % v
+
+        # Start at Source and end at Sink
+        self.prob += (
+            pulp.lpSum([self.x[("Source", v)] for v in self.G.successors("Source")])
+            == 1,
+            "start_at_source",
+        )
+        self.prob += (
+            pulp.lpSum([self.x[(u, "Sink")] for u in self.G.predecessors("Sink")]) == 1,
+            "end_at_sink",
+        )
         # Problem specific constraints
         if self.time_windows:
             self.add_time_windows()
@@ -84,10 +100,13 @@ class SubProblemLP(SubProblemBase):
             self.add_max_load()
         if self.duration:
             self.add_max_duration()
+        if negative_edge_cycle(self.G):
+            logger.debug("negative cycle found")
+            self.add_elementarity()
 
     def add_time_windows(self):
         # Big-M definition
-        M = 1e10
+        M = self.G.nodes["Sink"]["upper"]
         # Add varibles
         t = pulp.LpVariable.dicts(
             "t", self.G.nodes(), lowBound=0, cat=pulp.LpContinuous
@@ -137,3 +156,21 @@ class SubProblemLP(SubProblemBase):
             <= self.duration,
             "max_duration_{}".format(self.duration),
         )
+
+    def add_elementarity(self):
+        """Ensures a node is visited at most once."""
+        # Big-M definition
+        M = len(self.G.nodes())
+        # Add rank varibles
+        # y[v] = rank of node v in the path
+        y = pulp.LpVariable.dicts("y", self.G.nodes(), cat=pulp.LpInteger)
+        # Add big-M constraints
+        for (i, j) in self.G.edges():
+            self.prob += (
+                y[i] + 1 <= y[j] + M * (1 - self.x[(i, j)]),
+                "elementary_%s_%s" % (i, j),
+            )
+        # Source is first, Sink is last (optional)
+        self.prob += y["Source"] == 0, "Source_is_first"
+        for v in self.G.nodes():
+            self.prob += y[v] <= y["Sink"], "Sink_after_%s" % v

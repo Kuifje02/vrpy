@@ -39,6 +39,13 @@ class SubProblemBase:
         self.duration = duration
         self.time_windows = time_windows
 
+        # Add reduced cost to "weight" attribute
+        for edge in self.G.edges(data=True):
+            edge[2]["weight"] = edge[2]["cost"]
+            for v in self.duals:
+                if edge[0] == v:
+                    edge[2]["weight"] -= self.duals[v]
+
         # Prune the graph if time windows are activated
         # remove infeasible arcs
         if time_windows:

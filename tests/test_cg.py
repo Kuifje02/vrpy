@@ -87,3 +87,9 @@ class TestsToy:
         """Tests column generation procedure on toy graph"""
         prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
         assert prob.solve(cspy=False) == 80
+
+    def test_LP_stops_elementarity(self):
+        """Tests column generation procedure on toy graph"""
+        self.G.add_edge(2, 1, cost=0)
+        prob = VehicleRoutingProblem(self.G, num_stops=3)
+        assert prob.solve(cspy=False) == 65
