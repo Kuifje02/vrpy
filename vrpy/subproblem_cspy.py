@@ -143,11 +143,11 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[2] += self.G.nodes[head_node]["demand"]
         # time
-        arrival_time = edge_data["time"]
+        arrival_time = new_res[3] + edge_data["time"]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
-        new_res[3] += max(arrival_time + service_time, inf_time_window)
+        new_res[3] = max(arrival_time + service_time, inf_time_window)
         # time-window feasibility resource
         if new_res[3] <= sup_time_window:
             new_res[4] = 0
@@ -155,6 +155,7 @@ class SubProblemCSPY(SubProblemBase):
             new_res[4] = 1
         # elementarity
         new_res[5] = 0  # not implemented yet
+        print(new_res)
         return new_res
 
     def REF_backward(self, cumulative_res, edge):
@@ -169,7 +170,7 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[2] -= self.G.nodes[head_node]["demand"]
         # time
-        arrival_time = edge_data["time"]
+        arrival_time = new_res[3] - edge_data["time"]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
@@ -177,7 +178,7 @@ class SubProblemCSPY(SubProblemBase):
             self.G.nodes[v]["upper"] + self.G.edges[v, "Sink"]["time"]
             for v in self.G.predecessors("Sink")
         ])
-        new_res[3] -= max(
+        new_res[3] = max(
             arrival_time + service_time,
             max_feasible_arrival_time - sup_time_window - service_time,
         )
