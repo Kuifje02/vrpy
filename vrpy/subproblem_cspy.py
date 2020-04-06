@@ -1,5 +1,8 @@
 import numpy as np
 import logging
+import sys
+
+sys.path.append("../../cspy")
 from cspy import BiDirectional
 from subproblem import SubProblemBase
 from networkx import DiGraph, add_path
@@ -86,9 +89,10 @@ class SubProblemCSPY(SubProblemBase):
         if self.duration:
             self.add_max_duration()
         if self.time_windows:
-            if not self.duration:
-                # update upper bound for duration
-                self.max_res[3] = 1 + self.G.nodes["Sink"]["upper"]
+            # if not self.duration:
+            # update upper bound for duration
+            self.max_res[3] = 1 + self.G.nodes["Sink"]["upper"]
+            self.max_res[4] = 0
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""
@@ -141,15 +145,16 @@ class SubProblemCSPY(SubProblemBase):
         # stops
         new_res[1] += 1
         # load
-        new_res[2] += self.G.nodes[head_node]["demand"]
+        new_res[2] += edge_data["res_cost"][2]
         # time
-        arrival_time = new_res[3] + edge_data["time"]
+        new_res[3] += edge_data["res_cost"][3]
+        arrival_time = new_res[3] + edge_data["res_cost"][3]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
-        new_res[3] = max(arrival_time + service_time, inf_time_window)
+        tau = max(arrival_time + service_time, inf_time_window)
         # time-window feasibility resource
-        if new_res[3] <= sup_time_window:
+        if tau <= sup_time_window:
             new_res[4] = 0
         else:
             new_res[4] = 1
@@ -168,9 +173,10 @@ class SubProblemCSPY(SubProblemBase):
         # stops
         new_res[1] -= 1
         # load
-        new_res[2] -= self.G.nodes[head_node]["demand"]
+        new_res[2] -= edge_data["res_cost"][2]
         # time
-        arrival_time = new_res[3] - edge_data["time"]
+        new_res[3] -= edge_data["res_cost"][3]
+        arrival_time = new_res[3] - edge_data["res_cost"][3]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
@@ -178,13 +184,12 @@ class SubProblemCSPY(SubProblemBase):
             self.G.nodes[v]["upper"] + self.G.edges[v, "Sink"]["time"]
             for v in self.G.predecessors("Sink")
         ])
-        new_res[3] = max(
+        tau = max(
             arrival_time + service_time,
             max_feasible_arrival_time - sup_time_window - service_time,
         )
         # time-window feasibility
-        if (new_res[3] <=
-                max_feasible_arrival_time - inf_time_window - service_time):
+        if (tau <= max_feasible_arrival_time - inf_time_window - service_time):
             new_res[4] = 0
         else:
             new_res[4] = 1
