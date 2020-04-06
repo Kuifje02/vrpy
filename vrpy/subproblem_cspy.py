@@ -15,9 +15,10 @@ class SubProblemCSPY(SubProblemBase):
     Inherits problem parameters from `SubproblemBase`
     """
 
-    def init(self):
+    def __init__(self, *args):
         """Initializes resources."""
         # Resource names
+        super(SubProblemCSPY, self).__init__(*args)
         self.resources = [
             "mono",
             "stops",
@@ -45,7 +46,6 @@ class SubProblemCSPY(SubProblemBase):
 
     def solve(self):
         """Solves the subproblem with cspy."""
-        self.init()
         self.formulate()
         logger.debug("resources")
         logger.debug(self.resources)
@@ -63,7 +63,7 @@ class SubProblemCSPY(SubProblemBase):
         logger.debug("subproblem")
         logger.debug("cost = %s" % self.bidirect.total_cost)
         logger.debug("resources = %s" % self.bidirect.consumed_resources)
-        if self.bidirect.total_cost < -(10 ** -5):
+        if self.bidirect.total_cost < -(10**-5):
             more_routes = True
             self.add_new_route()
             logger.debug("new route %s" % self.bidirect.path)
@@ -172,18 +172,17 @@ class SubProblemCSPY(SubProblemBase):
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
-        max_feasible_arrival_time = max(
-            [
-                self.G.nodes[v]["upper"] + self.G.edges[v, "Sink"]["time"]
-                for v in self.G.predecessors("Sink")
-            ]
-        )
+        max_feasible_arrival_time = max([
+            self.G.nodes[v]["upper"] + self.G.edges[v, "Sink"]["time"]
+            for v in self.G.predecessors("Sink")
+        ])
         new_res[3] -= max(
             arrival_time + service_time,
             max_feasible_arrival_time - sup_time_window - service_time,
         )
         # time-window feasibility
-        if new_res[3] <= max_feasible_arrival_time - inf_time_window - service_time:
+        if new_res[
+                3] <= max_feasible_arrival_time - inf_time_window - service_time:
             new_res[4] = 0
         else:
             new_res[4] = 1

@@ -14,11 +14,12 @@ class SubProblemLP(SubProblemBase):
     Inherits problem parameters from `SubproblemBase`
     """
 
-    def __init(self):
-        # Attribute for the pulp.LpProblem
-        self.prob = None
-        # Attribute for the flow varibles
-        self.x = None
+    def __init__(self, *args):
+        super(SubProblemLP, self).__init__(*args)
+        # create problem
+        self.prob = pulp.LpProblem("SubProblem", pulp.LpMinimize)
+        # flow variables
+        self.x = pulp.LpVariable.dicts("x", self.G.edges(), cat=pulp.LpBinary)
 
     def solve(self):
         self.formulate()
@@ -29,7 +30,7 @@ class SubProblemLP(SubProblemBase):
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective %s" % pulp.value(self.prob.objective))
-        if pulp.value(self.prob.objective) < -(10 ** -5):
+        if pulp.value(self.prob.objective) < -(10**-5):
             more_routes = True
             self.add_new_route()
             return self.routes, more_routes
@@ -52,10 +53,6 @@ class SubProblemLP(SubProblemBase):
         logger.debug("new route cost = %s" % self.total_cost)
 
     def formulate(self):
-        # create problem
-        self.prob = pulp.LpProblem("SubProblem", pulp.LpMinimize)
-        # flow variables
-        self.x = pulp.LpVariable.dicts("x", self.G.edges(), cat=pulp.LpBinary)
         # minimize reduced cost
         """
         edge_cost = pulp.lpSum(
@@ -71,24 +68,30 @@ class SubProblemLP(SubProblemBase):
         )
         self.prob += edge_cost - dual_cost
         """
-        self.prob += pulp.lpSum(
-            [self.G.edges[i, j]["weight"] * self.x[(i, j)] for (i, j) in self.G.edges()]
-        )
+        self.prob += pulp.lpSum([
+            self.G.edges[i, j]["weight"] * self.x[(i, j)]
+            for (i, j) in self.G.edges()
+        ])
         # flow balance
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
-                in_flow = pulp.lpSum([self.x[(i, v)] for i in self.G.predecessors(v)])
-                out_flow = pulp.lpSum([self.x[(v, j)] for j in self.G.successors(v)])
+                in_flow = pulp.lpSum(
+                    [self.x[(i, v)] for i in self.G.predecessors(v)])
+                out_flow = pulp.lpSum(
+                    [self.x[(v, j)] for j in self.G.successors(v)])
                 self.prob += in_flow == out_flow, "flow_balance_%s" % v
 
         # Start at Source and end at Sink
         self.prob += (
-            pulp.lpSum([self.x[("Source", v)] for v in self.G.successors("Source")])
-            == 1,
+            pulp.lpSum([
+                self.x[("Source", v)] for v in self.G.successors("Source")
+            ]) == 1,
             "start_at_source",
         )
         self.prob += (
-            pulp.lpSum([self.x[(u, "Sink")] for u in self.G.predecessors("Sink")]) == 1,
+            pulp.lpSum([
+                self.x[(u, "Sink")] for u in self.G.predecessors("Sink")
+            ]) == 1,
             "end_at_sink",
         )
         # Problem specific constraints
@@ -108,13 +111,15 @@ class SubProblemLP(SubProblemBase):
         # Big-M definition
         M = self.G.nodes["Sink"]["upper"]
         # Add varibles
-        t = pulp.LpVariable.dicts(
-            "t", self.G.nodes(), lowBound=0, cat=pulp.LpContinuous
-        )
+        t = pulp.LpVariable.dicts("t",
+                                  self.G.nodes(),
+                                  lowBound=0,
+                                  cat=pulp.LpContinuous)
         # Add big-M constraints
         for (i, j) in self.G.edges():
             self.prob += (
-                t[i] + self.G.edges[i, j]["time"] <= t[j] + M * (1 - self.x[(i, j)]),
+                t[i] + self.G.edges[i, j]["time"] <= t[j] + M *
+                (1 - self.x[(i, j)]),
                 "time_window_%s_%s" % (i, j),
             )
         # Add node constraints
@@ -126,34 +131,28 @@ class SubProblemLP(SubProblemBase):
         # Add max stop constraint
         # S stops => S+1 arcs
         self.prob += (
-            pulp.lpSum([self.x[(i, j)] for (i, j) in self.G.edges()])
-            <= self.num_stops + 1,
+            pulp.lpSum([self.x[(i, j)] for (i, j) in self.G.edges()]) <=
+            self.num_stops + 1,
             "max_{}".format(self.num_stops),
         )
 
     def add_max_load(self):
         # Add maximum load constraints
         self.prob += (
-            pulp.lpSum(
-                [
-                    self.G.nodes[j]["demand"] * self.x[(i, j)]
-                    for (i, j) in self.G.edges()
-                ]
-            )
-            <= self.load_capacity,
+            pulp.lpSum([
+                self.G.nodes[j]["demand"] * self.x[(i, j)]
+                for (i, j) in self.G.edges()
+            ]) <= self.load_capacity,
             "max_load_".format(self.load_capacity),
         )
 
     def add_max_duration(self):
         # Add maximum duration constraints
         self.prob += (
-            pulp.lpSum(
-                [
-                    self.G.edges[i, j]["time"] * self.x[(i, j)]
-                    for (i, j) in self.G.edges()
-                ]
-            )
-            <= self.duration,
+            pulp.lpSum([
+                self.G.edges[i, j]["time"] * self.x[(i, j)]
+                for (i, j) in self.G.edges()
+            ]) <= self.duration,
             "max_duration_{}".format(self.duration),
         )
 

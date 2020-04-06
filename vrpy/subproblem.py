@@ -55,9 +55,7 @@ class SubProblemBase:
                 service_time = 0  # for now
                 tail_inf_time_window = G.nodes[i]["lower"]
                 head_sup_time_window = G.nodes[j]["upper"]
-                if (
-                    tail_inf_time_window + travel_time + service_time
-                    > head_sup_time_window
-                ):
+                if (tail_inf_time_window + travel_time + service_time >
+                        head_sup_time_window):
                     infeasible_arcs.append((i, j))
             G.remove_edges_from(infeasible_arcs)
