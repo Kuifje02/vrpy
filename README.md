@@ -28,7 +28,7 @@ A python framework for solving the VRP and its variants with column generation.
 
 ```python
 from networkx import DiGraph
-from vrpy.main import VRPSolver
+from vrpy.main import VehicleRoutingProblem
 
 # Define the graph, must contain "Source" and "Sink" nodes
 G = DiGraph()
@@ -42,7 +42,7 @@ G.nodes[2]["demand"] = 4
 
 # Solve the VRP
 # Optional values define constraints
-prob = VRPSolver(G, num_stops=4, load_capacity=10, duration=4)
+prob = VehicleRoutingProblem(G, num_stops=4, load_capacity=10, duration=4)
 prob.column_generation()
 ```
 

@@ -8,7 +8,7 @@ from subproblem_cspy import SubProblemCSPY
 logger = logging.getLogger(__name__)
 
 
-class VRPSolver:
+class VehicleRoutingProblem:
     """Stores the underlying network of the VRP and parameters for solving
        with a column generation approach.
 
@@ -48,7 +48,7 @@ class VRPSolver:
         self.duration = duration
         self.time_windows = time_windows
 
-    def column_generation(self, cspy=True):
+    def solve(self, cspy=True):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
