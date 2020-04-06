@@ -17,8 +17,9 @@ class SubProblemCSPY(SubProblemBase):
 
     def __init__(self, *args):
         """Initializes resources."""
-        # Resource names
+        # Pass arguments to base
         super(SubProblemCSPY, self).__init__(*args)
+        # Resource names
         self.resources = [
             "mono",
             "stops",
@@ -73,19 +74,6 @@ class SubProblemCSPY(SubProblemBase):
             more_routes = False
             return self.routes, more_routes
 
-    def add_new_route(self):
-        """Create new route as DiGraph and add to pool of columns"""
-        route_id = len(self.routes) + 1
-        new_route = DiGraph(name=route_id)
-        add_path(new_route, self.bidirect.path)
-        self.total_cost = 0
-        for (i, j) in new_route.edges():
-            edge_cost = self.G.edges[i, j]["cost"]
-            self.total_cost += edge_cost
-            new_route.edges[i, j]["cost"] = edge_cost
-        new_route.graph["cost"] = self.total_cost
-        self.routes.append(new_route)
-
     def formulate(self):
         """Updates max_res depending on which contraints are active."""
         # Update weight attribute with duals
@@ -101,6 +89,19 @@ class SubProblemCSPY(SubProblemBase):
             if not self.duration:
                 # update upper bound for duration
                 self.max_res[3] = 1 + self.G.nodes["Sink"]["upper"]
+
+    def add_new_route(self):
+        """Create new route as DiGraph and add to pool of columns"""
+        route_id = len(self.routes) + 1
+        new_route = DiGraph(name=route_id)
+        add_path(new_route, self.bidirect.path)
+        self.total_cost = 0
+        for (i, j) in new_route.edges():
+            edge_cost = self.G.edges[i, j]["cost"]
+            self.total_cost += edge_cost
+            new_route.edges[i, j]["cost"] = edge_cost
+        new_route.graph["cost"] = self.total_cost
+        self.routes.append(new_route)
 
     def add_dual_cost(self):
         """Updates edge weight attribute with dual values."""
@@ -142,7 +143,7 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[2] += self.G.nodes[head_node]["demand"]
         # time
-        arrival_time = new_res[3] + edge_data["time"]
+        arrival_time = edge_data["time"]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
@@ -168,7 +169,7 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[2] -= self.G.nodes[head_node]["demand"]
         # time
-        arrival_time = new_res[3] - edge_data["time"]
+        arrival_time = edge_data["time"]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
@@ -181,8 +182,8 @@ class SubProblemCSPY(SubProblemBase):
             max_feasible_arrival_time - sup_time_window - service_time,
         )
         # time-window feasibility
-        if new_res[
-                3] <= max_feasible_arrival_time - inf_time_window - service_time:
+        if (new_res[3] <=
+                max_feasible_arrival_time - inf_time_window - service_time):
             new_res[4] = 0
         else:
             new_res[4] = 1
