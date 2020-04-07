@@ -27,7 +27,7 @@ class MasterSolvePulp(MasterProblemBase):
                 if pulp.value(self.y[r.graph["name"]]) > 0.5:
                     logger.debug("route %s selected" % r.graph["name"])
             duals = self.get_duals()
-            logger.debug("duals %s :" % duals)
+            logger.debug("duals : %s" % duals)
             return duals, pulp.value(self.prob.objective)
 
         else:

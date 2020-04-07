@@ -4,8 +4,8 @@ import sys
 
 sys.path.append("../../cspy")
 from cspy import BiDirectional
-from subproblem import SubProblemBase
 from networkx import DiGraph, add_path
+from subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,6 @@ class SubProblemCSPY(SubProblemBase):
         ]
         # Initialize cspy edge attributes
         for edge in self.G.edges(data=True):
-            edge[2]["weight"] = edge[2]["cost"]
             edge[2]["res_cost"] = np.array([1, 1, 0, 0, 0, 0])
 
     def solve(self):
@@ -56,17 +55,13 @@ class SubProblemCSPY(SubProblemBase):
         logger.debug(self.min_res)
         logger.debug(self.max_res)
         self.bidirect = BiDirectional(
-            self.G,
-            self.max_res,
-            self.min_res,
-            direction="both",
-            REF=self.REF,
+            self.G, self.max_res, self.min_res, direction="both", REF=self.REF,
         )
         self.bidirect.run()
         logger.debug("subproblem")
         logger.debug("cost = %s" % self.bidirect.total_cost)
         logger.debug("resources = %s" % self.bidirect.consumed_resources)
-        if self.bidirect.total_cost < -(10**-5):
+        if self.bidirect.total_cost < -(10 ** -5):
             more_routes = True
             self.add_new_route()
             logger.debug("new route %s" % self.bidirect.path)
@@ -79,7 +74,7 @@ class SubProblemCSPY(SubProblemBase):
     def formulate(self):
         """Updates max_res depending on which contraints are active."""
         # Update weight attribute with duals
-        self.add_dual_cost()
+        # self.add_dual_cost()
         # Problem specific constraints
         if self.num_stops:
             self.add_max_stops()
@@ -105,13 +100,6 @@ class SubProblemCSPY(SubProblemBase):
             new_route.edges[i, j]["cost"] = edge_cost
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
-
-    def add_dual_cost(self):
-        """Updates edge weight attribute with dual values."""
-        for edge in self.G.edges(data=True):
-            for v in self.duals:
-                if edge[0] == v:
-                    edge[2]["weight"] -= self.duals[v]
 
     def add_max_stops(self):
         """Updates maximum number of stops."""
