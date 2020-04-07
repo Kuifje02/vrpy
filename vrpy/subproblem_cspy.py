@@ -1,4 +1,4 @@
-import numpy as np
+from numpy import array, zeros
 import logging
 import sys
 
@@ -29,24 +29,28 @@ class SubProblemCSPY(SubProblemBase):
             "load",
             "time",
             "time windows",
-            "elementarity",
         ]
+        # Add elementarity (no Source due to definition)
+        self.resources.extend([
+            "elementarity_{}".format(i) for i in self.G.nodes() if i != "Source"
+        ])
         # Set number of resources as attribute of graph
         self.G.graph["n_res"] = len(self.resources)
         # Default lower and upper bounds
         self.min_res = [0 for x in range(len(self.resources))]
+        # Add upper bounds for mono, stops, load and time
         self.max_res = [
             len(self.G.edges()),
             len(self.G.nodes()),
             sum([self.G.nodes[v]["demand"] for v in self.G.nodes()]),
             sum([self.G.edges[u, v]["time"] for (u, v) in self.G.edges()]),
-            1,
-            1,
         ]
+        # Add upper bounds for time-windows and elementarity
+        self.max_res.extend([1 for i in range(4, len(self.resources))])
         # Initialize cspy edge attributes
         for edge in self.G.edges(data=True):
             edge[2]["weight"] = edge[2]["cost"]
-            edge[2]["res_cost"] = np.array([1, 1, 0, 0, 0, 0])
+            edge[2]["res_cost"] = zeros(len(self.resources))
 
     def solve(self):
         """Solves the subproblem with cspy."""
@@ -136,7 +140,7 @@ class SubProblemCSPY(SubProblemBase):
         """
         Resource extension function based on Righini and Salani's paper
         """
-        new_res = np.array(cumulative_res)
+        new_res = array(cumulative_res)
         # extract data
         tail_node, head_node, edge_data = edge[0:3]
         # monotone resource
@@ -157,6 +161,8 @@ class SubProblemCSPY(SubProblemBase):
         else:
             new_res[4] = 1
         # elementarity
-        new_res[5] = 0  # not implemented yet
-        print(new_res)
+        for idx in range(5, len(self.resources)):
+            if str(head_node) == self.resources[idx].replace(
+                    "elementarity_", ""):
+                new_res[idx] += 1
         return new_res
