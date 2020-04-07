@@ -16,6 +16,7 @@ jobs:
       - run: 
           name: clone cspy-master
           command: |
+            cd ..
             git clone https://github.com/torressa/cspy.git
       - run:
           name: install dependencies
@@ -31,6 +32,7 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             cd ~/vrpy/tests/
+            ls ../../
             pytest --cov
             codecov
             bash <(curl -s https://codecov.io/bash)
@@ -47,6 +49,7 @@ jobs:
       - run: 
           name: clone cspy-master
           command: |
+            cd ..
             git clone https://github.com/torressa/cspy.git
       - run:
           name: install dependencies
@@ -73,6 +76,7 @@ jobs:
       - run: 
           name: clone cspy-master
           command: |
+            cd ..
             git clone https://github.com/torressa/cspy.git
       - run:
           name: install dependencies
