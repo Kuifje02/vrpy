@@ -60,8 +60,7 @@ class SubProblemCSPY(SubProblemBase):
             self.max_res,
             self.min_res,
             direction="both",
-            REF_forward=self.REF_forward,
-            REF_backward=self.REF_backward,
+            REF=self.REF,
         )
         self.bidirect.run()
         logger.debug("subproblem")
@@ -133,7 +132,7 @@ class SubProblemCSPY(SubProblemBase):
             travel_time = self.G.edges[i, j]["time"]
             self.G.edges[i, j]["res_cost"][3] = travel_time
 
-    def REF_forward(self, cumulative_res, edge):
+    def REF(self, cumulative_res, edge):
         """
         Resource extension function based on Righini and Salani's paper
         """
@@ -147,52 +146,17 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[2] += edge_data["res_cost"][2]
         # time
-        new_res[3] += edge_data["res_cost"][3]
         arrival_time = new_res[3] + edge_data["res_cost"][3]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
-        tau = max(arrival_time + service_time, inf_time_window)
+        new_res[3] = max(arrival_time + service_time, inf_time_window)
         # time-window feasibility resource
-        if tau <= sup_time_window:
+        if new_res[3] <= sup_time_window:
             new_res[4] = 0
         else:
             new_res[4] = 1
         # elementarity
         new_res[5] = 0  # not implemented yet
         print(new_res)
-        return new_res
-
-    def REF_backward(self, cumulative_res, edge):
-        """Resource extension function based on Righini and Salani's paper
-        """
-        new_res = np.array(cumulative_res)
-        tail_node, head_node, edge_data = edge[0:3]
-        # monotone resource
-        new_res[0] -= 1
-        # stops
-        new_res[1] -= 1
-        # load
-        new_res[2] -= edge_data["res_cost"][2]
-        # time
-        new_res[3] -= edge_data["res_cost"][3]
-        arrival_time = new_res[3] - edge_data["res_cost"][3]
-        service_time = 0  # undefined for now
-        inf_time_window = self.G.nodes[head_node]["lower"]
-        sup_time_window = self.G.nodes[head_node]["upper"]
-        max_feasible_arrival_time = max([
-            self.G.nodes[v]["upper"] + self.G.edges[v, "Sink"]["time"]
-            for v in self.G.predecessors("Sink")
-        ])
-        tau = max(
-            arrival_time + service_time,
-            max_feasible_arrival_time - sup_time_window - service_time,
-        )
-        # time-window feasibility
-        if (tau <= max_feasible_arrival_time - inf_time_window - service_time):
-            new_res[4] = 0
-        else:
-            new_res[4] = 1
-        # elementarity
-        new_res[5] = 0  # not implemented yet
         return new_res
