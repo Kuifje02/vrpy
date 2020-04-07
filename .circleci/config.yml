@@ -32,7 +32,6 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             cd ~/vrpy/tests/
-            ls ../../
             pytest --cov
             codecov
             bash <(curl -s https://codecov.io/bash)
