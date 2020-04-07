@@ -48,7 +48,7 @@ class VehicleRoutingProblem:
         self.duration = duration
         self.time_windows = time_windows
 
-    def solve(self, cspy=True):
+    def solve(self, cspy=True, max_iter=None):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -66,7 +66,7 @@ class VehicleRoutingProblem:
             self.routes = self.initial_routes
         k = 0
         # generate interesting columns
-        while more_routes:
+        while more_routes and k < 10:  # max_iter is temporary (?)
             k += 1
             logger.debug("\niteration %s" % k)
             # solve restricted relaxed master problem
