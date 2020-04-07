@@ -1,5 +1,5 @@
 ###### Requirements without Version Specifiers ######
-cspy
+# cspy
 networkx
 numpy
 pulp
