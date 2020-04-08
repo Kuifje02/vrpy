@@ -135,24 +135,22 @@ class SubProblemCSPY(SubProblemBase):
         new_res = array(cumulative_res)
         # extract data
         tail_node, head_node, edge_data = edge[0:3]
-        # monotone resource
+        # stops/monotone resource
         new_res[0] += 1
-        # stops
-        new_res[1] += 1
         # load
-        new_res[2] += edge_data["res_cost"][2]
+        new_res[1] += edge_data["res_cost"][1]
         # time
-        arrival_time = new_res[3] + edge_data["res_cost"][3]
+        arrival_time = new_res[2] + edge_data["res_cost"][2]
         service_time = 0  # undefined for now
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
-        new_res[3] = max(arrival_time + service_time, inf_time_window)
+        new_res[2] = max(arrival_time + service_time, inf_time_window)
         # time-window feasibility resource
-        if new_res[3] <= sup_time_window:
-            new_res[4] = 0
+        if new_res[2] <= sup_time_window:
+            new_res[3] = 0
         else:
-            new_res[4] = 1
+            new_res[3] = 1
         # elementarity
-        idx = self.resources.index("elementarity_{}")
+        idx = self.resources.index("elementarity_{}".format(head_node))
         new_res[idx] += 1
         return new_res
