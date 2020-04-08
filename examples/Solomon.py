@@ -116,7 +116,8 @@ class DataSet:
             duration=None,
             time_windows=False,
         )
-        self.best_value, self.best_routes = prob.solve(cspy=False)
+        prob.solve(cspy=False)
+        self.best_value, self.best_routes = prob.best_value, prob.best_routes
 
     def plot_solution(self):
         """Plots the solution after optimization."""
@@ -147,6 +148,6 @@ class DataSet:
 
 
 if __name__ == "__main__":
-    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=10)
-    solomon_data.solve(num_stops=2)
+    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=30)
+    solomon_data.solve(num_stops=4)
     solomon_data.plot_solution()
