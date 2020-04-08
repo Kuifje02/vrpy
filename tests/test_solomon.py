@@ -11,15 +11,24 @@ from examples.Solomon import DataSet
 class TestsSolomon:
     def setup(self):
         """
-        Solomon instance c101.txt., 3 first nodes only including depot
+        Solomon instance c101, 25 first nodes only including depot
         """
         self.data = DataSet(
-            path="../examples/data/", instance_name="c101.txt", n_vertices=3
+            path="../examples/data/", instance_name="c101.txt", n_vertices=25
         )
         self.G = self.data.G
+        self.n_vertices = 25
+
+    def test_setup_instance_name(self):
+        assert self.G.graph["name"] == "c101"
+
+    def test_setup_vehicle_capacity(self):
+        assert self.G.graph["vehicle_capacity"] == 200
 
     def test_setup_nodes(self):
-        assert len(self.G.nodes()) == 4
+        # extra node for the Sink
+        assert len(self.G.nodes()) == self.n_vertices + 1
 
     def test_setup_edges(self):
-        assert len(self.G.edges()) == 6
+        n = self.n_vertices
+        assert len(self.G.edges()) == n * (n - 1)

@@ -1,5 +1,6 @@
 ###### Requirements without Version Specifiers ######
 # cspy
+matplotlib.pyplot
 networkx
 numpy
 pandas

@@ -1,8 +1,9 @@
 from math import sqrt
-from networkx import DiGraph
+from networkx import DiGraph, draw_networkx_edges, draw_networkx_nodes
 import numpy as np
 from pandas import read_csv
 import sys
+import matplotlib.pyplot
 
 sys.path.append("../vrpy/")
 sys.path.append("../")
@@ -40,9 +41,17 @@ class DataSet:
 
     def __init__(self, path, instance_name, n_vertices=None):
 
-        self.G = DiGraph()
+        # Read vehicle capacity
+        with open(path + instance_name) as fp:
+            for i, line in enumerate(fp):
+                if i == 4:
+                    self.max_load = int(line.split()[1])
+        fp.close()
 
-        # Read txt file
+        # Create network and store name + capacity
+        self.G = DiGraph(name=instance_name[:-4], vehicle_capacity=self.max_load)
+
+        # Read nodes from txt file
         df_solomon = read_csv(
             path + instance_name,
             sep="\s+",
@@ -98,11 +107,46 @@ class DataSet:
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
         return sqrt(delta_x ** 2 + delta_y ** 2)
 
+    def solve(self, num_stops):
+        """Instantiates instance as VRP and solves."""
+        prob = VehicleRoutingProblem(
+            self.G,
+            num_stops=num_stops,
+            load_capacity=self.max_load,
+            duration=None,
+            time_windows=False,
+        )
+        self.best_value, self.best_routes = prob.solve(cspy=False)
 
-"""
+    def plot_solution(self):
+        """Plots the solution after optimization."""
+        # Store coordinates
+        pos = {}
+        for v in self.G.nodes():
+            pos[v] = np.array([self.G.nodes[v]["x"], self.G.nodes[v]["y"]])
+
+        # Draw customers
+        draw_networkx_nodes(
+            self.G, pos, node_size=10,
+        )
+        # Draw Source and Sink
+        draw_networkx_nodes(
+            self.G, pos, nodelist=["Source", "Sink"], node_size=50, node_color="r"
+        )
+        # Draw best routes
+        options = {
+            "node_color": "blue",
+            "node_size": 10,
+            "line_color": "grey",
+            "linewidths": 0,
+            "width": 0.1,
+        }
+        for r in self.best_routes:
+            draw_networkx_edges(r, pos, **options)
+        matplotlib.pyplot.show()
+
+
 if __name__ == "__main__":
-    solomon_data = DataSet(path="./", instance_name="c101.txt", n_vertices=3)
-    G = solomon_data.G
-    prob = VehicleRoutingProblem(G)
-    prob.solve(cspy=False, max_iter=3)
-"""
+    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=10)
+    solomon_data.solve(num_stops=2)
+    solomon_data.plot_solution()
