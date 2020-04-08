@@ -17,7 +17,7 @@ class MasterSolvePulp(MasterProblemBase):
         self.formulate()
         self.prob.solve()
         # if you have CPLEX
-        # prob.solve(pulp.solvers.CPLEX_CMD(msg=0)))
+        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
@@ -31,12 +31,14 @@ class MasterSolvePulp(MasterProblemBase):
             return duals, pulp.value(self.prob.objective)
 
         else:
+            best_routes = []
             for r in self.routes:
                 val = pulp.value(self.y[r.graph["name"]])
                 if val > 0:
                     logger.info("%s cost %s" % (r.nodes, r.graph["cost"]))
+                    best_routes.append(r)
             logger.info("total cost = %s" % pulp.value(self.prob.objective))
-            return pulp.value(self.prob.objective)
+            return pulp.value(self.prob.objective), best_routes
 
     def formulate(self):
         # create problem
@@ -66,7 +68,7 @@ class MasterSolvePulp(MasterProblemBase):
                     pulp.lpSum(
                         [self.y[r.graph["name"]] for r in self.routes if v in r.nodes()]
                     )
-                    >= 1,
+                    == 1,
                     "visit_node_%s" % v,
                 )
 
