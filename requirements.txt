@@ -2,6 +2,7 @@
 # cspy
 networkx
 numpy
+pandas
 pulp
 pytest
 
