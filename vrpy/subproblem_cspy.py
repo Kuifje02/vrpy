@@ -31,9 +31,9 @@ class SubProblemCSPY(SubProblemBase):
             "time windows",
         ]
         # Add elementarity (no Source due to definition)
-        self.resources.extend(
-            ["elementarity_{}".format(i) for i in self.G.nodes() if i != "Source"]
-        )
+        self.resources.extend([
+            "elementarity_{}".format(i) for i in self.G.nodes() if i != "Source"
+        ])
         # Set number of resources as attribute of graph
         self.G.graph["n_res"] = len(self.resources)
         # Default lower and upper bounds
@@ -59,13 +59,17 @@ class SubProblemCSPY(SubProblemBase):
         logger.debug(self.min_res)
         logger.debug(self.max_res)
         self.bidirect = BiDirectional(
-            self.G, self.max_res, self.min_res, direction="both", REF=self.REF,
+            self.G,
+            self.max_res,
+            self.min_res,
+            direction="both",
+            REF=self.REF,
         )
         self.bidirect.run()
         logger.debug("subproblem")
         logger.debug("cost = %s" % self.bidirect.total_cost)
         logger.debug("resources = %s" % self.bidirect.consumed_resources)
-        if self.bidirect.total_cost < -(10 ** -5):
+        if self.bidirect.total_cost < -(10**-5):
             more_routes = True
             self.add_new_route()
             logger.debug("new route %s" % self.bidirect.path)
@@ -149,7 +153,6 @@ class SubProblemCSPY(SubProblemBase):
         else:
             new_res[4] = 1
         # elementarity
-        for idx in range(5, len(self.resources)):
-            if str(head_node) == self.resources[idx].replace("elementarity_", ""):
-                new_res[idx] += 1
+        idx = self.resources.index("elementarity_{}")
+        new_res[idx] += 1
         return new_res
