@@ -24,8 +24,7 @@ class SubProblemCSPY(SubProblemBase):
         super(SubProblemCSPY, self).__init__(*args)
         # Resource names
         self.resources = [
-            "mono",
-            "stops",
+            "stops/mono",
             "load",
             "time",
             "time windows",
@@ -40,13 +39,12 @@ class SubProblemCSPY(SubProblemBase):
         self.min_res = [0 for x in range(len(self.resources))]
         # Add upper bounds for mono, stops, load and time
         self.max_res = [
-            len(self.G.edges()),
             len(self.G.nodes()),
             sum([self.G.nodes[v]["demand"] for v in self.G.nodes()]),
             sum([self.G.edges[u, v]["time"] for (u, v) in self.G.edges()]),
         ]
         # Add upper bounds for time-windows and elementarity
-        self.max_res.extend([1 for i in range(4, len(self.resources))])
+        self.max_res.extend([1 for i in range(3, len(self.resources))])
         # Initialize cspy edge attributes
         for edge in self.G.edges(data=True):
             edge[2]["res_cost"] = zeros(len(self.resources))
@@ -81,11 +79,11 @@ class SubProblemCSPY(SubProblemBase):
 
     def formulate(self):
         """Updates max_res depending on which contraints are active."""
-        # Update weight attribute with duals
-        # self.add_dual_cost()
         # Problem specific constraints
         if self.num_stops:
             self.add_max_stops()
+        else:
+            self.add_monotone()
         if self.load_capacity:
             self.add_max_load()
         if self.duration:
@@ -93,8 +91,8 @@ class SubProblemCSPY(SubProblemBase):
         if self.time_windows:
             # if not self.duration:
             # update upper bound for duration
-            self.max_res[3] = 1 + self.G.nodes["Sink"]["upper"]
-            self.max_res[4] = 0
+            self.max_res[2] = 1 + self.G.nodes["Sink"]["upper"]
+            self.max_res[3] = 0
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""
@@ -111,22 +109,34 @@ class SubProblemCSPY(SubProblemBase):
 
     def add_max_stops(self):
         """Updates maximum number of stops."""
+        # Change label
+        self.resources[0] = "stops"
         # The Sink does not count (hence + 1)
-        self.max_res[1] = self.num_stops + 1
+        self.max_res[0] = self.num_stops + 1
+        for (i, j) in self.G.edges():
+            self.G.edges[i, j]["res_cost"][0] = 1
+
+    def add_monotone(self):
+        """Updates monotone resource."""
+        # Change label
+        self.resource[0] = "mono"
+        self.max_res[0] = len(self.G.edges())
+        for (i, j) in self.G.edges():
+            self.G.edges[i, j]["res_cost"][0] = 1
 
     def add_max_load(self):
         """Updates maximum load."""
-        self.max_res[2] = self.load_capacity
+        self.max_res[1] = self.load_capacity
         for (i, j) in self.G.edges():
             demand_head_node = self.G.nodes[j]["demand"]
-            self.G.edges[i, j]["res_cost"][2] = demand_head_node
+            self.G.edges[i, j]["res_cost"][1] = demand_head_node
 
     def add_max_duration(self):
         """Updates maximum travel time."""
-        self.max_res[3] = self.duration
+        self.max_res[2] = self.duration
         for (i, j) in self.G.edges():
             travel_time = self.G.edges[i, j]["time"]
-            self.G.edges[i, j]["res_cost"][3] = travel_time
+            self.G.edges[i, j]["res_cost"][2] = travel_time
 
     def REF(self, cumulative_res, edge):
         """
