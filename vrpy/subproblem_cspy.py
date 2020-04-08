@@ -49,7 +49,6 @@ class SubProblemCSPY(SubProblemBase):
         self.max_res.extend([1 for i in range(4, len(self.resources))])
         # Initialize cspy edge attributes
         for edge in self.G.edges(data=True):
-            edge[2]["weight"] = edge[2]["cost"]
             edge[2]["res_cost"] = zeros(len(self.resources))
 
     def solve(self):
