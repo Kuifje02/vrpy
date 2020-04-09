@@ -105,18 +105,16 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x ** 2 + delta_y ** 2)
+        return sqrt(delta_x**2 + delta_y**2)
 
-    def solve(self, num_stops):
+    def solve(self, num_stops, cspy=False):
         """Instantiates instance as VRP and solves."""
         prob = VehicleRoutingProblem(
             self.G,
             num_stops=num_stops,
             load_capacity=self.max_load,
-            duration=None,
-            time_windows=False,
         )
-        prob.solve(cspy=False)
+        prob.solve(cspy=cspy)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
 
     def plot_solution(self):
