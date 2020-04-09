@@ -29,22 +29,17 @@ class SubProblemCSPY(SubProblemBase):
             "time",
             "time windows",
         ]
-        # Add elementarity (no Source due to definition)
-        self.resources.extend([
-            "elementarity_{}".format(i) for i in self.G.nodes() if i != "Source"
-        ])
         # Set number of resources as attribute of graph
         self.G.graph["n_res"] = len(self.resources)
         # Default lower and upper bounds
         self.min_res = [0 for x in range(len(self.resources))]
-        # Add upper bounds for mono, stops, load and time
+        # Add upper bounds for mono, stops, load and time, and time windows
         self.max_res = [
             len(self.G.nodes()),
             sum([self.G.nodes[v]["demand"] for v in self.G.nodes()]),
             sum([self.G.edges[u, v]["time"] for (u, v) in self.G.edges()]),
+            1,
         ]
-        # Add upper bounds for time-windows and elementarity
-        self.max_res.extend([1 for i in range(3, len(self.resources))])
         # Initialize cspy edge attributes
         for edge in self.G.edges(data=True):
             edge[2]["res_cost"] = zeros(len(self.resources))
@@ -160,7 +155,4 @@ class SubProblemCSPY(SubProblemBase):
             new_res[3] = 0
         else:
             new_res[3] = 1
-        # elementarity
-        idx = self.resources.index("elementarity_{}".format(head_node))
-        new_res[idx] += 1
         return new_res
