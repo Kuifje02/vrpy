@@ -1,5 +1,6 @@
 from networkx import DiGraph
 import logging
+from pandas import DataFrame
 from conf_logger import setup_logger
 from master_solve_pulp import MasterSolvePulp
 from subproblem_lp import SubProblemLP
@@ -48,8 +49,11 @@ class VehicleRoutingProblem:
         self.duration = duration
         self.time_windows = time_windows
 
+        # Attributes to keep track of solution
         self.best_solution = None
         self.best_routes = None
+        self.iteration = []
+        self.lower_bound = []
 
     def solve(self, cspy=True, max_iter=None):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
@@ -69,12 +73,14 @@ class VehicleRoutingProblem:
             self.routes = self.initial_routes
         k = 0
         # generate interesting columns
-        while more_routes and k < 30:  # max_iter is temporary (?)
+        while more_routes and k < 1000:  # max_iter is temporary (?)
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
             duals, relaxed_cost = masterproblem.solve()
-            logger.info("\niteration %s, %s" % (k, relaxed_cost))
+            logger.info("iteration %s, %s" % (k, relaxed_cost))
+            self.iteration.append(k)
+            self.lower_bound.append(relaxed_cost)
             # solve sub problem
             if cspy:
                 # with cspy
@@ -99,6 +105,9 @@ class VehicleRoutingProblem:
                     self.time_windows,
                 )
             self.routes, more_routes = subproblem.solve()
+
+        # export relaxed_cost = f(iteration) to Excel file
+        self.export_convergence_rate()
 
         # solve as MIP
         logger.info("MIP solution")
@@ -131,3 +140,12 @@ class VehicleRoutingProblem:
                 initial_routes.append(route)
 
         self.routes = initial_routes
+
+    def export_convergence_rate(self):
+        """Exports evolution of lowerbound to excel file.
+        """
+        keys = ["k", "z"]
+        values = [self.iteration, self.lower_bound]
+        convergence = dict(zip(keys, values))
+        df = DataFrame(convergence, columns=keys)
+        df.to_excel("convergence.xls", index=False)

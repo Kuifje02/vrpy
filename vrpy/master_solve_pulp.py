@@ -1,6 +1,7 @@
 import pulp
 import logging
 from masterproblem import MasterProblemBase
+from networkx import shortest_path
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,10 @@ class MasterSolvePulp(MasterProblemBase):
             for r in self.routes:
                 val = pulp.value(self.y[r.graph["name"]])
                 if val > 0:
-                    logger.info("%s cost %s" % (r.nodes, r.graph["cost"]))
+                    logger.info(
+                        "%s cost %s"
+                        % (shortest_path(r, "Source", "Sink"), r.graph["cost"])
+                    )
                     best_routes.append(r)
             logger.info("total cost = %s" % pulp.value(self.prob.objective))
             return pulp.value(self.prob.objective), best_routes

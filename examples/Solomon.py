@@ -9,6 +9,10 @@ sys.path.append("../vrpy/")
 sys.path.append("../")
 from vrpy.main import VehicleRoutingProblem
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class SolomonNode:
     """Stores attributes of a node of Solomon's instances."""
@@ -105,14 +109,12 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x**2 + delta_y**2)
+        return sqrt(delta_x ** 2 + delta_y ** 2)
 
     def solve(self, num_stops, cspy=False):
         """Instantiates instance as VRP and solves."""
         prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=num_stops,
-            load_capacity=self.max_load,
+            self.G, num_stops=num_stops, load_capacity=self.max_load,
         )
         prob.solve(cspy=cspy)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
@@ -146,6 +148,7 @@ class DataSet:
 
 
 if __name__ == "__main__":
-    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=30)
-    solomon_data.solve(num_stops=4)
+    # logging.getLogger().setLevel(logging.DEBUG)
+    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=50)
+    solomon_data.solve(num_stops=None)
     solomon_data.plot_solution()

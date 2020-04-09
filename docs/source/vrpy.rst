@@ -4,6 +4,14 @@ vrpy package
 Submodules
 ----------
 
+vrpy.conf\_logger module
+------------------------
+
+.. automodule:: vrpy.conf_logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 vrpy.main module
 ----------------
 
@@ -24,6 +32,14 @@ vrpy.master\_solve\_pulp module
 -------------------------------
 
 .. automodule:: vrpy.master_solve_pulp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+vrpy.masterproblem module
+-------------------------
+
+.. automodule:: vrpy.masterproblem
    :members:
    :undoc-members:
    :show-inheritance:
