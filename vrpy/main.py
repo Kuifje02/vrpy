@@ -55,7 +55,8 @@ class VehicleRoutingProblem:
         self.iteration = []
         self.lower_bound = []
 
-    def solve(self, cspy=True, max_iter=None):
+    # @profile
+    def solve(self, cspy=True):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -72,14 +73,19 @@ class VehicleRoutingProblem:
         else:
             self.routes = self.initial_routes
         k = 0
+        no_improvement = 0
         # generate interesting columns
-        while more_routes and k < 1000:  # max_iter is temporary (?)
+        while more_routes and k < 1000 and no_improvement < 20:
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
             duals, relaxed_cost = masterproblem.solve()
             logger.info("iteration %s, %s" % (k, relaxed_cost))
             self.iteration.append(k)
+            if k > 1 and relaxed_cost == self.lower_bound[-1]:
+                no_improvement += 1
+            else:
+                no_improvement = 0
             self.lower_bound.append(relaxed_cost)
             # solve sub problem
             if cspy:
@@ -107,7 +113,8 @@ class VehicleRoutingProblem:
             self.routes, more_routes = subproblem.solve()
 
         # export relaxed_cost = f(iteration) to Excel file
-        self.export_convergence_rate()
+        # self.export_convergence_rate()
+        # print(more_routes, k, no_improvement)
 
         # solve as MIP
         logger.info("MIP solution")
