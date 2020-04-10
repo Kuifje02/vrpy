@@ -53,7 +53,10 @@ class DataSet:
         fp.close()
 
         # Create network and store name + capacity
-        self.G = DiGraph(name=instance_name[:-4], vehicle_capacity=self.max_load)
+        self.G = DiGraph(
+            name=instance_name[:-4] + "." + str(n_vertices),
+            vehicle_capacity=self.max_load,
+        )
 
         # Read nodes from txt file
         df_solomon = read_csv(
@@ -113,6 +116,8 @@ class DataSet:
 
     def solve(self, num_stops, cspy=False):
         """Instantiates instance as VRP and solves."""
+        print(self.G.graph["name"])
+        print("======")
         prob = VehicleRoutingProblem(
             self.G, num_stops=num_stops, load_capacity=self.max_load,
         )
@@ -144,11 +149,13 @@ class DataSet:
         }
         for r in self.best_routes:
             draw_networkx_edges(r, pos, **options)
-        matplotlib.pyplot.show()
+
+        # matplotlib.pyplot.show() # Display best routes
+        # Save best routes as image
+        matplotlib.pyplot.savefig("%s.pdf" % self.G.graph["name"])
 
 
 if __name__ == "__main__":
-    # logging.getLogger().setLevel(logging.DEBUG)
-    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=50)
-    solomon_data.solve(num_stops=None)
+    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=8)
+    solomon_data.solve(num_stops=None, cspy=True)
     solomon_data.plot_solution()
