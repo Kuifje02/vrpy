@@ -116,10 +116,14 @@ class DataSet:
 
     def solve(self, num_stops, cspy=False):
         """Instantiates instance as VRP and solves."""
-        print(self.G.graph["name"])
-        print("======")
+        if cspy:
+            self.G.graph["subproblem"] = "cspy"
+        else:
+            self.G.graph["subproblem"] = "lp"
+        print(self.G.graph["name"], self.G.graph["subproblem"])
+        print("===========")
         prob = VehicleRoutingProblem(
-            self.G, num_stops=num_stops, load_capacity=self.max_load,
+            self.G, num_stops=num_stops, load_capacity=self.max_load, time_windows=True
         )
         prob.solve(cspy=cspy)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
@@ -156,6 +160,27 @@ class DataSet:
 
 
 if __name__ == "__main__":
-    solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=8)
-    solomon_data.solve(num_stops=None, cspy=True)
-    solomon_data.plot_solution()
+    keys = ["instance", "nodes", "lp", "cspy"]
+    instance = []
+    nodes = []
+    res_cspy = []
+    res_lp = []
+    for n in [25, 50]:
+        solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=n)
+        instance.append(solomon_data.G.graph["name"])
+        nodes.append(n)
+        solomon_data.solve(num_stops=None, cspy=False)
+        res_lp.append(solomon_data.best_value)
+        try:  # n < 6:
+            solomon_data.solve(num_stops=None, cspy=True)
+            res_cspy.append(solomon_data.best_value)
+        except:
+            res_cspy.append("error")
+
+        solomon_data.plot_solution()
+    from pandas import DataFrame
+
+    values = [instance, nodes, res_lp, res_cspy]
+    compar = dict(zip(keys, values))
+    df = DataFrame(compar, columns=keys)
+    df.to_excel("compar.xls", index=False)
