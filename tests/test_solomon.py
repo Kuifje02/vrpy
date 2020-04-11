@@ -32,12 +32,13 @@ class TestsSolomon:
     def test_setup_edges(self):
         assert len(self.G.edges()) == self.n_vertices * (self.n_vertices - 1)
 
-    # These tests take too long for now, I am temporarily commenting them
-    """
     def test_subproblem_lp(self):
-        self.data.solve(num_stops=4)
-        assert self.data.best_value == 553.4009812212076
+        # benchmark result
+        # e.g., in Feillet et al. (2004)
+        self.data.solve(num_stops=None)
+        assert round(self.data.best_value, 1) == 191.2
 
+    """
     def test_subproblem_cspy(self):
         self.data.solve(num_stops=4, cspy=True)
         assert self.data.best_value == 553.4009812212076
