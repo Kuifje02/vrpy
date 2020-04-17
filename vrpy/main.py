@@ -72,7 +72,10 @@ class VehicleRoutingProblem:
         """
         # Setup the logger
         setup_logger()
-        # initialization
+        # Setup attributes if cspy
+        if cspy:
+            self.update_attributes_for_cspy()
+        # Initialization
         more_routes = True
         if not self.initial_routes:
             self.initial_solution()
@@ -170,6 +173,18 @@ class VehicleRoutingProblem:
                 total_cost += dist
             G.graph["cost"] = total_cost
             self.routes.append(G)
+
+    def update_attributes_for_cspy(self):
+        """Adds dummy attributes on nodes and edges if missing."""
+        if not self.time_windows:
+            for v in self.G.nodes():
+                if "lower" not in self.G.nodes[v]:
+                    self.G.nodes[v]["lower"] = 0
+                if "upper" not in self.G.nodes[v]:
+                    self.G.nodes[v]["upper"] = 0
+            for (i, j) in self.G.edges():
+                if "time" not in self.G.edges[i, j]:
+                    self.G.edges[i, j]["time"] = 0
 
     def export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file.
