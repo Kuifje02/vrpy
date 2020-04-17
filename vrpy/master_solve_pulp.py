@@ -15,10 +15,10 @@ class MasterSolvePulp(MasterProblemBase):
 
     def solve(self):
         self.formulate()
-        # self.prob.solve()
+        self.prob.solve()
         # if you have CPLEX
         # self.prob.writeLP("masterprob.lp")
-        self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
+        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
