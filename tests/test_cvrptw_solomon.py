@@ -9,13 +9,14 @@ from examples.cvrptw_solomon import DataSet
 
 
 class TestsSolomon:
+
     def setup(self):
         """
         Solomon instance c101, 25 first nodes only including depot
         """
-        self.data = DataSet(
-            path="../examples/data/", instance_name="c101.txt", n_vertices=25
-        )
+        self.data = DataSet(path="../examples/data/",
+                            instance_name="c101.txt",
+                            n_vertices=25)
         self.G = self.data.G
         self.n_vertices = 25
 
@@ -32,16 +33,13 @@ class TestsSolomon:
     def test_setup_edges(self):
         assert len(self.G.edges()) == self.n_vertices * (self.n_vertices - 1)
 
-    """
     # for some reason fails on CircleCI
     def test_subproblem_lp(self):
         # benchmark result
         # e.g., in Feillet et al. (2004)
-        self.data.solve(num_stops=None)
+        self.data.solve()
         assert round(self.data.best_value, 1) == 191.2
-    """
-    """
+
     def test_subproblem_cspy(self):
-        self.data.solve(num_stops=4, cspy=True)
+        self.data.solve(cspy=True)
         assert self.data.best_value == 553.4009812212076
-    """
