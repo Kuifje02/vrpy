@@ -63,12 +63,7 @@ class DataSet:
         # Read nodes from txt file
         n_vertices = int(instance_name[3:5])
         df_augerat = read_csv(
-            path + instance_name,
-            sep="\t",
-            # skip_blank_lines=True,
-            skiprows=6,
-            nrows=n_vertices,
-            engine="python",
+            path + instance_name, sep="\t", skiprows=6, nrows=n_vertices,
         )
         # Scan each line of the file and add nodes to the network
         for line in df_augerat.itertuples():
@@ -80,21 +75,17 @@ class DataSet:
                 self.G.add_node("Sink", x=node.x, y=node.y, demand=0)
 
         # Read demand from txt file
-        n_vertices = int(instance_name[3:5])
         df_demand = read_csv(
             path + instance_name,
             sep="\t",
-            # skip_blank_lines=True,
-            skiprows=23,
+            skiprows=range(7 + n_vertices),
+            nrows=n_vertices,
         )
         for line in df_demand.itertuples():
-            # print(line)
             values = line[1].split()
-            try:
-                node = AugeratNodeDemand(values)
-                self.G.nodes[node.name]["demand"] = node.demand
-            except:
-                continue
+            node = AugeratNodeDemand(values)
+            self.G.nodes[node.name]["demand"] = node.demand
+
         # Add the edges, the graph is complete
         for u in self.G.nodes():
             if u != "Sink":
@@ -174,16 +165,5 @@ class DataSet:
 if __name__ == "__main__":
 
     data = DataSet(path="./data/", instance_name="P-n16-k8.vrp")
-
-    r_1 = ["Source", 2, "Sink"]
-    r_2 = ["Source", 6, "Sink"]
-    r_3 = ["Source", 8, "Sink"]
-    r_4 = ["Source", 15, 12, 10, "Sink"]
-    r_5 = ["Source", 14, 5, "Sink"]
-    r_6 = ["Source", 13, 9, 7, "Sink"]
-    r_7 = ["Source", 11, 4, "Sink"]
-    r_8 = ["Source", 3, 1, "Sink"]
-    ini = [r_1, r_2, r_3, r_4, r_5, r_6, r_7, r_8]
-    # ini = None
-    data.solve(initial_routes=ini, cspy=False)
-    data.plot_solution()
+    data.solve(cspy=False)
+    # data.plot_solution()
