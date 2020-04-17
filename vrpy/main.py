@@ -1,7 +1,7 @@
 from networkx import DiGraph
 import logging
 from pandas import DataFrame
-from conf_logger import setup_logger
+
 from master_solve_pulp import MasterSolvePulp
 from subproblem_lp import SubProblemLP
 from subproblem_cspy import SubProblemCSPY
@@ -70,8 +70,6 @@ class VehicleRoutingProblem:
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
-        # Setup the logger
-        setup_logger()
         # Setup attributes if cspy
         if cspy:
             self.update_attributes_for_cspy()

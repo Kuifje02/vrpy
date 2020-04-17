@@ -172,8 +172,8 @@ class SubProblemCSPY(SubProblemBase):
         # time
         arrival_time = new_res[2] + edge_data["res_cost"][2]
         service_time = 0
-        if "service_time" in self.G.nodes[head_node]:
-            service_time = self.G.nodes[head_node]["service_time"]
+        # if "service_time" in self.G.nodes[head_node]:
+        #     service_time = self.G.nodes[head_node]["service_time"]
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
         new_res[2] = max(arrival_time + service_time, inf_time_window)
