@@ -5,7 +5,7 @@ sys.path.append("../")
 sys.path.append("../vrpy/")
 from vrpy.main import VehicleRoutingProblem
 
-from examples.Solomon import DataSet
+from examples.cvrptw_solomon import DataSet
 
 
 class TestsSolomon:
