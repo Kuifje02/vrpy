@@ -42,4 +42,4 @@ class TestsSolomon:
 
     def test_subproblem_cspy(self):
         self.data.solve(cspy=True)
-        assert self.data.best_value == 553.4009812212076
+        assert round(self.data.best_value, 1) == 191.2

@@ -1,12 +1,11 @@
 from numpy import array, zeros
 import logging
 import sys
+from networkx import DiGraph, add_path
 
 sys.path.append("../../cspy")
+
 from cspy import BiDirectional, Tabu, GreedyElim
-from networkx import (DiGraph, add_path, reconstruct_path,
-                      floyd_warshall_predecessor_and_distance,
-                      negative_edge_cycle)
 from subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)

@@ -1,5 +1,6 @@
 from networkx import DiGraph
 import logging
+from pandas import DataFrame
 from conf_logger import setup_logger
 from master_solve_pulp import MasterSolvePulp
 from subproblem_lp import SubProblemLP
@@ -54,12 +55,14 @@ class VehicleRoutingProblem:
         self.duration = duration
         self.time_windows = time_windows
 
+        # Attributes to keep track of solution
         self.best_solution = None
         self.best_routes = None
-        # Setup the logger
-        setup_logger()
+        self.iteration = []
+        self.lower_bound = []
 
-    def solve(self, cspy=True, max_iter=None):
+    # @profile
+    def solve(self, cspy=True):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -80,13 +83,20 @@ class VehicleRoutingProblem:
             self.initial_routes_to_digraphs()
 
         k = 0
+        no_improvement = 0
         # generate interesting columns
-        while more_routes and k < 100:
+        while more_routes and k < 1000 and no_improvement < 20:
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
             duals, relaxed_cost = masterproblem.solve()
-            logger.info("\niteration %s, %s" % (k, relaxed_cost))
+            logger.info("iteration %s, %s" % (k, relaxed_cost))
+            self.iteration.append(k)
+            if k > 1 and relaxed_cost == self.lower_bound[-1]:
+                no_improvement += 1
+            else:
+                no_improvement = 0
+            self.lower_bound.append(relaxed_cost)
             # solve sub problem
             if cspy:
                 # with cspy
@@ -111,6 +121,10 @@ class VehicleRoutingProblem:
                     self.time_windows,
                 )
             self.routes, more_routes = subproblem.solve()
+
+        # export relaxed_cost = f(iteration) to Excel file
+        # self.export_convergence_rate()
+        # print(more_routes, k, no_improvement)
 
         # solve as MIP
         logger.info("MIP solution")
