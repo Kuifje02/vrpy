@@ -14,11 +14,11 @@ class MasterSolvePulp(MasterProblemBase):
     """
 
     def solve(self):
-        # prob.writeLP("prob.lp")
         self.formulate()
-        self.prob.solve()
+        # self.prob.solve()
         # if you have CPLEX
-        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
+        # self.prob.writeLP("masterprob.lp")
+        self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
@@ -67,7 +67,11 @@ class MasterSolvePulp(MasterProblemBase):
 
         # visit each node once
         for v in self.G.nodes():
-            if v not in ["Source", "Sink"]:
+            if (
+                v not in ["Source", "Sink"]
+                and "depot_from" not in self.G.nodes[v]
+                and "depot_to" not in self.G.nodes[v]
+            ):
                 self.prob += (
                     pulp.lpSum(
                         [self.y[r.graph["name"]] for r in self.routes if v in r.nodes()]
@@ -84,7 +88,11 @@ class MasterSolvePulp(MasterProblemBase):
         """
         duals = {}
         for v in self.G.nodes():
-            if v not in ["Source", "Sink"]:
+            if (
+                v not in ["Source", "Sink"]
+                and "depot_from" not in self.G.nodes[v]
+                and "depot_to" not in self.G.nodes[v]
+            ):
                 constr_name = "visit_node_%s" % v
                 duals[v] = self.prob.constraints[constr_name].pi
         return duals
