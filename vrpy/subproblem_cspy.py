@@ -71,14 +71,14 @@ class SubProblemCSPY(SubProblemBase):
                                          self.max_res,
                                          self.min_res,
                                          direction="both",
-                                         REF=self.REF,
+                                         REF=self.get_REF(),
                                          method="generated")
             else:
                 logger.debug("solving with greedyelim")
                 self.alg = GreedyElim(self.G,
                                       self.max_res,
                                       self.min_res,
-                                      REF=self.REF,
+                                      REF=self.get_REF(),
                                       max_depth=100)
             self.alg.run()
             logger.debug("subproblem")
@@ -158,7 +158,15 @@ class SubProblemCSPY(SubProblemBase):
             travel_time = self.G.edges[i, j]["time"]
             self.G.edges[i, j]["res_cost"][2] = travel_time
 
-    def REF(self, cumulative_res, edge):
+    def get_REF(self):
+        if self.time_windows:
+            # Use custom REF
+            return self.REF
+        else:
+            # Use default additive propagation
+            return
+
+    def REF_TW(self, cumulative_res, edge):
         """
         Resource extension function based on Righini and Salani's paper
         """
