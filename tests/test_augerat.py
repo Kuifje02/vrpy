@@ -46,7 +46,7 @@ class TestsSolomon:
         r_8 = ["Source", 3, 1, "Sink"]
         ini = [r_1, r_2, r_3, r_4, r_5, r_6, r_7, r_8]
         self.data.solve(initial_routes=ini)
-        assert round(self.data.best_value, 1) == 451.1
+        assert int(self.data.best_value) == 451
 
     """
     def test_subproblem_cspy(self):
