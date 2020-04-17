@@ -19,6 +19,10 @@ class VehicleRoutingProblem:
             List of Digraphs.
             Feasible solution for first iteration.
             Defaults to None.
+        edge_cost_function (function, optional):
+            Mapping with a cost for each edge.
+            Only necessary if initial_routes is not None.
+            Defaults to None.
         num_stops (int, optional):
             Maximum number of stops.
             Defaults to None.
@@ -37,6 +41,7 @@ class VehicleRoutingProblem:
         self,
         G,
         initial_routes=None,
+        edge_cost_function=None,
         num_stops=None,
         load_capacity=None,
         duration=None,
@@ -44,6 +49,7 @@ class VehicleRoutingProblem:
     ):
         self.G = G
         self.initial_routes = initial_routes
+        self.edge_cost_function = edge_cost_function
         self.num_stops = num_stops
         self.load_capacity = load_capacity
         self.duration = duration
@@ -71,7 +77,8 @@ class VehicleRoutingProblem:
         if not self.initial_routes:
             self.initial_solution()
         else:
-            self.routes = self.initial_routes
+            self.initial_routes_to_digraphs()
+
         k = 0
         no_improvement = 0
         # generate interesting columns
@@ -147,6 +154,22 @@ class VehicleRoutingProblem:
                 initial_routes.append(route)
 
         self.routes = initial_routes
+
+    def initial_routes_to_digraphs(self):
+        """Converts list of initial routes to list of Digraphs."""
+        route_id = 0
+        self.routes = []
+        for r in self.initial_routes:
+            total_cost = 0
+            route_id += 1
+            G = DiGraph(name=route_id)
+            edges = list(zip(r[:-1], r[1:]))
+            for (i, j) in edges:
+                dist = round(self.edge_cost_function(i, j), 1)
+                G.add_edge(i, j, cost=dist)
+                total_cost += dist
+            G.graph["cost"] = total_cost
+            self.routes.append(G)
 
     def export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file.
