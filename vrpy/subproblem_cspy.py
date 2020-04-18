@@ -161,7 +161,7 @@ class SubProblemCSPY(SubProblemBase):
     def get_REF(self):
         if self.time_windows:
             # Use custom REF
-            return self.REF
+            return self.REF_TW
         else:
             # Use default additive propagation
             return
