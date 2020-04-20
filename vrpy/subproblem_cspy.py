@@ -40,7 +40,7 @@ class SubProblemCSPY(SubProblemBase):
         self.max_res = [
             len(self.G.nodes()),
             sum([self.G.nodes[v]["demand"] for v in self.G.nodes()]),
-            sum([self.G.nodes[v]["upper"] for v in self.G.nodes()]),
+            sum([self.G.edges[u, v]["time"] for u, v in self.G.edges()]),
             1,
         ]
         # Initialize cspy edge attributes
@@ -82,7 +82,7 @@ class SubProblemCSPY(SubProblemBase):
                     self.max_res,
                     self.min_res,
                     REF=self.get_REF(),
-                    max_depth=100,
+                    max_depth=50,
                 )
             self.alg.run()
             logger.debug("subproblem")
@@ -177,21 +177,20 @@ class SubProblemCSPY(SubProblemBase):
         """
         new_res = array(cumulative_res)
         # extract data
-        tail_node, head_node, edge_data = edge[0:3]
+        i, j, edge_data = edge[0:3]
         # stops/monotone resource
         new_res[0] += 1
         # load
         new_res[1] += edge_data["res_cost"][1]
         # time
-        arrival_time = new_res[2] + self.G.edges[tail_node, head_node]["time"]
-        service_time = self.G.nodes[tail_node]["service_time"]
-        inf_time_window = self.G.nodes[head_node]["lower"]
-        sup_time_window = self.G.nodes[head_node]["upper"]
-        new_res[2] = arrival_time
-        tau = max(arrival_time + service_time, inf_time_window)
+        service_time = self.G.nodes[i]["service_time"]
+        travel_time = self.G.edges[i, j]["time"]
+        a_j = self.G.nodes[j]["lower"]
+        b_i = self.G.nodes[i]["upper"]
+        new_res[2] = max(new_res[2] + service_time + travel_time, a_j)
 
         # time-window feasibility resource
-        if not self.time_windows or (tau <= sup_time_window):
+        if new_res[2] <= b_i:
             new_res[3] = 0
         else:
             new_res[3] = 1
