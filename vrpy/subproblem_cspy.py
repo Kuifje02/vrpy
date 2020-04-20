@@ -40,7 +40,7 @@ class SubProblemCSPY(SubProblemBase):
         self.max_res = [
             len(self.G.nodes()),
             sum([self.G.nodes[v]["demand"] for v in self.G.nodes()]),
-            sum([self.G.edges[u, v]["time"] for (u, v) in self.G.edges()]),
+            sum([self.G.nodes[v]["upper"] for v in self.G.nodes()]),
             1,
         ]
         # Initialize cspy edge attributes
@@ -183,7 +183,7 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[1] += edge_data["res_cost"][1]
         # time
-        arrival_time = new_res[2] + edge_data["res_cost"][2]
+        arrival_time = new_res[2] + self.G.edges[tail_node, head_node]["time"]
         service_time = self.G.nodes[tail_node]["service_time"]
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]

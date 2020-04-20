@@ -97,9 +97,10 @@ class DataSet:
                 for v in self.G.nodes():
                     if v != "Source":
                         if u != v and (u, v) != ("Source", "Sink"):
-                            self.G.add_edge(
-                                u, v, cost=self.distance(u, v), time=self.distance(u, v)
-                            )
+                            self.G.add_edge(u,
+                                            v,
+                                            cost=self.distance(u, v),
+                                            time=self.distance(u, v))
 
     def distance(self, u, v):
         """2D Euclidian distance between two nodes.
@@ -113,9 +114,9 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x ** 2 + delta_y ** 2)
+        return sqrt(delta_x**2 + delta_y**2)
 
-    def solve(self, num_stops=None, cspy=False):
+    def solve(self, num_stops=None, cspy=False, exact=False):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -123,10 +124,11 @@ class DataSet:
             self.G.graph["subproblem"] = "lp"
         print(self.G.graph["name"], self.G.graph["subproblem"])
         print("===========")
-        prob = VehicleRoutingProblem(
-            self.G, num_stops=num_stops, load_capacity=self.max_load, time_windows=True
-        )
-        prob.solve(cspy=cspy)
+        prob = VehicleRoutingProblem(self.G,
+                                     num_stops=num_stops,
+                                     load_capacity=self.max_load,
+                                     time_windows=True)
+        prob.solve(cspy=cspy, exact=exact)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
 
     def plot_solution(self):
@@ -138,12 +140,16 @@ class DataSet:
 
         # Draw customers
         draw_networkx_nodes(
-            self.G, pos, node_size=10,
+            self.G,
+            pos,
+            node_size=10,
         )
         # Draw Source and Sink
-        draw_networkx_nodes(
-            self.G, pos, nodelist=["Source", "Sink"], node_size=50, node_color="r"
-        )
+        draw_networkx_nodes(self.G,
+                            pos,
+                            nodelist=["Source", "Sink"],
+                            node_size=50,
+                            node_color="r")
         # Draw best routes
         options = {
             "node_color": "blue",
@@ -174,7 +180,9 @@ if __name__ == "__main__":
     time_cspy = []
 
     for n in range(3, 12):
-        solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=n)
+        solomon_data = DataSet(path="./data/",
+                               instance_name="c101.txt",
+                               n_vertices=n)
         instance.append(solomon_data.G.graph["name"])
         nodes.append(n)
         # LP
