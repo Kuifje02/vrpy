@@ -35,6 +35,9 @@ class VehicleRoutingProblem:
         time_windows (bool, optional):
             True if time windows on vertices.
             Defaults to False.
+        undirected (bool, optional):
+            True if underlying network is undirected.
+            Defaults to True.
     """
 
     def __init__(
@@ -46,6 +49,7 @@ class VehicleRoutingProblem:
         load_capacity=None,
         duration=None,
         time_windows=False,
+        undirected=True,
     ):
         self.G = G
         self.initial_routes = initial_routes
@@ -54,9 +58,13 @@ class VehicleRoutingProblem:
         self.load_capacity = load_capacity
         self.duration = duration
         self.time_windows = time_windows
+        self.undirected = undirected
 
         # Remove infeasible arcs
         self.prune_graph()
+        # Add index attribute for each node
+        if self.undirected:
+            self.create_index_for_nodes()
 
         # Attributes to keep track of solution
         self.best_solution = None
@@ -109,6 +117,7 @@ class VehicleRoutingProblem:
                     self.load_capacity,
                     self.duration,
                     self.time_windows,
+                    self.undirected,
                 )
             else:
                 # as LP
@@ -120,6 +129,7 @@ class VehicleRoutingProblem:
                     self.load_capacity,
                     self.duration,
                     self.time_windows,
+                    self.undirected,
                 )
             self.routes, more_routes = subproblem.solve()
 
@@ -133,7 +143,10 @@ class VehicleRoutingProblem:
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
     def prune_graph(self):
-        """Removes useless edges from graph."""
+        """Preprocessing:
+           - Removes useless edges from graph
+           - Strengthens time windows
+        """
         infeasible_arcs = []
         # remove infeasible arcs (capacities)
         if self.load_capacity:
@@ -228,6 +241,18 @@ class VehicleRoutingProblem:
             for (i, j) in self.G.edges():
                 if "time" not in self.G.edges[i, j]:
                     self.G.edges[i, j]["time"] = 0
+
+    def create_index_for_nodes(self):
+        """An index is created for each node ;
+           usefull if node names are not integers.
+        """
+        self.G.nodes["Source"]["id"] = 0
+        self.G.nodes["Sink"]["id"] = len(self.G.nodes()) - 1
+        index = 0
+        for v in self.G.nodes():
+            if v not in ["Source", "Sink"]:
+                index += 1
+                self.G.nodes[v]["id"] = index
 
     def export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file.

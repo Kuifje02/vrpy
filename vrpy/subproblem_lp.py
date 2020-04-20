@@ -24,7 +24,7 @@ class SubProblemLP(SubProblemBase):
     # @profile
     def solve(self):
         self.formulate()
-        # self.prob.writeLP("prob.lp")
+        self.prob.writeLP("prob.lp")
         self.prob.solve()
         # if you have CPLEX
         # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
@@ -53,25 +53,11 @@ class SubProblemLP(SubProblemBase):
         self.routes.append(new_route)
         logger.debug("new route %s %s" % (route_id, new_route.edges()))
         logger.debug("new route cost = %s" % self.total_cost)
-        routes_txt = open("routes.txt", "a")
-        routes_txt.write(str(shortest_path(new_route, "Source", "Sink")) + "\n")
+        # routes_txt = open("routes.txt", "a")
+        # routes_txt.write(str(shortest_path(new_route, "Source", "Sink")) + "\n")
 
     def formulate(self):
         # minimize reduced cost
-        """
-        edge_cost = pulp.lpSum(
-            [self.G.edges[i, j]["cost"] * self.x[(i, j)] for (i, j) in self.G.edges()]
-        )
-        dual_cost = pulp.lpSum(
-            [
-                self.x[(v, j)] * self.duals[v]
-                for v in self.G.nodes()
-                if v not in ["Source"]
-                for j in self.G.successors(v)
-            ]
-        )
-        self.prob += edge_cost - dual_cost
-        """
         self.prob += pulp.lpSum(
             [self.G.edges[i, j]["weight"] * self.x[(i, j)] for (i, j) in self.G.edges()]
         )
@@ -92,20 +78,6 @@ class SubProblemLP(SubProblemBase):
             pulp.lpSum([self.x[(u, "Sink")] for u in self.G.predecessors("Sink")]) == 1,
             "end_at_sink",
         )
-        # symmetry breaking
-        # index of first node < index of last node
-        """
-        self.prob += (
-            pulp.lpSum(
-                [int(v) * self.x[("Source", v)] for v in self.G.successors("Source")]
-            )
-            <= 1
-            + pulp.lpSum(
-                [int(v) * self.x[(v, "Sink")] for v in self.G.predecessors("Sink")]
-            ),
-            "break_symmetry",
-        )
-        """
 
         # Problem specific constraints
         if self.time_windows:
@@ -119,6 +91,10 @@ class SubProblemLP(SubProblemBase):
         if negative_edge_cycle(self.G):
             logger.debug("negative cycle found")
             self.add_elementarity()
+
+        # Break some symmetry
+        if self.undirected:
+            self.break_symmetry()
 
     def add_time_windows(self):
         # Big-M definition
@@ -199,3 +175,23 @@ class SubProblemLP(SubProblemBase):
         for v in self.G.nodes():
             if v != "Sink":
                 self.prob += y[v] <= y["Sink"], "Sink_after_%s" % v
+
+    def break_symmetry(self):
+        """If the graph is undirected, divide the number of possible paths by 2."""
+        # index of first node < index of last node
+        self.prob += (
+            pulp.lpSum(
+                [
+                    self.G.nodes[v]["id"] * self.x[("Source", v)]
+                    for v in self.G.successors("Source")
+                ]
+            )
+            <= 1
+            + pulp.lpSum(
+                [
+                    self.G.nodes[v]["id"] * self.x[(v, "Sink")]
+                    for v in self.G.predecessors("Sink")
+                ]
+            ),
+            "break_symmetry",
+        )
