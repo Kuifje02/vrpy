@@ -24,7 +24,7 @@ class SubProblemLP(SubProblemBase):
     # @profile
     def solve(self):
         self.formulate()
-        self.prob.writeLP("prob.lp")
+        # self.prob.writeLP("prob.lp")
         self.prob.solve()
         # if you have CPLEX
         # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
@@ -93,7 +93,7 @@ class SubProblemLP(SubProblemBase):
             self.add_elementarity()
 
         # Break some symmetry
-        if self.undirected:
+        if self.undirected and not self.time_windows:
             self.break_symmetry()
 
     def add_time_windows(self):
@@ -179,6 +179,7 @@ class SubProblemLP(SubProblemBase):
     def break_symmetry(self):
         """If the graph is undirected, divide the number of possible paths by 2."""
         # index of first node < index of last node
+
         self.prob += (
             pulp.lpSum(
                 [
@@ -186,8 +187,7 @@ class SubProblemLP(SubProblemBase):
                     for v in self.G.successors("Source")
                 ]
             )
-            <= 1
-            + pulp.lpSum(
+            <= pulp.lpSum(
                 [
                     self.G.nodes[v]["id"] * self.x[(v, "Sink")]
                     for v in self.G.predecessors("Sink")
