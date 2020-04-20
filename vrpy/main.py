@@ -73,11 +73,18 @@ class VehicleRoutingProblem:
         self.lower_bound = []
 
     # @profile
-    def solve(self, cspy=True):
+    def solve(self, cspy=True, exact=True):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
-            cspy (bool, optional): True if cspy is used for subproblem. Defaults to True.
+            cspy (bool, optional):
+                True if cspy is used for subproblem.
+                Defaults to True.
+            exact (bool, optional):
+                True if only cspy's exact algorithm is used to generate columns.
+                Otherwise, heuristitics will be used until they produce +ve
+                reduced cost columns, after which the exact algorithm is used.
+                Defaults to True.
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
@@ -118,6 +125,7 @@ class VehicleRoutingProblem:
                     self.duration,
                     self.time_windows,
                     self.undirected,
+                    exact=exact,
                 )
             else:
                 # as LP
@@ -151,10 +159,8 @@ class VehicleRoutingProblem:
         # remove infeasible arcs (capacities)
         if self.load_capacity:
             for (i, j) in self.G.edges():
-                if (
-                    self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"]
-                    > self.load_capacity
-                ):
+                if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
+                        self.load_capacity):
                     infeasible_arcs.append((i, j))
 
         # remove infeasible arcs (time windows)
@@ -164,10 +170,8 @@ class VehicleRoutingProblem:
                 service_time = 0  # for now
                 tail_inf_time_window = self.G.nodes[i]["lower"]
                 head_sup_time_window = self.G.nodes[j]["upper"]
-                if (
-                    tail_inf_time_window + travel_time + service_time
-                    > head_sup_time_window
-                ):
+                if (tail_inf_time_window + travel_time + service_time >
+                        head_sup_time_window):
                     infeasible_arcs.append((i, j))
 
             # strenghten time windows
@@ -176,13 +180,14 @@ class VehicleRoutingProblem:
                     # earliest time is coming straight from depot
                     self.G.nodes[v]["lower"] = max(
                         self.G.nodes[v]["lower"],
-                        self.G.nodes["Source"]["lower"]
-                        + self.G.edges["Source", v]["time"],
+                        self.G.nodes["Source"]["lower"] +
+                        self.G.edges["Source", v]["time"],
                     )
                     # latest time is going straight to depot
                     self.G.nodes[v]["upper"] = min(
                         self.G.nodes[v]["upper"],
-                        self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
+                        self.G.nodes["Sink"]["upper"] -
+                        self.G.edges[v, "Sink"]["time"],
                     )
 
         self.G.remove_edges_from(infeasible_arcs)

@@ -58,12 +58,18 @@ class DataSet:
         fp.close()
 
         # Create network and store name + capacity
-        self.G = DiGraph(name=instance_name[:-4], vehicle_capacity=self.max_load,)
+        self.G = DiGraph(
+            name=instance_name[:-4],
+            vehicle_capacity=self.max_load,
+        )
 
         # Read nodes from txt file
         n_vertices = int(instance_name[3:5])
         df_augerat = read_csv(
-            path + instance_name, sep="\t", skiprows=6, nrows=n_vertices,
+            path + instance_name,
+            sep="\t",
+            skiprows=6,
+            nrows=n_vertices,
         )
         # Scan each line of the file and add nodes to the network
         for line in df_augerat.itertuples():
@@ -92,7 +98,9 @@ class DataSet:
                 for v in self.G.nodes():
                     if v != "Source":
                         if u != v and (u, v) != ("Source", "Sink"):
-                            self.G.add_edge(u, v, cost=round(self.distance(u, v), 1))
+                            self.G.add_edge(u,
+                                            v,
+                                            cost=round(self.distance(u, v), 1))
 
         # relabel
         before = [v for v in self.G.nodes() if v not in ["Source", "Sink"]]
@@ -112,9 +120,9 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x ** 2 + delta_y ** 2)
+        return sqrt(delta_x**2 + delta_y**2)
 
-    def solve(self, initial_routes=None, cspy=False):
+    def solve(self, initial_routes=None, cspy=False, exact=True):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -128,7 +136,7 @@ class DataSet:
             edge_cost_function=self.distance,
             load_capacity=self.max_load,
         )
-        prob.solve(cspy=cspy)
+        prob.solve(cspy=cspy, exact=exact)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
 
     def plot_solution(self):
@@ -140,12 +148,16 @@ class DataSet:
 
         # Draw customers
         draw_networkx_nodes(
-            self.G, pos, node_size=10,
+            self.G,
+            pos,
+            node_size=10,
         )
         # Draw Source and Sink
-        draw_networkx_nodes(
-            self.G, pos, nodelist=["Source", "Sink"], node_size=50, node_color="r"
-        )
+        draw_networkx_nodes(self.G,
+                            pos,
+                            nodelist=["Source", "Sink"],
+                            node_size=50,
+                            node_color="r")
         # Draw best routes
         options = {
             "node_color": "blue",

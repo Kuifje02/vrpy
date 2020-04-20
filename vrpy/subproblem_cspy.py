@@ -13,18 +13,17 @@ logger = logging.getLogger(__name__)
 
 class SubProblemCSPY(SubProblemBase):
     """
-    Solves the sub problem for the column generation procedure with cspy; attemps
-    to find routes with negative reduced cost.
+    Solves the sub problem for the column generation procedure with cspy;
+    attemps to find routes with negative reduced cost.
 
     Inherits problem parameters from `SubproblemBase`
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, exact):
         """Initializes resources."""
         # Pass arguments to base
         super(SubProblemCSPY, self).__init__(*args)
         # Resource names
-        self.exact = False
         self.alg = None
         self.resources = [
             "stops/mono",
@@ -32,7 +31,7 @@ class SubProblemCSPY(SubProblemBase):
             "time",
             "time windows",
         ]
-        self.exact = False
+        self.exact = exact
         # Set number of resources as attribute of graph
         self.G.graph["n_res"] = len(self.resources)
         # Default lower and upper bounds
@@ -50,7 +49,8 @@ class SubProblemCSPY(SubProblemBase):
 
     # @profile
     def solve(self):
-        """Solves the subproblem with cspy.
+        """
+        Solves the subproblem with cspy.
 
         Resolves until:
         1. heuristic algorithm gives a new route (column with -ve reduced cost);
@@ -63,10 +63,9 @@ class SubProblemCSPY(SubProblemBase):
         logger.debug("max res = {}".format(self.max_res))
 
         more_routes = False
-        exact = False
 
         while True:
-            if exact:
+            if self.exact:
                 logger.debug("solving with bidirectional")
                 self.alg = BiDirectional(
                     self.G,
@@ -89,15 +88,16 @@ class SubProblemCSPY(SubProblemBase):
             logger.debug("subproblem")
             logger.debug("cost = %s" % self.alg.total_cost)
             logger.debug("resources = %s" % self.alg.consumed_resources)
-            if self.alg.total_cost < -(10 ** -5):
+            if self.alg.total_cost < -(10**-5):
                 more_routes = True
                 self.add_new_route()
                 logger.debug("new route %s" % self.alg.path)
                 logger.debug("new route cost = %s" % self.total_cost)
                 break
             # If not already solved exactly
-            elif not exact:
-                exact = True
+            elif not self.exact:
+                # Solve exactly from here on
+                self.exact = True
             # Solved heuristically and exactly and no more routes
             else:
                 break
@@ -187,9 +187,11 @@ class SubProblemCSPY(SubProblemBase):
         service_time = self.G.nodes[tail_node]["service_time"]
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
-        new_res[2] = max(arrival_time + service_time, inf_time_window)
+        new_res[2] = arrival_time
+        tau = max(arrival_time + service_time, inf_time_window)
+
         # time-window feasibility resource
-        if not self.time_windows or (new_res[2] <= sup_time_window):
+        if not self.time_windows or (tau <= sup_time_window):
             new_res[3] = 0
         else:
             new_res[3] = 1
