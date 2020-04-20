@@ -48,6 +48,7 @@ class SubProblemCSPY(SubProblemBase):
         for edge in self.G.edges(data=True):
             edge[2]["res_cost"] = zeros(len(self.resources))
 
+    # @profile
     def solve(self):
         """Solves the subproblem with cspy.
 
@@ -67,24 +68,28 @@ class SubProblemCSPY(SubProblemBase):
         while True:
             if exact:
                 logger.debug("solving with bidirectional")
-                self.alg = BiDirectional(self.G,
-                                         self.max_res,
-                                         self.min_res,
-                                         direction="both",
-                                         REF=self.get_REF(),
-                                         method="generated")
+                self.alg = BiDirectional(
+                    self.G,
+                    self.max_res,
+                    self.min_res,
+                    direction="both",
+                    REF=self.get_REF(),
+                    method="generated",
+                )
             else:
                 logger.debug("solving with greedyelim")
-                self.alg = GreedyElim(self.G,
-                                      self.max_res,
-                                      self.min_res,
-                                      REF=self.get_REF(),
-                                      max_depth=100)
+                self.alg = GreedyElim(
+                    self.G,
+                    self.max_res,
+                    self.min_res,
+                    REF=self.get_REF(),
+                    max_depth=100,
+                )
             self.alg.run()
             logger.debug("subproblem")
             logger.debug("cost = %s" % self.alg.total_cost)
             logger.debug("resources = %s" % self.alg.consumed_resources)
-            if self.alg.total_cost < -(10**-5):
+            if self.alg.total_cost < -(10 ** -5):
                 more_routes = True
                 self.add_new_route()
                 logger.debug("new route %s" % self.alg.path)

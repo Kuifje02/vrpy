@@ -46,10 +46,16 @@ class SubProblemBase:
                 if edge[0] == v:
                     edge[2]["weight"] -= self.duals[v]
 
-        # Prune the graph if time windows are activated
-        # remove infeasible arcs
+        # Prune the graph
+        infeasible_arcs = []
+        # remove infeasible arcs (capacities)
+        if load_capacity:
+            for (i, j) in G.edges():
+                if G.nodes[i]["demand"] + G.nodes[j]["demand"] > load_capacity:
+                    infeasible_arcs.append((i, j))
+
+        # remove infeasible arcs (time windows)
         if time_windows:
-            infeasible_arcs = []
             for (i, j) in G.edges():
                 travel_time = G.edges[i, j]["time"]
                 service_time = 0  # for now
@@ -60,4 +66,4 @@ class SubProblemBase:
                     > head_sup_time_window
                 ):
                     infeasible_arcs.append((i, j))
-            G.remove_edges_from(infeasible_arcs)
+        G.remove_edges_from(infeasible_arcs)
