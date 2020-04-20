@@ -17,7 +17,10 @@ class SubProblemBase:
             Maximum duration. Optional.
             If not provided, constraint not enforced.
         time_windows (bool):
-            True if time windows activated
+            True if time windows activated.
+        undirected (bool):
+            True if underlying network is undirected.
+            Defaults to True.
     """
 
     def __init__(
@@ -29,6 +32,7 @@ class SubProblemBase:
         load_capacity=None,
         duration=None,
         time_windows=False,
+        undirected=True,
     ):
         # Input attributes
         self.G = G
@@ -38,6 +42,7 @@ class SubProblemBase:
         self.load_capacity = load_capacity
         self.duration = duration
         self.time_windows = time_windows
+        self.undirected = undirected
 
         # Add reduced cost to "weight" attribute
         for edge in self.G.edges(data=True):
@@ -45,4 +50,3 @@ class SubProblemBase:
             for v in self.duals:
                 if edge[0] == v:
                     edge[2]["weight"] -= self.duals[v]
-
