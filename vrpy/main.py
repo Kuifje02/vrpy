@@ -16,7 +16,7 @@ class VehicleRoutingProblem:
     Args:
         G (DiGraph): The underlying network.
         initial_routes (list, optional):
-            List of Digraphs.
+            List of paths (list of nodes).
             Feasible solution for first iteration.
             Defaults to None.
         edge_cost_function (function, optional):
@@ -54,6 +54,9 @@ class VehicleRoutingProblem:
         self.load_capacity = load_capacity
         self.duration = duration
         self.time_windows = time_windows
+
+        # Remove infeasible arcs
+        self.prune_graph()
 
         # Attributes to keep track of solution
         self.best_solution = None
@@ -128,6 +131,47 @@ class VehicleRoutingProblem:
         logger.info("MIP solution")
         masterproblem_mip = MasterSolvePulp(self.G, self.routes, relax=False)
         self.best_value, self.best_routes = masterproblem_mip.solve()
+
+    def prune_graph(self):
+        infeasible_arcs = []
+        # remove infeasible arcs (capacities)
+        if self.load_capacity:
+            for (i, j) in self.G.edges():
+                if (
+                    self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"]
+                    > self.load_capacity
+                ):
+                    infeasible_arcs.append((i, j))
+
+        # remove infeasible arcs (time windows)
+        if self.time_windows:
+            for (i, j) in self.G.edges():
+                travel_time = self.G.edges[i, j]["time"]
+                service_time = 0  # for now
+                tail_inf_time_window = self.G.nodes[i]["lower"]
+                head_sup_time_window = self.G.nodes[j]["upper"]
+                if (
+                    tail_inf_time_window + travel_time + service_time
+                    > head_sup_time_window
+                ):
+                    infeasible_arcs.append((i, j))
+
+            # strenghten time windows
+            for v in self.G.nodes():
+                if v not in ["Source", "Sink"]:
+                    # earliest time is coming straight from depot
+                    self.G.nodes[v]["lower"] = max(
+                        self.G.nodes[v]["lower"],
+                        self.G.nodes["Source"]["lower"]
+                        + self.G.edges["Source", v]["time"],
+                    )
+                    # latest time is going straight to depot
+                    self.G.nodes[v]["upper"] = min(
+                        self.G.nodes[v]["upper"],
+                        self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
+                    )
+
+        self.G.remove_edges_from(infeasible_arcs)
 
     def initial_solution(self):
         """If no initial solution is given, creates one"""
