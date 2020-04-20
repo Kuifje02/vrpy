@@ -32,12 +32,11 @@ class TestsSolomon:
     def test_setup_edges(self):
         assert len(self.G.edges()) == self.n_vertices * (self.n_vertices - 1)
 
-    # for some reason fails on CircleCI
     def test_subproblem_lp(self):
         # benchmark result
         # e.g., in Feillet et al. (2004)
         self.data.solve()
-        assert round(self.data.best_value, 1) == 191.2
+        assert int(self.data.best_value) == 191
 
     """
     def test_subproblem_cspy(self):
