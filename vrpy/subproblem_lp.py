@@ -24,10 +24,10 @@ class SubProblemLP(SubProblemBase):
     # @profile
     def solve(self):
         self.formulate()
-        self.prob.writeLP("prob.lp")
-        # self.prob.solve()
+        # self.prob.writeLP("prob.lp")
+        self.prob.solve()
         # if you have CPLEX
-        self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
+        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("")
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
