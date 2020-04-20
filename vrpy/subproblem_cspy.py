@@ -187,11 +187,12 @@ class SubProblemCSPY(SubProblemBase):
         travel_time = self.G.edges[i, j]["time"]
         a_j = self.G.nodes[j]["lower"]
         b_i = self.G.nodes[i]["upper"]
-        new_res[2] = max(new_res[2] + service_time + travel_time, a_j)
 
         # time-window feasibility resource
-        if new_res[2] <= b_i:
+        if not self.time_windows or new_res[2] <= b_i:
             new_res[3] = 0
         else:
             new_res[3] = 1
+
+        new_res[2] = max(new_res[2] + service_time + travel_time, a_j)
         return new_res
