@@ -130,7 +130,8 @@ class SubProblemLP(SubProblemBase):
         # Add big-M constraints
         for (i, j) in self.G.edges():
             self.prob += (
-                t[i] + self.G.edges[i, j]["time"] <= t[j] + M * (1 - self.x[(i, j)]),
+                t[i] + self.G.nodes[i]["service_time"] + self.G.edges[i, j]["time"]
+                <= t[j] + M * (1 - self.x[(i, j)]),
                 "time_window_%s_%s" % (i, j),
             )
         # Add node constraints
@@ -165,7 +166,8 @@ class SubProblemLP(SubProblemBase):
         self.prob += (
             pulp.lpSum(
                 [
-                    self.G.edges[i, j]["time"] * self.x[(i, j)]
+                    (self.G.edges[i, j]["time"] + self.G.nodes[i]["service_time"])
+                    * self.x[(i, j)]
                     for (i, j) in self.G.edges()
                 ]
             )

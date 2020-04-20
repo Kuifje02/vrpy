@@ -17,14 +17,17 @@ class TestsToy:
             self.G.add_edge(v, "Sink", cost=10, time=20)
             self.G.nodes[v]["demand"] = 5
             self.G.nodes[v]["upper"] = 100
-            self.G.nodes[v]["lower"] = 0
+            self.G.nodes[v]["lower"] = 5
+            self.G.nodes[v]["service_time"] = 1
         self.G.nodes[2]["upper"] = 20
         self.G.nodes["Sink"]["demand"] = 0
         self.G.nodes["Sink"]["lower"] = 0
         self.G.nodes["Sink"]["upper"] = 100
+        self.G.nodes["Sink"]["service_time"] = 0
         self.G.nodes["Source"]["demand"] = 0
         self.G.nodes["Source"]["lower"] = 0
         self.G.nodes["Source"]["upper"] = 100
+        self.G.nodes["Source"]["service_time"] = 0
         self.G.add_edge(1, 2, cost=10, time=20)
         self.G.add_edge(2, 3, cost=10, time=20)
         self.G.add_edge(3, 4, cost=15, time=20)
@@ -53,7 +56,7 @@ class TestsToy:
            with stop, capacity and duration constraints
         """
         prob = VehicleRoutingProblem(
-            self.G, num_stops=3, load_capacity=10, duration=60,
+            self.G, num_stops=3, load_capacity=10, duration=62,
         )
         prob.solve()
         assert prob.best_value == 85
@@ -86,7 +89,7 @@ class TestsToy:
 
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=60)
+        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
         prob.solve(cspy=False)
         assert prob.best_value == 85
 

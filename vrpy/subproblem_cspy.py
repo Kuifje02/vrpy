@@ -164,7 +164,7 @@ class SubProblemCSPY(SubProblemBase):
             self.G.edges[i, j]["res_cost"][2] = travel_time
 
     def get_REF(self):
-        if self.time_windows:
+        if self.duration or self.time_windows:
             # Use custom REF
             return self.REF_TW
         else:
@@ -184,14 +184,12 @@ class SubProblemCSPY(SubProblemBase):
         new_res[1] += edge_data["res_cost"][1]
         # time
         arrival_time = new_res[2] + edge_data["res_cost"][2]
-        service_time = 0
-        # if "service_time" in self.G.nodes[head_node]:
-        #     service_time = self.G.nodes[head_node]["service_time"]
+        service_time = self.G.nodes[tail_node]["service_time"]
         inf_time_window = self.G.nodes[head_node]["lower"]
         sup_time_window = self.G.nodes[head_node]["upper"]
         new_res[2] = max(arrival_time + service_time, inf_time_window)
         # time-window feasibility resource
-        if new_res[2] <= sup_time_window:
+        if not self.time_windows or (new_res[2] <= sup_time_window):
             new_res[3] = 0
         else:
             new_res[3] = 1
