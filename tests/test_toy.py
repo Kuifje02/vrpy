@@ -77,31 +77,37 @@ class TestsToy:
 
     def test_LP_stops(self):
         """Tests column generation procedure on toy graph with stop constraints"""
-        prob = VehicleRoutingProblem(self.G, num_stops=3)
+        prob = VehicleRoutingProblem(self.G, num_stops=3, undirected=False)
         prob.solve(cspy=False)
         assert prob.best_value == 70
 
     def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, load_capacity=10, undirected=False
+        )
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, load_capacity=10, duration=62, undirected=False
+        )
         prob.solve(cspy=False)
         assert prob.best_value == 85
 
     def test_LP_stops_time_windows(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, time_windows=True, undirected=False
+        )
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
     def test_LP_stops_elementarity(self):
         """Tests column generation procedure on toy graph"""
         self.G.add_edge(2, 1, cost=2)
-        prob = VehicleRoutingProblem(self.G, num_stops=3)
+        prob = VehicleRoutingProblem(self.G, num_stops=3, undirected=False)
         prob.solve(cspy=False)
         assert prob.best_value == 67
