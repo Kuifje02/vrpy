@@ -133,6 +133,7 @@ class VehicleRoutingProblem:
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
     def prune_graph(self):
+        """Removes useless edges from graph."""
         infeasible_arcs = []
         # remove infeasible arcs (capacities)
         if self.load_capacity:
