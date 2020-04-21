@@ -101,7 +101,7 @@ class VehicleRoutingProblem:
         k = 0
         no_improvement = 0
         # generate interesting columns
-        while more_routes and k < 1000 and no_improvement < 20:
+        while more_routes and k < 200 and no_improvement < 20:
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
@@ -159,35 +159,38 @@ class VehicleRoutingProblem:
         # remove infeasible arcs (capacities)
         if self.load_capacity:
             for (i, j) in self.G.edges():
-                if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
-                        self.load_capacity):
+                if (
+                    self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"]
+                    > self.load_capacity
+                ):
                     infeasible_arcs.append((i, j))
 
         # remove infeasible arcs (time windows)
         if self.time_windows:
             for (i, j) in self.G.edges():
                 travel_time = self.G.edges[i, j]["time"]
-                service_time = 0  # for now
+                service_time = self.G.nodes[i]["service_time"]
                 tail_inf_time_window = self.G.nodes[i]["lower"]
                 head_sup_time_window = self.G.nodes[j]["upper"]
-                if (tail_inf_time_window + travel_time + service_time >
-                        head_sup_time_window):
+                if (
+                    tail_inf_time_window + travel_time + service_time
+                    > head_sup_time_window
+                ):
                     infeasible_arcs.append((i, j))
 
-            # strenghten time windows
+            # strengthen time windows
             for v in self.G.nodes():
                 if v not in ["Source", "Sink"]:
                     # earliest time is coming straight from depot
                     self.G.nodes[v]["lower"] = max(
                         self.G.nodes[v]["lower"],
-                        self.G.nodes["Source"]["lower"] +
-                        self.G.edges["Source", v]["time"],
+                        self.G.nodes["Source"]["lower"]
+                        + self.G.edges["Source", v]["time"],
                     )
                     # latest time is going straight to depot
                     self.G.nodes[v]["upper"] = min(
                         self.G.nodes[v]["upper"],
-                        self.G.nodes["Sink"]["upper"] -
-                        self.G.edges[v, "Sink"]["time"],
+                        self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
 
         self.G.remove_edges_from(infeasible_arcs)
