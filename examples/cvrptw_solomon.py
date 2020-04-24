@@ -167,19 +167,29 @@ class DataSet:
 
 
 if __name__ == "__main__":
-    # all keys must be different
-    # -> I changed time (s) to time lp/cspy (s)
-    keys = ["instance", "nodes", "lp", "time lp (s)", "cspy", "time cspy (s)"]
+    keys = [
+        "instance",
+        "nodes",
+        "lp",
+        "time lp (s)",
+        "cspy exact ",
+        "time cspy exact (s)",
+        # "cspy heuristic",
+        # "time cspy heuristic (s)",
+    ]
     instance = []
     nodes = []
     # LP
     res_lp = []
     time_lp = []
-    # cspy
+    # cspy exact
     res_cspy = []
     time_cspy = []
+    # cspy heuristic
+    res_cspy_heuristic = []
+    time_cspy_heuristic = []
 
-    for n in range(3, 12):
+    for n in range(3, 50):
         solomon_data = DataSet(path="./data/",
                                instance_name="c101.txt",
                                n_vertices=n)
@@ -191,17 +201,32 @@ if __name__ == "__main__":
         time_lp.append(float(time.time() - start))
         res_lp.append(solomon_data.best_value)
 
-        # cspy
+        # cspy exact
         start_cspy = time.time()
-        solomon_data.solve(cspy=True)
+        solomon_data.solve(cspy=True, exact=True)
         time_cspy.append(float(time.time() - start_cspy))
         res_cspy.append(solomon_data.best_value)
+
+        # cspy heuristic
+        # start_cspy = time.time()
+        # solomon_data.solve(cspy=True, exact=False)
+        # time_cspy_heuristic.append(float(time.time() - start_cspy))
+        # res_cspy_heuristic.append(solomon_data.best_value)
 
         # solomon_data.plot_solution()
 
     from pandas import DataFrame
 
-    values = [instance, nodes, res_lp, time_lp, res_cspy, time_cspy]
+    values = [
+        instance,
+        nodes,
+        res_lp,
+        time_lp,
+        res_cspy,
+        time_cspy,
+        # res_cspy_heuristic,
+        # time_cspy_heuristic,
+    ]
     compar = dict(zip(keys, values))
     df = DataFrame(compar, columns=keys)
     df.to_excel("compar.xls", index=False)
