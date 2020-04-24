@@ -52,6 +52,8 @@ class SubProblemLP(SubProblemBase):
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
         logger.debug("new route %s %s" % (route_id, new_route.edges()))
+        # for (i, j) in new_route.edges():
+        #    print(i, j, self.G.edges[i, j])
         logger.debug("new route cost = %s" % self.total_cost)
         # routes_txt = open("routes.txt", "a")
         # routes_txt.write(str(shortest_path(new_route, "Source", "Sink")) + "\n")
@@ -88,13 +90,18 @@ class SubProblemLP(SubProblemBase):
             self.add_max_load()
         if self.duration:
             self.add_max_duration()
+        self.elementarity = False
         if negative_edge_cycle(self.G):
             logger.debug("negative cycle found")
             self.add_elementarity()
+            self.elementarity = True
 
         # Break some symmetry
-        if self.undirected and not self.time_windows:
-            self.break_symmetry()
+        # if self.undirected and not self.time_windows:
+        #    self.break_symmetry()
+
+        if self.pickup_delivery:
+            self.add_pickup_delivery()
 
     def add_time_windows(self):
         # Big-M definition
@@ -157,7 +164,7 @@ class SubProblemLP(SubProblemBase):
         M = len(self.G.nodes())
         # Add rank varibles
         # y[v] = rank of node v in the path
-        y = pulp.LpVariable.dicts(
+        self.y = pulp.LpVariable.dicts(
             "y",
             self.G.nodes(),
             lowBound=0,
@@ -167,19 +174,18 @@ class SubProblemLP(SubProblemBase):
         # Add big-M constraints
         for (i, j) in self.G.edges():
             self.prob += (
-                y[i] + 1 <= y[j] + M * (1 - self.x[(i, j)]),
+                self.y[i] + 1 <= self.y[j] + M * (1 - self.x[(i, j)]),
                 "elementary_%s_%s" % (i, j),
             )
         # Source is first, Sink is last (optional)
-        self.prob += y["Source"] == 0, "Source_is_first"
+        self.prob += self.y["Source"] == 0, "Source_is_first"
         for v in self.G.nodes():
             if v != "Sink":
-                self.prob += y[v] <= y["Sink"], "Sink_after_%s" % v
+                self.prob += self.y[v] <= self.y["Sink"], "Sink_after_%s" % v
 
     def break_symmetry(self):
         """If the graph is undirected, divide the number of possible paths by 2."""
         # index of first node < index of last node
-
         self.prob += (
             pulp.lpSum(
                 [
@@ -195,3 +201,32 @@ class SubProblemLP(SubProblemBase):
             ),
             "break_symmetry",
         )
+
+    def add_pickup_delivery(self):
+        """
+        Adds precedence and consistency constraints 
+        for pickup and delivery options.
+        """
+        for v in self.G.nodes():
+            if "request" in self.G.nodes[v]:
+                delivery_node = self.G.nodes[v]["request"]
+
+                # same vehicle for pickup and delivery node
+                self.prob += (
+                    pulp.lpSum([self.x[(v, u)] for u in self.G.successors(v)])
+                    == pulp.lpSum(
+                        [
+                            self.x[(delivery_node, u)]
+                            for u in self.G.successors(delivery_node)
+                        ]
+                    ),
+                    "nodes_%s_%s_together" % (v, delivery_node),
+                )
+
+                # pickup before delivery
+                if not self.add_elementarity:
+                    self.add_elementarity()
+                self.prob += (
+                    self.y[v] <= self.y[delivery_node],
+                    "node_%s_before_%s" % (v, delivery_node),
+                )

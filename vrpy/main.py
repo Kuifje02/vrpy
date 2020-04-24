@@ -35,6 +35,9 @@ class VehicleRoutingProblem:
         time_windows (bool, optional):
             True if time windows on vertices.
             Defaults to False.
+        pickup_delivery (bool, optional):
+            True if pickup and delivery constraints.
+            Defaults to False.
         undirected (bool, optional):
             True if underlying network is undirected.
             Defaults to True.
@@ -49,6 +52,7 @@ class VehicleRoutingProblem:
         load_capacity=None,
         duration=None,
         time_windows=False,
+        pickup_delivery=False,
         undirected=True,
     ):
         self.G = G
@@ -58,6 +62,7 @@ class VehicleRoutingProblem:
         self.load_capacity = load_capacity
         self.duration = duration
         self.time_windows = time_windows
+        self.pickup_delivery = pickup_delivery
         self.undirected = undirected
 
         # Remove infeasible arcs
@@ -101,7 +106,7 @@ class VehicleRoutingProblem:
         k = 0
         no_improvement = 0
         # generate interesting columns
-        while more_routes and k < 200 and no_improvement < 20:
+        while more_routes and k < 100 and no_improvement < 50:
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
@@ -124,6 +129,7 @@ class VehicleRoutingProblem:
                     self.load_capacity,
                     self.duration,
                     self.time_windows,
+                    self.pickup_delivery,
                     self.undirected,
                     exact=exact,
                 )
