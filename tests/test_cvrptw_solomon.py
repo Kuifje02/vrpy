@@ -9,13 +9,14 @@ from examples.cvrptw_solomon import DataSet
 
 
 class TestsSolomon:
+
     def setup(self):
         """
         Solomon instance c101, 25 first nodes only including depot
         """
-        self.data = DataSet(
-            path="../examples/data/", instance_name="c101.txt", n_vertices=25
-        )
+        self.data = DataSet(path="../examples/data/",
+                            instance_name="c101.txt",
+                            n_vertices=25)
         self.G = self.data.G
         self.n_vertices = 25
 
@@ -38,8 +39,6 @@ class TestsSolomon:
         self.data.solve()
         assert int(self.data.best_value) == 191
 
-    """
     def test_subproblem_cspy(self):
-        self.data.solve(cspy=True)
-        assert round(self.data.best_value, 1) == 191.2
-    """
+        self.data.solve(cspy=True, exact=True)
+        assert int(self.data.best_value) == 191
