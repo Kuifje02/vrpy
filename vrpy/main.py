@@ -111,7 +111,7 @@ class VehicleRoutingProblem:
         while more_routes and k < 100 and no_improvement < 50:
             k += 1
             # solve restricted relaxed master problem
-            masterproblem = MasterSolvePulp(self.G, self.routes)
+            masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
             duals, relaxed_cost = masterproblem.solve()
             logger.info("iteration %s, %s" % (k, relaxed_cost))
             self.iteration.append(k)
