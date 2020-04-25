@@ -70,6 +70,8 @@ class VehicleRoutingProblem:
         # Add index attribute for each node
         if self.undirected:
             self.create_index_for_nodes()
+        # Set default attributes
+        self.add_default_service_time()
 
         # Attributes to keep track of solution
         self.best_solution = None
@@ -109,7 +111,7 @@ class VehicleRoutingProblem:
         while more_routes and k < 100 and no_improvement < 50:
             k += 1
             # solve restricted relaxed master problem
-            masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
+            masterproblem = MasterSolvePulp(self.G, self.routes)
             duals, relaxed_cost = masterproblem.solve()
             logger.info("iteration %s, %s" % (k, relaxed_cost))
             self.iteration.append(k)
@@ -255,9 +257,13 @@ class VehicleRoutingProblem:
             for (i, j) in self.G.edges():
                 if "time" not in self.G.edges[i, j]:
                     self.G.edges[i, j]["time"] = 0
-        for v in self.G.nodes():
-            if "service_time" not in self.G.nodes[v]:
-                self.G.nodes[v]["service_time"] = 0
+
+    def add_default_service_time(self):
+        """Adds dummy service time."""
+        if self.duration or self.time_windows:
+            for v in self.G.nodes():
+                if "service_time" not in self.G.nodes[v]:
+                    self.G.nodes[v]["service_time"] = 0
 
     def create_index_for_nodes(self):
         """An index is created for each node ;
