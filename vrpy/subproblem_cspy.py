@@ -46,11 +46,6 @@ class SubProblemCSPY(SubProblemBase):
         # Initialize cspy edge attributes
         for edge in self.G.edges(data=True):
             edge[2]["res_cost"] = zeros(len(self.resources))
-        # Maximum feasible arrival time
-        self.T = max([
-            self.G.nodes[v]["upper"] + self.G.nodes[v]["service_time"] +
-            self.G.edges[v, "Sink"]["time"] for v in self.G.predecessors("Sink")
-        ])
 
     # @profile
     def solve(self):
@@ -122,6 +117,13 @@ class SubProblemCSPY(SubProblemBase):
             # update upper bound for duration
             self.max_res[2] = 1 + self.G.nodes["Sink"]["upper"]
             self.max_res[3] = 0
+        if self.duration or self.time_windows:
+            # Maximum feasible arrival time
+            self.T = max([
+                self.G.nodes[v]["upper"] + self.G.nodes[v]["service_time"] +
+                self.G.edges[v, "Sink"]["time"]
+                for v in self.G.predecessors("Sink")
+            ])
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""
