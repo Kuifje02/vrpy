@@ -255,6 +255,9 @@ class VehicleRoutingProblem:
             for (i, j) in self.G.edges():
                 if "time" not in self.G.edges[i, j]:
                     self.G.edges[i, j]["time"] = 0
+        for v in self.G.nodes():
+            if "service_time" not in self.G.nodes[v]:
+                self.G.nodes[v]["service_time"] = 0
 
     def create_index_for_nodes(self):
         """An index is created for each node ;
