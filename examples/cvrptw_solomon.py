@@ -174,8 +174,8 @@ if __name__ == "__main__":
         "time lp (s)",
         "cspy exact ",
         "time cspy exact (s)",
-        # "cspy heuristic",
-        # "time cspy heuristic (s)",
+        "cspy heuristic",
+        "time cspy heuristic (s)",
     ]
     instance = []
     nodes = []
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     res_cspy_heuristic = []
     time_cspy_heuristic = []
 
-    for n in range(3, 50):
+    for n in range(2, 30):
         solomon_data = DataSet(path="./data/",
                                instance_name="c101.txt",
                                n_vertices=n)
@@ -208,12 +208,12 @@ if __name__ == "__main__":
         res_cspy.append(solomon_data.best_value)
 
         # cspy heuristic
-        # start_cspy = time.time()
-        # solomon_data.solve(cspy=True, exact=False)
-        # time_cspy_heuristic.append(float(time.time() - start_cspy))
-        # res_cspy_heuristic.append(solomon_data.best_value)
+        start_cspy = time.time()
+        solomon_data.solve(cspy=True, exact=False)
+        time_cspy_heuristic.append(float(time.time() - start_cspy))
+        res_cspy_heuristic.append(solomon_data.best_value)
 
-        # solomon_data.plot_solution()
+        solomon_data.plot_solution()
 
     from pandas import DataFrame
 
@@ -224,8 +224,8 @@ if __name__ == "__main__":
         time_lp,
         res_cspy,
         time_cspy,
-        # res_cspy_heuristic,
-        # time_cspy_heuristic,
+        res_cspy_heuristic,
+        time_cspy_heuristic,
     ]
     compar = dict(zip(keys, values))
     df = DataFrame(compar, columns=keys)
