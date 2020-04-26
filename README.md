@@ -21,9 +21,6 @@ A python framework for solving the VRP and its variants with column generation.
 
 ## Documentation (work in progress)
 
-[toy example](https://fr.overleaf.com/read/zmqqdbgtmmnv
-)
-
 ## Usage (work in progress)
 
 ```python
