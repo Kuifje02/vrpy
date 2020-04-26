@@ -18,6 +18,10 @@ class SubProblemBase:
             If not provided, constraint not enforced.
         time_windows (bool):
             True if time windows activated.
+            Defaluts to False.
+        pickup_delivery (bool):
+            True if pickup and delivery constraints.
+            Defaults to False.
         undirected (bool):
             True if underlying network is undirected.
             Defaults to True.
@@ -32,6 +36,7 @@ class SubProblemBase:
         load_capacity=None,
         duration=None,
         time_windows=False,
+        pickup_delivery=False,
         undirected=True,
     ):
         # Input attributes
@@ -42,6 +47,7 @@ class SubProblemBase:
         self.load_capacity = load_capacity
         self.duration = duration
         self.time_windows = time_windows
+        self.pickup_delivery = pickup_delivery
         self.undirected = undirected
 
         # Add reduced cost to "weight" attribute

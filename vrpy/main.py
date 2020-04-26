@@ -35,6 +35,12 @@ class VehicleRoutingProblem:
         time_windows (bool, optional):
             True if time windows on vertices.
             Defaults to False.
+        pickup_delivery (bool, optional):
+            True if pickup and delivery constraints.
+            Defaults to False.
+        drop_penalty (int, optional):
+            Value of penalty if node is dropped.
+            Defaults to None.
         undirected (bool, optional):
             True if underlying network is undirected.
             Defaults to True.
@@ -49,6 +55,8 @@ class VehicleRoutingProblem:
         load_capacity=None,
         duration=None,
         time_windows=False,
+        pickup_delivery=False,
+        drop_penalty=None,
         undirected=True,
     ):
         self.G = G
@@ -58,6 +66,8 @@ class VehicleRoutingProblem:
         self.load_capacity = load_capacity
         self.duration = duration
         self.time_windows = time_windows
+        self.pickup_delivery = pickup_delivery
+        self.drop_penalty = drop_penalty
         self.undirected = undirected
 
         # Remove infeasible arcs
@@ -65,6 +75,8 @@ class VehicleRoutingProblem:
         # Add index attribute for each node
         if self.undirected:
             self.create_index_for_nodes()
+        # Set default attributes
+        self.add_default_service_time()
 
         # Attributes to keep track of solution
         self.best_solution = None
@@ -101,7 +113,7 @@ class VehicleRoutingProblem:
         k = 0
         no_improvement = 0
         # generate interesting columns
-        while more_routes and k < 1000 and no_improvement < 20:
+        while more_routes and k < 100 and no_improvement < 50:
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
@@ -124,6 +136,7 @@ class VehicleRoutingProblem:
                     self.load_capacity,
                     self.duration,
                     self.time_windows,
+                    self.pickup_delivery,
                     self.undirected,
                     exact=exact,
                 )
@@ -147,7 +160,9 @@ class VehicleRoutingProblem:
 
         # solve as MIP
         logger.info("MIP solution")
-        masterproblem_mip = MasterSolvePulp(self.G, self.routes, relax=False)
+        masterproblem_mip = MasterSolvePulp(
+            self.G, self.routes, self.drop_penalty, relax=False
+        )
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
     def prune_graph(self):
@@ -159,35 +174,38 @@ class VehicleRoutingProblem:
         # remove infeasible arcs (capacities)
         if self.load_capacity:
             for (i, j) in self.G.edges():
-                if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
-                        self.load_capacity):
+                if (
+                    self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"]
+                    > self.load_capacity
+                ):
                     infeasible_arcs.append((i, j))
 
         # remove infeasible arcs (time windows)
         if self.time_windows:
             for (i, j) in self.G.edges():
                 travel_time = self.G.edges[i, j]["time"]
-                service_time = 0  # for now
+                service_time = self.G.nodes[i]["service_time"]
                 tail_inf_time_window = self.G.nodes[i]["lower"]
                 head_sup_time_window = self.G.nodes[j]["upper"]
-                if (tail_inf_time_window + travel_time + service_time >
-                        head_sup_time_window):
+                if (
+                    tail_inf_time_window + travel_time + service_time
+                    > head_sup_time_window
+                ):
                     infeasible_arcs.append((i, j))
 
-            # strenghten time windows
+            # strengthen time windows
             for v in self.G.nodes():
                 if v not in ["Source", "Sink"]:
                     # earliest time is coming straight from depot
                     self.G.nodes[v]["lower"] = max(
                         self.G.nodes[v]["lower"],
-                        self.G.nodes["Source"]["lower"] +
-                        self.G.edges["Source", v]["time"],
+                        self.G.nodes["Source"]["lower"]
+                        + self.G.edges["Source", v]["time"],
                     )
                     # latest time is going straight to depot
                     self.G.nodes[v]["upper"] = min(
                         self.G.nodes[v]["upper"],
-                        self.G.nodes["Sink"]["upper"] -
-                        self.G.edges[v, "Sink"]["time"],
+                        self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
 
         self.G.remove_edges_from(infeasible_arcs)
@@ -246,6 +264,13 @@ class VehicleRoutingProblem:
             for (i, j) in self.G.edges():
                 if "time" not in self.G.edges[i, j]:
                     self.G.edges[i, j]["time"] = 0
+
+    def add_default_service_time(self):
+        """Adds dummy service time."""
+        if self.duration or self.time_windows:
+            for v in self.G.nodes():
+                if "service_time" not in self.G.nodes[v]:
+                    self.G.nodes[v]["service_time"] = 0
 
     def create_index_for_nodes(self):
         """An index is created for each node ;
