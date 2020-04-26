@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class CVRP:
     """
     Stores the data from ortools example ;
-    https://developers.google.com/optimization/routing/cvrp
+    A first set of demands is copied from here : https://developers.google.com/optimization/routing/cvrp
+    A second set of demands is copied from here : https://developers.google.com/optimization/routing/penalties
+    With the second set, some vertices are dropped, activating a penalty.
     """
 
     def __init__(self):
@@ -40,6 +42,8 @@ class CVRP:
             (798, 640),  # location 16
         ]
         self.demands = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
+        # for penalties + dropping visits :
+        self.demands = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
         self.max_load = 15
 
         # create network
@@ -82,9 +86,12 @@ class CVRP:
             edge_cost_function=self.manhattan,
             load_capacity=self.max_load,
             num_stops=num_stops,
+            drop_penalty=1000,
         )
         prob.solve(cspy=cspy, exact=exact)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
+        for r in self.best_routes:
+            print(r.nodes(), sum([self.G.nodes[v]["demand"] for v in r.nodes()]))
 
     def plot_solution(self):
         """Plots the solution after optimization."""
@@ -125,6 +132,12 @@ if __name__ == "__main__":
         ["Source", 7, 13, 12, 11, "Sink"],
         ["Source", 9, 8, 6, 5, "Sink"],
     ]
-    intial_routes = None
+    initial_routes_2 = [
+        ["Source", 9, 14, 16, "Sink"],
+        ["Source", 12, 11, 4, 3, 1, "Sink"],
+        ["Source", 7, 13, "Sink"],
+        ["Source", 8, 10, 2, 5, "Sink"],
+    ]
+    initial_routes = None
     data.solve(initial_routes=initial_routes)
     data.plot_solution()

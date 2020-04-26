@@ -38,6 +38,9 @@ class VehicleRoutingProblem:
         pickup_delivery (bool, optional):
             True if pickup and delivery constraints.
             Defaults to False.
+        drop_penalty (int, optional):
+            Value of penalty if node is dropped.
+            Defaults to None.
         undirected (bool, optional):
             True if underlying network is undirected.
             Defaults to True.
@@ -53,6 +56,7 @@ class VehicleRoutingProblem:
         duration=None,
         time_windows=False,
         pickup_delivery=False,
+        drop_penalty=None,
         undirected=True,
     ):
         self.G = G
@@ -63,6 +67,7 @@ class VehicleRoutingProblem:
         self.duration = duration
         self.time_windows = time_windows
         self.pickup_delivery = pickup_delivery
+        self.drop_penalty = drop_penalty
         self.undirected = undirected
 
         # Remove infeasible arcs
@@ -155,7 +160,9 @@ class VehicleRoutingProblem:
 
         # solve as MIP
         logger.info("MIP solution")
-        masterproblem_mip = MasterSolvePulp(self.G, self.routes, relax=False)
+        masterproblem_mip = MasterSolvePulp(
+            self.G, self.routes, self.drop_penalty, relax=False
+        )
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
     def prune_graph(self):
