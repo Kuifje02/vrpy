@@ -67,8 +67,8 @@ class VRPTW:
 
     def add_nodes(self):
         for node_id in self.nodes:
-            x = self.nodes[id][0] / 114
-            y = self.nodes[id][1] / 80
+            x = self.nodes[node_id][0] / 114
+            y = self.nodes[node_id][1] / 80
             if node_id == 0:
                 self.G.add_node(
                     "Source", x=x, y=y, demand=0, service_time=0, lower=0, upper=5
