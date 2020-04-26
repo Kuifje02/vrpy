@@ -43,7 +43,7 @@ class CVRP:
         ]
         self.demands = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
         # for penalties + dropping visits :
-        self.demands = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
+        # self.demands = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
         self.max_load = 15
 
         # create network
@@ -58,7 +58,7 @@ class CVRP:
                 self.G.add_node("Source", x=x, y=y, demand=0)
                 self.G.add_node("Sink", x=x, y=y, demand=0)
             else:
-                self.G.add_node(node_id, x=x, y=y, demand=self.demands[id])
+                self.G.add_node(node_id, x=x, y=y, demand=self.demands[node_id])
             node_id += 1
 
     def add_edges(self):
