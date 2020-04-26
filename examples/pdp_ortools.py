@@ -1,4 +1,4 @@
-from networkx import relabel_nodes, DiGraph, draw_networkx_edges, draw_networkx_nodes
+from networkx import DiGraph, draw_networkx_edges, draw_networkx_nodes
 import sys
 import matplotlib.pyplot
 import numpy as np
@@ -59,15 +59,15 @@ class PDP:
         self.add_edges()
 
     def add_nodes(self):
-        for id in self.nodes:
+        for node_id in self.nodes:
             x = self.nodes[id][0]
             y = self.nodes[id][1]
-            if id == 0:
+            if node_id == 0:
                 self.G.add_node("Source", x=x, y=y, service_time=0)
                 self.G.add_node("Sink", x=x, y=y, service_time=0)
             else:
                 self.G.add_node(id, x=x, y=y, service_time=0)
-            if id in self.pickups_deliveries:
+            if node_id in self.pickups_deliveries:
                 self.G.nodes[id]["request"] = self.pickups_deliveries[id]
 
     def add_edges(self):

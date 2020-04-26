@@ -1,4 +1,4 @@
-from networkx import relabel_nodes, DiGraph, draw_networkx_edges, draw_networkx_nodes
+from networkx import DiGraph, draw_networkx_edges, draw_networkx_nodes
 import sys
 import matplotlib.pyplot
 import numpy as np
@@ -66,10 +66,10 @@ class VRPTW:
         self.add_edges()
 
     def add_nodes(self):
-        for id in self.nodes:
+        for node_id in self.nodes:
             x = self.nodes[id][0] / 114
             y = self.nodes[id][1] / 80
-            if id == 0:
+            if node_id == 0:
                 self.G.add_node(
                     "Source", x=x, y=y, demand=0, service_time=0, lower=0, upper=5
                 )
@@ -78,7 +78,7 @@ class VRPTW:
                 )
             else:
                 self.G.add_node(
-                    id,
+                    node_id,
                     x=x,
                     y=y,
                     demand=0,
