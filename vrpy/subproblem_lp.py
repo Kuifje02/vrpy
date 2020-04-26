@@ -49,6 +49,9 @@ class SubProblemLP(SubProblemBase):
                 edge_cost = self.G.edges[i, j]["cost"]
                 self.total_cost += edge_cost
                 new_route.add_edge(i, j, cost=edge_cost)
+                if self.time_windows:
+                    new_route.nodes[i]["time"] = pulp.value(self.t[i])
+                    # new_route.nodes["Sink"]["time"] = pulp.value(self.t["Sink"])
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
         logger.debug("new route %s %s" % (route_id, new_route.edges()))
@@ -80,6 +83,11 @@ class SubProblemLP(SubProblemBase):
             pulp.lpSum([self.x[(u, "Sink")] for u in self.G.predecessors("Sink")]) == 1,
             "end_at_sink",
         )
+        # Forbid route Source-Sink
+        self.prob += (
+            pulp.lpSum([self.x[(i, j)] for (i, j) in self.G.edges()]) >= 2,
+            "at_least_1_stop",
+        )
 
         # Problem specific constraints
         if self.time_windows:
@@ -107,20 +115,20 @@ class SubProblemLP(SubProblemBase):
         # Big-M definition
         M = self.G.nodes["Sink"]["upper"]
         # Add varibles
-        t = pulp.LpVariable.dicts(
+        self.t = pulp.LpVariable.dicts(
             "t", self.G.nodes(), lowBound=0, cat=pulp.LpContinuous
         )
         # Add big-M constraints
         for (i, j) in self.G.edges():
             self.prob += (
-                t[i] + self.G.nodes[i]["service_time"] + self.G.edges[i, j]["time"]
-                <= t[j] + M * (1 - self.x[(i, j)]),
+                self.t[i] + self.G.nodes[i]["service_time"] + self.G.edges[i, j]["time"]
+                <= self.t[j] + M * (1 - self.x[(i, j)]),
                 "time_window_%s_%s" % (i, j),
             )
         # Add node constraints
         for v in self.G.nodes():
-            self.prob += t[v] <= self.G.nodes[v]["upper"], "node_%s_up" % v
-            self.prob += t[v] >= self.G.nodes[v]["lower"], "node_%s_low" % v
+            self.prob += self.t[v] <= self.G.nodes[v]["upper"], "node_%s_up" % v
+            self.prob += self.t[v] >= self.G.nodes[v]["lower"], "node_%s_low" % v
 
     def add_max_stops(self):
         # Add max stop constraint

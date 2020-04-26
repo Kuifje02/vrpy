@@ -25,12 +25,7 @@ class SubProblemCSPY(SubProblemBase):
         super(SubProblemCSPY, self).__init__(*args)
         # Resource names
         self.alg = None
-        self.resources = [
-            "stops/mono",
-            "load",
-            "time",
-            "time windows",
-        ]
+        self.resources = ["stops/mono", "load", "time", "time windows"]
         self.exact = exact
         # Set number of resources as attribute of graph
         self.G.graph["n_res"] = len(self.resources)
@@ -67,30 +62,35 @@ class SubProblemCSPY(SubProblemBase):
         while True:
             if self.exact:
                 logger.debug("solving with bidirectional")
-                self.alg = BiDirectional(self.G,
-                                         self.max_res,
-                                         self.min_res,
-                                         direction="both",
-                                         method="generated",
-                                         REF_forward=self.get_REF("forward"),
-                                         REF_backward=self.get_REF("backward"),
-                                         REF_join=self.get_REF("join"))
+                self.alg = BiDirectional(
+                    self.G,
+                    self.max_res,
+                    self.min_res,
+                    direction="both",
+                    method="generated",
+                    REF_forward=self.get_REF("forward"),
+                    REF_backward=self.get_REF("backward"),
+                    REF_join=self.get_REF("join"),
+                )
             else:
                 logger.debug("solving with greedyelim")
-                self.alg = GreedyElim(self.G,
-                                      self.max_res,
-                                      self.min_res,
-                                      REF=self.get_REF("forward"),
-                                      max_depth=40)
+                self.alg = GreedyElim(
+                    self.G,
+                    self.max_res,
+                    self.min_res,
+                    REF=self.get_REF("forward"),
+                    max_depth=40,
+                )
             self.alg.run()
             logger.debug("subproblem")
             logger.debug("cost = %s" % self.alg.total_cost)
             logger.debug("resources = %s" % self.alg.consumed_resources)
-            if self.alg.total_cost < -(10**-5):
+            if self.alg.total_cost < -(10 ** -5):
                 more_routes = True
                 self.add_new_route()
                 logger.debug("new route %s" % self.alg.path)
-                logger.debug("new route cost = %s" % self.total_cost)
+                logger.debug("reduced cost = %s" % self.alg.total_cost)
+                logger.debug("real cost = %s" % self.total_cost)
                 break
             # If not already solved exactly
             elif not self.exact:
@@ -119,11 +119,14 @@ class SubProblemCSPY(SubProblemBase):
             self.max_res[3] = 0
         if self.duration or self.time_windows:
             # Maximum feasible arrival time
-            self.T = max([
-                self.G.nodes[v]["upper"] + self.G.nodes[v]["service_time"] +
-                self.G.edges[v, "Sink"]["time"]
-                for v in self.G.predecessors("Sink")
-            ])
+            self.T = max(
+                [
+                    self.G.nodes[v]["upper"]
+                    + self.G.nodes[v]["service_time"]
+                    + self.G.edges[v, "Sink"]["time"]
+                    for v in self.G.predecessors("Sink")
+                ]
+            )
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""
@@ -227,10 +230,7 @@ class SubProblemCSPY(SubProblemBase):
         a_j = self.G.nodes[j]["lower"]
         # Upper time windows
         b_i = self.G.nodes[i]["upper"]
-        new_res[2] = max(
-            new_res[2] + theta_j + travel_time,
-            self.T - b_i - theta_i,
-        )
+        new_res[2] = max(new_res[2] + theta_j + travel_time, self.T - b_i - theta_i,)
 
         # time-window feasibility
         if not self.time_windows or (new_res[2] <= self.T - a_i - theta_i):

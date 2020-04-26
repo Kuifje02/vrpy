@@ -117,6 +117,18 @@ class VRPTW:
         )
         prob.solve(cspy=cspy, exact=exact)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
+        for r in self.best_routes:
+            for v in r.nodes():
+                if "time" in r.nodes[v]:
+                    print(
+                        v,
+                        ":",
+                        self.G.nodes[v]["lower"],
+                        "<=",
+                        r.nodes[v]["time"],
+                        "<=",
+                        self.G.nodes[v]["upper"],
+                    )
 
     def plot_solution(self):
         """Plots the solution after optimization."""
@@ -151,8 +163,8 @@ class VRPTW:
 
 if __name__ == "__main__":
     data = VRPTW()
-    for (i, j) in data.G.edges():
-        print(i, j, data.G.edges[i, j])
+    # for (i, j) in data.G.edges():
+    #    print(i, j, data.G.edges[i, j])
     initial_routes = [
         ["Source", 9, 14, 16, "Sink"],
         ["Source", 7, 1, 4, 3, "Sink"],

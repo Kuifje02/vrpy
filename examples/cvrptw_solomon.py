@@ -184,9 +184,7 @@ if __name__ == "__main__":
     time_cspy_heuristic = []
 
     for n in range(2, 30):
-        solomon_data = DataSet(path="./data/",
-                               instance_name="c101.txt",
-                               n_vertices=n)
+        solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=n)
         instance.append(solomon_data.G.graph["name"])
         nodes.append(n)
         # LP

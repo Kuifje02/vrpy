@@ -182,7 +182,5 @@ if __name__ == "__main__":
         if "customer" in data.G.nodes[v]:
             ini.append(["Source", 51, v, str(51) + "_", "Sink"])
 
-    print(len(data.G.edges()))
-
     data.solve(initial_routes=ini, cspy=False)
     data.plot_solution()
