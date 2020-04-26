@@ -60,15 +60,15 @@ class PDP:
 
     def add_nodes(self):
         for node_id in self.nodes:
-            x = self.nodes[id][0]
-            y = self.nodes[id][1]
+            x = self.nodes[node_id][0]
+            y = self.nodes[node_id][1]
             if node_id == 0:
                 self.G.add_node("Source", x=x, y=y, service_time=0)
                 self.G.add_node("Sink", x=x, y=y, service_time=0)
             else:
-                self.G.add_node(id, x=x, y=y, service_time=0)
+                self.G.add_node(node_id, x=x, y=y, service_time=0)
             if node_id in self.pickups_deliveries:
-                self.G.nodes[id]["request"] = self.pickups_deliveries[id]
+                self.G.nodes[node_id]["request"] = self.pickups_deliveries[node_id]
 
     def add_edges(self):
         for u in self.G.nodes():
