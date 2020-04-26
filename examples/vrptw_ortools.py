@@ -83,8 +83,8 @@ class VRPTW:
                     y=y,
                     demand=0,
                     service_time=0,
-                    lower=self.time_windows[id][0],
-                    upper=self.time_windows[id][1],
+                    lower=self.time_windows[node_id][0],
+                    upper=self.time_windows[node_id][1],
                 )
 
     def add_edges(self):
