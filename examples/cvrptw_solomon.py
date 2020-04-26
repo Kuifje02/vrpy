@@ -161,7 +161,6 @@ class DataSet:
 
 
 if __name__ == "__main__":
-    # all keys must be different
     keys = [
         "instance",
         "nodes",
@@ -184,8 +183,10 @@ if __name__ == "__main__":
     res_cspy_heuristic = []
     time_cspy_heuristic = []
 
-    for n in range(3, 14):
-        solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=n)
+    for n in range(2, 30):
+        solomon_data = DataSet(path="./data/",
+                               instance_name="c101.txt",
+                               n_vertices=n)
         instance.append(solomon_data.G.graph["name"])
         nodes.append(n)
         # LP

@@ -7,6 +7,7 @@ from vrpy.main import VehicleRoutingProblem
 
 
 class TestsToy:
+
     def setup(self):
         """
         Creates a toy graph and sets the initial routes for first iteration
@@ -37,13 +38,13 @@ class TestsToy:
     # subsolve cspy #
     #################
 
-    def test_sub_cspy_stops(self):
+    def test_cspy_stops(self):
         """Tests column generation procedure on toy graph with stop constraints"""
         prob = VehicleRoutingProblem(self.G, num_stops=3)
         prob.solve()
         assert prob.best_value == 70
 
-    def test_sub_cspy_stops_capacity(self):
+    def test_cspy_stops_capacity(self):
         """Tests column generation procedure on toy graph
            with stop and capacity constraints
         """
@@ -51,22 +52,26 @@ class TestsToy:
         prob.solve()
         assert prob.best_value == 80
 
-    def test_sub_cspy_stops_capacity_duration(self):
+    def test_cspy_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph
            with stop, capacity and duration constraints
         """
-        prob = VehicleRoutingProblem(
-            self.G, num_stops=3, load_capacity=10, duration=62,
-        )
-        prob.solve()
+        prob = VehicleRoutingProblem(self.G,
+                                     num_stops=3,
+                                     load_capacity=10,
+                                     duration=62)
+        prob.solve(exact=False)
         assert prob.best_value == 85
 
-    def test_sub_cspy_stops_time_windows(self):
+    def test_cspy_stops_time_windows(self):
         """Tests column generation procedure on toy graph
            with stop, capacity and time_window constraints
         """
         prob = VehicleRoutingProblem(
-            self.G, num_stops=3, duration=60, time_windows=True,
+            self.G,
+            num_stops=3,
+            duration=60,
+            time_windows=True,
         )
         prob.solve()
         assert prob.best_value == 80
@@ -83,25 +88,29 @@ class TestsToy:
 
     def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(
-            self.G, num_stops=3, load_capacity=10, undirected=False
-        )
+        prob = VehicleRoutingProblem(self.G,
+                                     num_stops=3,
+                                     load_capacity=10,
+                                     undirected=False)
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(
-            self.G, num_stops=3, load_capacity=10, duration=62, undirected=False
-        )
+        prob = VehicleRoutingProblem(self.G,
+                                     num_stops=3,
+                                     load_capacity=10,
+                                     duration=62,
+                                     undirected=False)
         prob.solve(cspy=False)
         assert prob.best_value == 85
 
     def test_LP_stops_time_windows(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(
-            self.G, num_stops=3, time_windows=True, undirected=False
-        )
+        prob = VehicleRoutingProblem(self.G,
+                                     num_stops=3,
+                                     time_windows=True,
+                                     undirected=False)
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
