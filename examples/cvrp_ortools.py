@@ -1,4 +1,4 @@
-from networkx import relabel_nodes, DiGraph, draw_networkx_edges, draw_networkx_nodes
+from networkx import DiGraph, draw_networkx_edges, draw_networkx_nodes
 import sys
 import matplotlib.pyplot
 import numpy as np
@@ -52,14 +52,14 @@ class CVRP:
         self.add_edges()
 
     def add_nodes(self):
-        id = 0
+        node_id = 0
         for (x, y) in self.nodes:
-            if id == 0:
+            if node_id == 0:
                 self.G.add_node("Source", x=x, y=y, demand=0)
                 self.G.add_node("Sink", x=x, y=y, demand=0)
             else:
-                self.G.add_node(id, x=x, y=y, demand=self.demands[id])
-            id += 1
+                self.G.add_node(node_id, x=x, y=y, demand=self.demands[id])
+            node_id += 1
 
     def add_edges(self):
         for u in self.G.nodes():

@@ -1,4 +1,4 @@
-from networkx import relabel_nodes, DiGraph, draw_networkx_edges, draw_networkx_nodes
+from networkx import DiGraph, draw_networkx_edges, draw_networkx_nodes
 import sys
 import matplotlib.pyplot
 import numpy as np
