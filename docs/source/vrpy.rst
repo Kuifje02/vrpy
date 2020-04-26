@@ -20,14 +20,6 @@ vrpy.main module
    :undoc-members:
    :show-inheritance:
 
-vrpy.main\_local module
------------------------
-
-.. automodule:: vrpy.main_local
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 vrpy.master\_solve\_pulp module
 -------------------------------
 
@@ -60,10 +52,26 @@ vrpy.subproblem\_cspy module
    :undoc-members:
    :show-inheritance:
 
+vrpy.subproblem\_cspy\_dev module
+---------------------------------
+
+.. automodule:: vrpy.subproblem_cspy_dev
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 vrpy.subproblem\_lp module
 --------------------------
 
 .. automodule:: vrpy.subproblem_lp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+vrpy.subproblem\_wip module
+---------------------------
+
+.. automodule:: vrpy.subproblem_wip
    :members:
    :undoc-members:
    :show-inheritance:
