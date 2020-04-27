@@ -115,13 +115,16 @@ class MasterSolvePulp(MasterProblemBase):
                 if self.drop_penalty:
                     right_hand_term -= self.drop[v]
 
-                self.prob += (
-                    pulp.lpSum(
-                        [self.y[r.graph["name"]] for r in self.routes if v in r.nodes()]
-                    )
-                    == right_hand_term,
-                    "visit_node_%s" % v,
+                visit_node = pulp.lpSum(
+                    [self.y[r.graph["name"]] for r in self.routes if v in r.nodes()]
                 )
+                if self.relax:
+                    # set covering constraints
+                    # cuts the dual space in half
+                    self.prob += visit_node >= right_hand_term, "visit_node_%s" % v
+                else:
+                    # set partitioning constraints
+                    self.prob += visit_node == right_hand_term, "visit_node_%s" % v
 
     def add_drop_variables(self):
         """
