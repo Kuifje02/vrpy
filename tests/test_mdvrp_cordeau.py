@@ -5,7 +5,7 @@ sys.path.append("../")
 sys.path.append("../vrpy/")
 from vrpy.main import VehicleRoutingProblem
 
-from examples.mdvrp_cordeau import DataSet
+from examples.benchmarks.mdvrp_cordeau import DataSet
 
 
 class TestsCordeau:
@@ -13,7 +13,9 @@ class TestsCordeau:
         """
         Cordeau instance p01, 8 vertices only.
         """
-        self.data = DataSet(path="../examples/data/", instance_name="p01", n_vertices=8)
+        self.data = DataSet(
+            path="../examples/benchmarks/data/", instance_name="p01", n_vertices=8
+        )
         self.G = self.data.G
 
     def test_setup_instance_name(self):

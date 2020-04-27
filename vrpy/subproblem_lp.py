@@ -1,7 +1,7 @@
 from networkx import DiGraph, negative_edge_cycle, shortest_path
 import pulp
-from subproblem import SubProblemBase
 import logging
+from vrpy.subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,9 @@ class SubProblemLP(SubProblemBase):
     def solve(self):
         self.formulate()
         # self.prob.writeLP("prob.lp")
-        self.prob.solve()
+        # self.prob.solve()
         # if you have CPLEX
-        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
+        self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("")
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])

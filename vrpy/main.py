@@ -2,9 +2,10 @@ from networkx import DiGraph
 import logging
 from pandas import DataFrame
 
-from master_solve_pulp import MasterSolvePulp
-from subproblem_lp import SubProblemLP
-from subproblem_cspy import SubProblemCSPY
+
+from vrpy.master_solve_pulp import MasterSolvePulp
+from vrpy.subproblem_lp import SubProblemLP
+from vrpy.subproblem_cspy import SubProblemCSPY
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +71,13 @@ class VehicleRoutingProblem:
         self.drop_penalty = drop_penalty
         self.undirected = undirected
 
+        # Set default attributes
+        self.add_default_service_time()
         # Remove infeasible arcs
         self.prune_graph()
         # Add index attribute for each node
         if self.undirected:
             self.create_index_for_nodes()
-        # Set default attributes
-        self.add_default_service_time()
 
         # Attributes to keep track of solution
         self.best_solution = None
@@ -116,8 +117,11 @@ class VehicleRoutingProblem:
         while more_routes and k < 100 and no_improvement < 50:
             k += 1
             # solve restricted relaxed master problem
-            masterproblem = MasterSolvePulp(self.G, self.routes, relax=True)
+            masterproblem = MasterSolvePulp(
+                self.G, self.routes, self.drop_penalty, relax=True
+            )
             duals, relaxed_cost = masterproblem.solve()
+
             logger.info("iteration %s, %s" % (k, relaxed_cost))
             self.iteration.append(k)
             if k > 1 and relaxed_cost == self.lower_bound[-1]:
@@ -125,6 +129,7 @@ class VehicleRoutingProblem:
             else:
                 no_improvement = 0
             self.lower_bound.append(relaxed_cost)
+
             # solve sub problem
             if cspy:
                 # with cspy

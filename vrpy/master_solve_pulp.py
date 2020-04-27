@@ -1,7 +1,7 @@
 import pulp
 import logging
-from masterproblem import MasterProblemBase
 from networkx import shortest_path
+from vrpy.masterproblem import MasterProblemBase
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +15,10 @@ class MasterSolvePulp(MasterProblemBase):
 
     def solve(self):
         self.formulate()
-        self.prob.solve()
+        # self.prob.solve()
         # self.prob.writeLP("masterprob.lp")
         # if you have CPLEX
-        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
+        self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))

@@ -1,4 +1,6 @@
 """vrpy modules."""
+
+from vrpy.conf_logger import setup_logger
+
 # Setup the logger
-from conf_logger import setup_logger
 setup_logger()

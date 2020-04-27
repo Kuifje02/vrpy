@@ -5,17 +5,17 @@ sys.path.append("../")
 sys.path.append("../vrpy/")
 from vrpy.main import VehicleRoutingProblem
 
-from examples.cvrp_augerat import DataSet
+from examples.benchmarks.cvrp_augerat import DataSet
 
 
 class TestsSolomon:
-
     def setup(self):
         """
         Augerat instance P-n16-k8.vrp
         """
-        self.data = DataSet(path="../examples/data/",
-                            instance_name="P-n16-k8.vrp")
+        self.data = DataSet(
+            path="../examples/benchmarks/data/", instance_name="P-n16-k8.vrp"
+        )
         self.G = self.data.G
 
     def test_setup_instance_name(self):
