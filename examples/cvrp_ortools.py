@@ -43,7 +43,7 @@ class CVRP:
         ]
         self.demands = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
         # for penalties + dropping visits :
-        # self.demands = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
+        self.demands = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
         self.max_load = 15
 
         # create network
