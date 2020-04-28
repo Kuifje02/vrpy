@@ -1,4 +1,4 @@
-from networkx import DiGraph, negative_edge_cycle, shortest_path
+from networkx import DiGraph, negative_edge_cycle  # , shortest_path
 import pulp
 import logging
 from vrpy.subproblem import SubProblemBase
@@ -52,12 +52,17 @@ class SubProblemLP(SubProblemBase):
                 if self.time_windows:
                     new_route.nodes[i]["time"] = pulp.value(self.t[i])
                     # new_route.nodes["Sink"]["time"] = pulp.value(self.t["Sink"])
+                if self.distribution_collection:
+                    new_route.edges[i, j]["load"] = pulp.value(
+                        self.load[(i, j)]
+                    ) + pulp.value(self.unload[(i, j)])
+
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
         logger.debug("new route %s %s" % (route_id, new_route.edges()))
+        logger.debug("new route cost = %s" % self.total_cost)
         # for (i, j) in new_route.edges():
         #    print(i, j, self.G.edges[i, j])
-        logger.debug("new route cost = %s" % self.total_cost)
         # routes_txt = open("routes.txt", "a")
         # routes_txt.write(str(shortest_path(new_route, "Source", "Sink")) + "\n")
 
@@ -103,13 +108,14 @@ class SubProblemLP(SubProblemBase):
             logger.debug("negative cycle found")
             self.add_elementarity()
             self.elementarity = True
+        if self.pickup_delivery:
+            self.add_pickup_delivery()
+        if self.distribution_collection:
+            self.add_distribution_collection()
 
         # Break some symmetry
         # if self.undirected and not self.time_windows:
         #    self.break_symmetry()
-
-        if self.pickup_delivery:
-            self.add_pickup_delivery()
 
     def add_time_windows(self):
         # Big-M definition
@@ -149,7 +155,7 @@ class SubProblemLP(SubProblemBase):
                 ]
             )
             <= self.load_capacity,
-            "max_load_".format(self.load_capacity),
+            "max_load_{}".format(self.load_capacity),
         )
 
     def add_max_duration(self):
@@ -212,7 +218,7 @@ class SubProblemLP(SubProblemBase):
 
     def add_pickup_delivery(self):
         """
-        Adds precedence and consistency constraints 
+        Adds precedence and consistency constraints
         for pickup and delivery options.
         """
         for v in self.G.nodes():
@@ -238,3 +244,64 @@ class SubProblemLP(SubProblemBase):
                     self.y[v] <= self.y[delivery_node],
                     "node_%s_before_%s" % (v, delivery_node),
                 )
+
+    def add_distribution_collection(self):
+        """
+        The following formulation tracks the amount of load to be
+        collected and delivered on each edge.
+        https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
+        """
+        # Variables to track the distribution load on each edge
+        self.unload = pulp.LpVariable.dicts(
+            "unload",
+            self.G.edges(),
+            lowBound=0,
+            upBound=self.load_capacity,
+            cat=pulp.LpContinuous,
+        )
+        # Variables to track the collection load on each edge
+        self.load = pulp.LpVariable.dicts(
+            "load",
+            self.G.edges(),
+            lowBound=0,
+            upBound=self.load_capacity,
+            cat=pulp.LpContinuous,
+        )
+        # unload definition (distribution)
+        for v in self.G.nodes():
+            if v not in ["Source", "Sink"]:
+                demand_v = self.G.nodes[v]["demand"]
+                distribution_load_from_v = pulp.lpSum(
+                    [self.unload[(v, u)] for u in self.G.successors(v)]
+                )
+                distribution_load_to_v = pulp.lpSum(
+                    [self.unload[(u, v)] for u in self.G.predecessors(v)]
+                )
+                is_used_v = pulp.lpSum([self.x[(u, v)] for u in self.G.predecessors(v)])
+                self.prob += (
+                    demand_v * is_used_v
+                    == distribution_load_to_v - distribution_load_from_v,
+                    "demand_%s" % v,
+                )
+        # load definition (collection)
+        for v in self.G.nodes():
+            if v not in ["Source", "Sink"]:
+                collect_v = self.G.nodes[v]["collect"]
+                collect_load_from_v = pulp.lpSum(
+                    [self.load[(v, u)] for u in self.G.successors(v)]
+                )
+                collect_load_to_v = pulp.lpSum(
+                    [self.load[(u, v)] for u in self.G.predecessors(v)]
+                )
+                is_used_v = pulp.lpSum([self.x[(u, v)] for u in self.G.predecessors(v)])
+                self.prob += (
+                    collect_v * is_used_v == collect_load_from_v - collect_load_to_v,
+                    "collect_%s" % v,
+                )
+        # Max load per edge
+        for (u, v) in self.G.edges():
+            self.prob += (
+                self.load[(u, v)] + self.unload[(u, v)]
+                <= self.load_capacity * self.x[(u, v)],
+                "capacity_%s_%s" % (u, v),
+            )

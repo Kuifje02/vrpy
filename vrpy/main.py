@@ -39,6 +39,9 @@ class VehicleRoutingProblem:
         pickup_delivery (bool, optional):
             True if pickup and delivery constraints.
             Defaults to False.
+        distribution_collection (bool, optional):
+            True if distribution and collection are simultaneously enforced.
+            Defaults to False.
         drop_penalty (int, optional):
             Value of penalty if node is dropped.
             Defaults to None.
@@ -57,6 +60,7 @@ class VehicleRoutingProblem:
         duration=None,
         time_windows=False,
         pickup_delivery=False,
+        distribution_collection=False,
         drop_penalty=None,
         undirected=True,
     ):
@@ -68,6 +72,7 @@ class VehicleRoutingProblem:
         self.duration = duration
         self.time_windows = time_windows
         self.pickup_delivery = pickup_delivery
+        self.distribution_collection = distribution_collection
         self.drop_penalty = drop_penalty
         self.undirected = undirected
 
@@ -142,6 +147,7 @@ class VehicleRoutingProblem:
                     self.duration,
                     self.time_windows,
                     self.pickup_delivery,
+                    self.distribution_collection,
                     self.undirected,
                     exact=exact,
                 )

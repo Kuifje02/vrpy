@@ -7,22 +7,25 @@ class SubProblemBase:
         routes (list): Current routes/variables/columns
 
     Attributes:
-        num_stops (int):
-            Maximum number of stops. Optional.
+        num_stops (int, optional):
+            Maximum number of stops.
             If not provided, constraint not enforced.
-        load_capacity (int):
-            Maximum capacity. Optional.
+        load_capacity (int, optional):
+            Maximum capacity.
             If not provided, constraint not enforced.
-        duration (int):
-            Maximum duration. Optional.
+        duration (int, optional):
+            Maximum duration.
             If not provided, constraint not enforced.
-        time_windows (bool):
+        time_windows (bool, optional):
             True if time windows activated.
             Defaluts to False.
-        pickup_delivery (bool):
+        pickup_delivery (bool, optional):
             True if pickup and delivery constraints.
             Defaults to False.
-        undirected (bool):
+        distribution_collection (bool, optional):
+            True if distribution and collection are simultaneously enforced.
+            Defaults to False.
+        undirected (bool, optional):
             True if underlying network is undirected.
             Defaults to True.
     """
@@ -37,6 +40,7 @@ class SubProblemBase:
         duration=None,
         time_windows=False,
         pickup_delivery=False,
+        distribution_collection=False,
         undirected=True,
     ):
         # Input attributes
@@ -48,6 +52,7 @@ class SubProblemBase:
         self.duration = duration
         self.time_windows = time_windows
         self.pickup_delivery = pickup_delivery
+        self.distribution_collection = distribution_collection
         self.undirected = undirected
 
         # Add reduced cost to "weight" attribute
