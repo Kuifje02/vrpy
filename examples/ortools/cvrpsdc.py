@@ -21,6 +21,7 @@ class CVRPSDC(OrToolsBase):
         # update options
         self.max_load = 15
         self.max_duration = 2300
+        self.activate_distribution_collection = True
 
         # update network
         self.G.graph["name"] += "cvrpsdc"
@@ -45,6 +46,6 @@ class CVRPSDC(OrToolsBase):
 
 if __name__ == "__main__":
     data = CVRPSDC()
-    data.solve()
+    data.solve(cspy=False)
     data.show_vehicle_loads()
     data.plot_solution()

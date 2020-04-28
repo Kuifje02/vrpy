@@ -41,6 +41,7 @@ class OrToolsBase:
         self.activate_pickup_delivery = False
         self.penalty = None
         self.activate_time_windows = False
+        self.activate_distribution_collection = False
 
         # create network
         self.G = DiGraph(name="ortools_")
@@ -89,6 +90,7 @@ class OrToolsBase:
             edge_cost_function=self.manhattan,
             drop_penalty=self.penalty,
             pickup_delivery=self.activate_pickup_delivery,
+            distribution_collection=self.activate_distribution_collection,
             time_windows=self.activate_time_windows,
         )
         prob.solve(cspy=cspy, exact=exact)
