@@ -5,4 +5,5 @@ The following VRP variants are included :
 -   Vehicle routing with maximum duration;
 -   Vehicle routing with time windows (VRPTW);
 -   Vehicle routing with pickups and deliveries (PDP);
--   Vehicle routing with penalties (dropping customers is allowed).
+-   Vehicle routing with penalties (dropping customers is allowed);
+-   Vehicle routing with simultaneous distribution and collection (CVRPSDC).
