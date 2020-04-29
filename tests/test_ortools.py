@@ -41,6 +41,7 @@ class TestsOrTools:
         data.solve(initial_routes=initial_routes, cspy=False)
         assert int(data.best_value) == 6208
 
+    """
     def test_cvrp_drop_subproblem_lp(self):
         data = Drop()
         initial_routes = [
@@ -51,6 +52,7 @@ class TestsOrTools:
         ]
         data.solve(initial_routes=initial_routes, cspy=False)
         assert int(data.best_value) == 7776
+    """
 
     def test_vrptw_subproblem_lp(self):
         data = VRPTW()
