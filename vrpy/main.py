@@ -65,6 +65,7 @@ class VehicleRoutingProblem:
         undirected=True,
     ):
         self.G = G
+        # VRP options/constraints
         self.initial_routes = initial_routes
         self.edge_cost_function = edge_cost_function
         self.num_stops = num_stops
@@ -89,6 +90,9 @@ class VehicleRoutingProblem:
         self.best_routes = None
         self.iteration = []
         self.lower_bound = []
+
+        # Keep track of paths containing nodes
+        self.routes_with_node = {}
 
     # @profile
     def solve(self, cspy=True, exact=True):
@@ -123,7 +127,11 @@ class VehicleRoutingProblem:
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(
-                self.G, self.routes, self.drop_penalty, relax=True
+                self.G,
+                self.routes_with_node,
+                self.routes,
+                self.drop_penalty,
+                relax=True,
             )
             duals, relaxed_cost = masterproblem.solve()
 
@@ -140,6 +148,7 @@ class VehicleRoutingProblem:
                 subproblem = SubProblemCSPY(
                     self.G,
                     duals,
+                    self.routes_with_node,
                     self.routes,
                     self.num_stops,
                     self.load_capacity,
@@ -155,6 +164,7 @@ class VehicleRoutingProblem:
                 subproblem = SubProblemLP(
                     self.G,
                     duals,
+                    self.routes_with_node,
                     self.routes,
                     self.num_stops,
                     self.load_capacity,
@@ -173,7 +183,7 @@ class VehicleRoutingProblem:
         # solve as MIP
         logger.info("MIP solution")
         masterproblem_mip = MasterSolvePulp(
-            self.G, self.routes, self.drop_penalty, relax=False
+            self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
         )
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
@@ -249,6 +259,7 @@ class VehicleRoutingProblem:
                 route.add_edge("Source", v, cost=cost_1)
                 route.add_edge(v, "Sink", cost=cost_2)
                 initial_routes.append(route)
+                self.routes_with_node[v] = [route]
 
         self.routes = initial_routes
 
@@ -267,6 +278,8 @@ class VehicleRoutingProblem:
                 total_cost += dist
             G.graph["cost"] = total_cost
             self.routes.append(G)
+            for v in r:
+                self.routes_with_node[v] = [G]
 
     def update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""

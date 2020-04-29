@@ -56,6 +56,8 @@ class SubProblemLP(SubProblemBase):
                     new_route.edges[i, j]["load"] = pulp.value(
                         self.load[(i, j)]
                     ) + pulp.value(self.unload[(i, j)])
+                if i != "Source":
+                    self.routes_with_node[i].append(new_route)
 
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)

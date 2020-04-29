@@ -4,6 +4,7 @@ class SubProblemBase:
     Args:
         G (DiGraph): Underlying network
         duals (dict): Dual values of master problem
+        routes_with_node (dict): Keys : nodes ; Values : list of routes which contain the node
         routes (list): Current routes/variables/columns
 
     Attributes:
@@ -34,6 +35,7 @@ class SubProblemBase:
         self,
         G,
         duals,
+        routes_with_node,
         routes,
         num_stops=None,
         load_capacity=None,
@@ -46,6 +48,7 @@ class SubProblemBase:
         # Input attributes
         self.G = G
         self.duals = duals
+        self.routes_with_node = routes_with_node
         self.routes = routes
         self.num_stops = num_stops
         self.load_capacity = load_capacity
@@ -54,7 +57,6 @@ class SubProblemBase:
         self.pickup_delivery = pickup_delivery
         self.distribution_collection = distribution_collection
         self.undirected = undirected
-
         # Add reduced cost to "weight" attribute
         for edge in self.G.edges(data=True):
             edge[2]["weight"] = edge[2]["cost"]

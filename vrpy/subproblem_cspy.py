@@ -83,8 +83,9 @@ class SubProblemCSPY(SubProblemBase):
                 )
             self.alg.run()
             logger.debug("subproblem")
+            logger.info("new route %s" % self.alg.path)
             logger.debug("cost = %s" % self.alg.total_cost)
-            logger.debug("resources = %s" % self.alg.consumed_resources)
+            logger.info("resources = %s" % self.alg.consumed_resources)
             if self.alg.total_cost < -(10 ** -5):
                 more_routes = True
                 self.add_new_route()
@@ -138,6 +139,8 @@ class SubProblemCSPY(SubProblemBase):
             edge_cost = self.G.edges[i, j]["cost"]
             self.total_cost += edge_cost
             new_route.edges[i, j]["cost"] = edge_cost
+            if i != "Source":
+                self.routes_with_node[i].append(new_route)
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
 
