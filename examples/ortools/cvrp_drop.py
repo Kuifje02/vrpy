@@ -1,4 +1,7 @@
-from cvrp import CVRP
+import sys
+
+sys.path.append("../../")
+from examples.ortools.cvrp import CVRP
 
 
 class Drop(CVRP):

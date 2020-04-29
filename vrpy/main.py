@@ -134,7 +134,6 @@ class VehicleRoutingProblem:
             else:
                 no_improvement = 0
             self.lower_bound.append(relaxed_cost)
-
             # solve sub problem
             if cspy:
                 # with cspy
@@ -161,6 +160,8 @@ class VehicleRoutingProblem:
                     self.load_capacity,
                     self.duration,
                     self.time_windows,
+                    self.pickup_delivery,
+                    self.distribution_collection,
                     self.undirected,
                 )
             self.routes, more_routes = subproblem.solve()
@@ -218,6 +219,9 @@ class VehicleRoutingProblem:
                         self.G.nodes[v]["upper"],
                         self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
+        # remove Source-Sink
+        if ("Source", "Sink") in self.G.edges():
+            infeasible_arcs.append(("Source", "Sink"))
 
         self.G.remove_edges_from(infeasible_arcs)
 
@@ -275,6 +279,10 @@ class VehicleRoutingProblem:
             for (i, j) in self.G.edges():
                 if "time" not in self.G.edges[i, j]:
                     self.G.edges[i, j]["time"] = 0
+        if not self.distribution_collection:
+            for v in self.G.nodes():
+                if "collect" not in self.G.nodes[v]:
+                    self.G.nodes[v]["collect"] = 0
 
     def add_default_service_time(self):
         """Adds dummy service time."""

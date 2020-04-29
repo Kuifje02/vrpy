@@ -1,4 +1,7 @@
-from base_ortools import OrToolsBase
+import sys
+
+sys.path.append("../../")
+from examples.ortools.base_ortools import OrToolsBase
 
 
 class CVRPSDC(OrToolsBase):
@@ -32,6 +35,8 @@ class CVRPSDC(OrToolsBase):
             if node_id > 0:
                 self.G.nodes[node_id]["demand"] = self.demand[node_id]
                 self.G.nodes[node_id]["collect"] = self.collect[node_id]
+        self.G.nodes["Source"]["collect"] = 0
+        self.G.nodes["Sink"]["collect"] = 0
 
     def show_vehicle_loads(self):
         for r in self.best_routes:

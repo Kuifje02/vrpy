@@ -1,4 +1,7 @@
-from base_ortools import OrToolsBase
+import sys
+
+sys.path.append("../../")
+from examples.ortools.base_ortools import OrToolsBase
 
 
 class VRPTW(OrToolsBase):

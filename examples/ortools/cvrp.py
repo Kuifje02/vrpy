@@ -1,4 +1,7 @@
-from base_ortools import OrToolsBase
+import sys
+
+sys.path.append("../../")
+from examples.ortools.base_ortools import OrToolsBase
 
 
 class CVRP(OrToolsBase):
@@ -27,8 +30,13 @@ class CVRP(OrToolsBase):
 
     def show_vehicle_loads(self):
         for r in self.best_routes:
+            print("route ", r.graph["name"])
+            print("========")
+            for (i, j) in r.edges():
+                if "load" in r.edges[i, j]:
+                    print(i, j, "load", r.edges[i, j]["load"])
             print(
-                r.nodes(),
+                "total load",
                 sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
                 "<=",
                 self.max_load,
