@@ -1,4 +1,5 @@
 from networkx import DiGraph
+import pytest
 import sys
 
 # sys.path.append("../")
@@ -68,6 +69,11 @@ class TestsToy:
         )
         prob.solve()
         assert prob.best_value == 80
+
+    def test_parameters_consistency(self):
+        prob = VehicleRoutingProblem(self.G, pickup_delivery=True)
+        with pytest.raises(NotImplementedError):
+            prob.solve()
 
     ###############
     # subsolve lp #
