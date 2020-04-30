@@ -5,7 +5,7 @@ from networkx import DiGraph, add_path
 
 sys.path.append("../../cspy")
 
-from cspy import BiDirectional, Tabu, GreedyElim
+from cspy import BiDirectional, GreedyElim
 from vrpy.subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)
@@ -25,21 +25,28 @@ class SubProblemCSPY(SubProblemBase):
         super(SubProblemCSPY, self).__init__(*args)
         # Resource names
         self.alg = None
-        self.resources = ["stops/mono", "load", "time", "time windows"]
+        self.resources = [
+            "stops/mono",
+            "load_delivered",
+            "load_collected",
+            "time",
+            "time windows",
+        ]
         self.exact = exact
         # Set number of resources as attribute of graph
-        self.sub_G.graph["n_res"] = len(self.resources)
+        self.G.graph["n_res"] = len(self.resources)
         # Default lower and upper bounds
         self.min_res = [0 for x in range(len(self.resources))]
         # Add upper bounds for mono, stops, load and time, and time windows
         self.max_res = [
-            len(self.sub_G.nodes()),
-            sum([self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()]),
-            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()]),
+            len(self.G.nodes()),
+            sum([self.G.nodes[v]["demand"] for v in self.G.nodes()]),
+            sum([self.G.nodes[v]["collect"] for v in self.G.nodes()]),
+            sum([self.G.edges[u, v]["time"] for u, v in self.G.edges()]),
             1,
         ]
         # Initialize cspy edge attributes
-        for edge in self.sub_G.edges(data=True):
+        for edge in self.G.edges(data=True):
             edge[2]["res_cost"] = zeros(len(self.resources))
 
     # @profile
@@ -52,9 +59,6 @@ class SubProblemCSPY(SubProblemBase):
         2. exact algorithm gives a new route;
         3. neither heuristic nor exact give a new route.
         """
-        if not self.run_subsolve:
-            return self.routes, False
-
         self.formulate()
         logger.debug("resources = {}".format(self.resources))
         logger.debug("min res = {}".format(self.min_res))
@@ -66,7 +70,7 @@ class SubProblemCSPY(SubProblemBase):
             if self.exact:
                 logger.debug("solving with bidirectional")
                 self.alg = BiDirectional(
-                    self.sub_G,
+                    self.G,
                     self.max_res,
                     self.min_res,
                     direction="both",
@@ -78,7 +82,7 @@ class SubProblemCSPY(SubProblemBase):
             else:
                 logger.debug("solving with greedyelim")
                 self.alg = GreedyElim(
-                    self.sub_G,
+                    self.G,
                     self.max_res,
                     self.min_res,
                     REF=self.get_REF("forward"),
@@ -116,20 +120,23 @@ class SubProblemCSPY(SubProblemBase):
         if self.duration:
             self.add_max_duration()
         if self.time_windows:
-            # if not self.duration:
-            # update upper bound for duration
-            self.max_res[2] = 1 + self.sub_G.nodes["Sink"]["upper"]
-            self.max_res[3] = 0
+            # Update upper bound for duration
+            self.max_res[3] = 1 + self.G.nodes["Sink"]["upper"]
+            self.max_res[4] = 0
         if self.duration or self.time_windows:
             # Maximum feasible arrival time
             self.T = max(
                 [
-                    self.sub_G.nodes[v]["upper"]
-                    + self.sub_G.nodes[v]["service_time"]
-                    + self.sub_G.edges[v, "Sink"]["time"]
-                    for v in self.sub_G.predecessors("Sink")
+                    self.G.nodes[v]["upper"]
+                    + self.G.nodes[v]["service_time"]
+                    + self.G.edges[v, "Sink"]["time"]
+                    for v in self.G.predecessors("Sink")
                 ]
             )
+        if self.distribution_collection:
+            # Update upper bounds for collected and delivered amounts
+            self.max_res[2] = self.load_capacity
+            self.max_res[3] = self.load_capacity
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""
@@ -138,11 +145,9 @@ class SubProblemCSPY(SubProblemBase):
         add_path(new_route, self.alg.path)
         self.total_cost = 0
         for (i, j) in new_route.edges():
-            edge_cost = self.sub_G.edges[i, j]["cost"]
+            edge_cost = self.G.edges[i, j]["cost"]
             self.total_cost += edge_cost
             new_route.edges[i, j]["cost"] = edge_cost
-            if i != "Source":
-                self.routes_with_node[i].append(new_route)
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
 
@@ -152,32 +157,32 @@ class SubProblemCSPY(SubProblemBase):
         self.resources[0] = "stops"
         # The Sink does not count (hence + 1)
         self.max_res[0] = self.num_stops + 1
-        for (i, j) in self.sub_G.edges():
-            self.sub_G.edges[i, j]["res_cost"][0] = 1
+        for (i, j) in self.G.edges():
+            self.G.edges[i, j]["res_cost"][0] = 1
 
     def add_monotone(self):
         """Updates monotone resource."""
         # Change label
         self.resources[0] = "mono"
-        for (i, j) in self.sub_G.edges():
-            self.sub_G.edges[i, j]["res_cost"][0] = 1
+        for (i, j) in self.G.edges():
+            self.G.edges[i, j]["res_cost"][0] = 1
 
     def add_max_load(self):
         """Updates maximum load."""
         self.max_res[1] = self.load_capacity
-        for (i, j) in self.sub_G.edges():
-            demand_head_node = self.sub_G.nodes[j]["demand"]
-            self.sub_G.edges[i, j]["res_cost"][1] = demand_head_node
+        for (i, j) in self.G.edges():
+            demand_head_node = self.G.nodes[j]["demand"]
+            self.G.edges[i, j]["res_cost"][1] = demand_head_node
 
     def add_max_duration(self):
         """Updates maximum travel time."""
-        self.max_res[2] = self.duration
-        for (i, j) in self.sub_G.edges():
-            travel_time = self.sub_G.edges[i, j]["time"]
-            self.sub_G.edges[i, j]["res_cost"][2] = travel_time
+        self.max_res[3] = self.duration
+        for (i, j) in self.G.edges():
+            travel_time = self.G.edges[i, j]["time"]
+            self.G.edges[i, j]["res_cost"][3] = travel_time
 
     def get_REF(self, type_):
-        if self.duration or self.time_windows:
+        if True:  # self.duration or self.time_windows:
             # Use custom REF
             if type_ == "forward":
                 return self.REF_forward
@@ -189,6 +194,89 @@ class SubProblemCSPY(SubProblemBase):
             # Use default
             return
 
+    def REF_forward_tw(self, cumulative_res, edge):
+        """
+        Resource extension function based on Righini and Salani's paper
+        """
+        new_res = array(cumulative_res)
+        # extract data
+        i, j, edge_data = edge[0:3]
+        # stops/monotone resource
+        new_res[0] += 1
+        # load
+        new_res[1] += self.G.nodes[j]["demand"]
+        # time
+        service_time = self.G.nodes[i]["service_time"]
+        travel_time = self.G.edges[i, j]["time"]
+        a_j = self.G.nodes[j]["lower"]
+        b_j = self.G.nodes[j]["upper"]
+
+        new_res[3] = max(new_res[3] + service_time + travel_time, a_j)
+
+        # time-window feasibility resource
+        if not self.time_windows or new_res[2] <= b_j:
+            new_res[4] = 0
+        else:
+            new_res[4] = 1
+
+        return new_res
+
+    def REF_backward_tw(self, cumulative_res, edge):
+        """
+        Resource extension function based on Righini and Salani's paper
+        """
+        new_res = array(cumulative_res)
+        i, j, edge_data = edge[0:3]
+        # monotone resource
+        new_res[0] -= 1
+        # load
+        new_res[1] += self.G.nodes[i]["demand"]
+        # Get relevant service times (thetas) and travel time
+        theta_i = self.G.nodes[i]["service_time"]
+        theta_j = self.G.nodes[j]["service_time"]
+        travel_time = self.G.edges[i, j]["time"]
+        # Lower time windows
+        a_i = self.G.nodes[i]["lower"]
+        a_j = self.G.nodes[j]["lower"]
+        # Upper time windows
+        b_i = self.G.nodes[i]["upper"]
+        new_res[3] = max(new_res[3] + theta_j + travel_time, self.T - b_i - theta_i,)
+
+        # time-window feasibility
+        if not self.time_windows or (new_res[3] <= self.T - a_i - theta_i):
+            new_res[4] = 0
+        else:
+            new_res[4] = 1
+
+        return new_res
+
+    def REF_join(self, fwd_res, bwd_res, edge):
+        print("REF JOIN OK")
+        final_res = [0, 0, 0, 0, 0]
+        i, j, edge_data = edge[0:3]
+
+        # Get relevant service times (thetas) and travel time
+        theta_i = self.G.nodes[i]["service_time"]
+        theta_j = self.G.nodes[j]["service_time"]
+        travel_time = self.G.edges[i, j]["time"]
+
+        # Invert monotone resource
+        bwd_res[0] = self.max_res[0] - bwd_res[0]
+        # Fill in final res
+        # Monotone / stops
+        final_res[0] = fwd_res[0] + bwd_res[0] + 1
+        # Load
+        final_res[1] = fwd_res[1] + bwd_res[1]
+        final_res[2] = fwd_res[2] + bwd_res[2]
+        # time
+        final_res[3] = fwd_res[3] + theta_i + travel_time + theta_j + bwd_res[3]
+        # Time windows
+        if self.time_windows and final_res[3] <= self.T:
+            final_res[4] = fwd_res[4] + bwd_res[4]
+        else:
+            final_res[4] = 1
+        return array(final_res)
+
     def REF_forward(self, cumulative_res, edge):
         """
         Resource extension function based on Righini and Salani's paper
@@ -199,21 +287,22 @@ class SubProblemCSPY(SubProblemBase):
         # stops/monotone resource
         new_res[0] += 1
         # load
-        new_res[1] += self.sub_G.nodes[j]["demand"]
+        new_res[1] += self.G.nodes[j]["demand"]
+        new_res[2] += max(new_res[2] + self.G.nodes[j]["collect"], new_res[1])
         # time
-        service_time = self.sub_G.nodes[i]["service_time"]
-        travel_time = self.sub_G.edges[i, j]["time"]
-        a_j = self.sub_G.nodes[j]["lower"]
-        b_j = self.sub_G.nodes[j]["upper"]
+        service_time = self.G.nodes[i]["service_time"]
+        travel_time = self.G.edges[i, j]["time"]
+        a_j = self.G.nodes[j]["lower"]
+        b_j = self.G.nodes[j]["upper"]
 
-        new_res[2] = max(new_res[2] + service_time + travel_time, a_j)
+        new_res[3] = max(new_res[3] + service_time + travel_time, a_j)
 
         # time-window feasibility resource
-        if not self.time_windows or new_res[2] <= b_j:
-            new_res[3] = 0
+        if not self.time_windows or new_res[3] <= b_j:
+            new_res[4] = 0
         else:
-            new_res[3] = 1
-
+            new_res[4] = 1
+        # print(edge)
         return new_res
 
     def REF_backward(self, cumulative_res, edge):
@@ -225,48 +314,23 @@ class SubProblemCSPY(SubProblemBase):
         # monotone resource
         new_res[0] -= 1
         # load
-        new_res[1] += self.sub_G.nodes[i]["demand"]
+        new_res[1] += self.G.nodes[i]["demand"]
+        new_res[2] += max(new_res[2] + self.G.nodes[i]["collect"], new_res[1])
         # Get relevant service times (thetas) and travel time
-        theta_i = self.sub_G.nodes[i]["service_time"]
-        theta_j = self.sub_G.nodes[j]["service_time"]
-        travel_time = self.sub_G.edges[i, j]["time"]
+        theta_i = self.G.nodes[i]["service_time"]
+        theta_j = self.G.nodes[j]["service_time"]
+        travel_time = self.G.edges[i, j]["time"]
         # Lower time windows
-        a_i = self.sub_G.nodes[i]["lower"]
-        a_j = self.sub_G.nodes[j]["lower"]
+        a_i = self.G.nodes[i]["lower"]
+        a_j = self.G.nodes[j]["lower"]
         # Upper time windows
-        b_i = self.sub_G.nodes[i]["upper"]
-        new_res[2] = max(new_res[2] + theta_j + travel_time, self.T - b_i - theta_i,)
+        b_i = self.G.nodes[i]["upper"]
+        new_res[3] = max(new_res[3] + theta_j + travel_time, self.T - b_i - theta_i,)
 
         # time-window feasibility
-        if not self.time_windows or (new_res[2] <= self.T - a_i - theta_i):
-            new_res[3] = 0
+        if not self.time_windows or (new_res[3] <= self.T - a_i - theta_i):
+            new_res[4] = 0
         else:
-            new_res[3] = 1
-
+            new_res[4] = 1
+        print(edge)
         return new_res
-
-    def REF_join(self, fwd_res, bwd_res, edge):
-        final_res = [0, 0, 0, 0]
-        i, j, edge_data = edge[0:3]
-
-        # Get relevant service times (thetas) and travel time
-        theta_i = self.sub_G.nodes[i]["service_time"]
-        theta_j = self.sub_G.nodes[j]["service_time"]
-        travel_time = self.sub_G.edges[i, j]["time"]
-
-        # Invert monotone resource
-        bwd_res[0] = self.max_res[0] - bwd_res[0]
-        # Fill in final res
-        # Monotone / stops
-        final_res[0] = fwd_res[0] + bwd_res[0] + 1
-        # Load
-        final_res[1] = fwd_res[1] + bwd_res[1]
-        # time
-        final_res[2] = fwd_res[2] + theta_i + travel_time + theta_j + bwd_res[2]
-        # Time windows
-        if final_res[2] <= self.T:
-            final_res[3] = fwd_res[3] + bwd_res[3]
-        else:
-            final_res[3] = 1
-
-        return array(final_res)
