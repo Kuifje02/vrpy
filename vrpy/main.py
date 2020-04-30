@@ -113,6 +113,7 @@ class VehicleRoutingProblem:
         # Setup attributes if cspy
         if cspy:
             self.update_attributes_for_cspy()
+            self.check_options_consistency()
         # Initialization
         more_routes = True
         if not self.initial_routes:
@@ -123,7 +124,7 @@ class VehicleRoutingProblem:
         k = 0
         no_improvement = 0
         # generate interesting columns
-        while more_routes and k < 100 and no_improvement < 50:
+        while more_routes and k < 500 and no_improvement < 100:
             k += 1
             # solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(
@@ -134,47 +135,55 @@ class VehicleRoutingProblem:
                 relax=True,
             )
             duals, relaxed_cost = masterproblem.solve()
-
             logger.info("iteration %s, %s" % (k, relaxed_cost))
-            self.iteration.append(k)
+
             if k > 1 and relaxed_cost == self.lower_bound[-1]:
                 no_improvement += 1
             else:
                 no_improvement = 0
+            self.iteration.append(k)
             self.lower_bound.append(relaxed_cost)
+
             # solve sub problem
-            if cspy:
-                # with cspy
-                subproblem = SubProblemCSPY(
-                    self.G,
-                    duals,
-                    self.routes_with_node,
-                    self.routes,
-                    self.num_stops,
-                    self.load_capacity,
-                    self.duration,
-                    self.time_windows,
-                    self.pickup_delivery,
-                    self.distribution_collection,
-                    self.undirected,
-                    exact=exact,
-                )
-            else:
-                # as LP
-                subproblem = SubProblemLP(
-                    self.G,
-                    duals,
-                    self.routes_with_node,
-                    self.routes,
-                    self.num_stops,
-                    self.load_capacity,
-                    self.duration,
-                    self.time_windows,
-                    self.pickup_delivery,
-                    self.distribution_collection,
-                    self.undirected,
-                )
-            self.routes, more_routes = subproblem.solve()
+            # if alpha = 1, the subproblem is solved exactly
+            for alpha in [0.1, 0.3, 0.6, 0.9, 1]:
+                logger.info("subproblem with alpha = %s" % alpha)
+                if cspy:
+                    # with cspy
+                    subproblem = SubProblemCSPY(
+                        self.G,
+                        duals,
+                        self.routes_with_node,
+                        self.routes,
+                        self.num_stops,
+                        self.load_capacity,
+                        self.duration,
+                        self.time_windows,
+                        self.pickup_delivery,
+                        self.distribution_collection,
+                        self.undirected,
+                        alpha,
+                        exact=exact,
+                    )
+                else:
+                    # as LP
+                    subproblem = SubProblemLP(
+                        self.G,
+                        duals,
+                        self.routes_with_node,
+                        self.routes,
+                        self.num_stops,
+                        self.load_capacity,
+                        self.duration,
+                        self.time_windows,
+                        self.pickup_delivery,
+                        self.distribution_collection,
+                        self.undirected,
+                        alpha,
+                    )
+                self.routes, more_routes = subproblem.solve()
+                if more_routes:
+                    break
 
         # export relaxed_cost = f(iteration) to Excel file
         # self.export_convergence_rate()
@@ -280,6 +289,9 @@ class VehicleRoutingProblem:
             self.routes.append(G)
             for v in r:
                 self.routes_with_node[v] = [G]
+        for v in self.G.nodes():
+            if v not in self.routes_with_node:
+                self.routes_with_node[v] = []
 
     def update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""
@@ -296,6 +308,15 @@ class VehicleRoutingProblem:
             for v in self.G.nodes():
                 if "collect" not in self.G.nodes[v]:
                     self.G.nodes[v]["collect"] = 0
+
+    def check_options_consistency(self):
+        """
+        The following options need are not implemented yet with cspy:
+            -pickup and delivery
+            -simultaneous distribution and collection
+        """
+        if self.pickup_delivery or self.distribution_collection:
+            raise NotImplementedError
 
     def add_default_service_time(self):
         """Adds dummy service time."""

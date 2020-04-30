@@ -8,7 +8,7 @@ from vrpy.main import VehicleRoutingProblem
 
 from examples.benchmarks.cvrptw_solomon import DataSet
 
-params = list(range(2, 16))  # for some reason n=16 fails
+params = list(range(2, 21))
 
 
 @fixture(

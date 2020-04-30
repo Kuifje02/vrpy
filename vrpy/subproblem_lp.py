@@ -19,10 +19,12 @@ class SubProblemLP(SubProblemBase):
         # create problem
         self.prob = pulp.LpProblem("SubProblem", pulp.LpMinimize)
         # flow variables
-        self.x = pulp.LpVariable.dicts("x", self.G.edges(), cat=pulp.LpBinary)
+        self.x = pulp.LpVariable.dicts("x", self.sub_G.edges(), cat=pulp.LpBinary)
 
     # @profile
     def solve(self):
+        if not self.run_subsolve:
+            return self.routes, False
         self.formulate()
         # self.prob.writeLP("prob.lp")
         self.prob.solve()
@@ -44,9 +46,9 @@ class SubProblemLP(SubProblemBase):
         route_id = len(self.routes) + 1
         new_route = DiGraph(name=route_id)
         self.total_cost = 0
-        for (i, j) in self.G.edges():
+        for (i, j) in self.sub_G.edges():
             if pulp.value(self.x[(i, j)]) > 0.5:
-                edge_cost = self.G.edges[i, j]["cost"]
+                edge_cost = self.sub_G.edges[i, j]["cost"]
                 self.total_cost += edge_cost
                 new_route.add_edge(i, j, cost=edge_cost)
                 if self.time_windows:
@@ -64,35 +66,43 @@ class SubProblemLP(SubProblemBase):
         logger.debug("new route %s %s" % (route_id, new_route.edges()))
         logger.debug("new route cost = %s" % self.total_cost)
         # for (i, j) in new_route.edges():
-        #    print(i, j, self.G.edges[i, j])
+        #    print(i, j, self.sub_G.edges[i, j])
         # routes_txt = open("routes.txt", "a")
         # routes_txt.write(str(shortest_path(new_route, "Source", "Sink")) + "\n")
 
     def formulate(self):
         # minimize reduced cost
         self.prob += pulp.lpSum(
-            [self.G.edges[i, j]["weight"] * self.x[(i, j)] for (i, j) in self.G.edges()]
+            [
+                self.sub_G.edges[i, j]["weight"] * self.x[(i, j)]
+                for (i, j) in self.sub_G.edges()
+            ]
         )
         # flow balance
-        for v in self.G.nodes():
+        for v in self.sub_G.nodes():
             if v not in ["Source", "Sink"]:
-                in_flow = pulp.lpSum([self.x[(i, v)] for i in self.G.predecessors(v)])
-                out_flow = pulp.lpSum([self.x[(v, j)] for j in self.G.successors(v)])
+                in_flow = pulp.lpSum(
+                    [self.x[(i, v)] for i in self.sub_G.predecessors(v)]
+                )
+                out_flow = pulp.lpSum(
+                    [self.x[(v, j)] for j in self.sub_G.successors(v)]
+                )
                 self.prob += in_flow == out_flow, "flow_balance_%s" % v
 
         # Start at Source and end at Sink
         self.prob += (
-            pulp.lpSum([self.x[("Source", v)] for v in self.G.successors("Source")])
+            pulp.lpSum([self.x[("Source", v)] for v in self.sub_G.successors("Source")])
             == 1,
             "start_at_source",
         )
         self.prob += (
-            pulp.lpSum([self.x[(u, "Sink")] for u in self.G.predecessors("Sink")]) == 1,
+            pulp.lpSum([self.x[(u, "Sink")] for u in self.sub_G.predecessors("Sink")])
+            == 1,
             "end_at_sink",
         )
         # Forbid route Source-Sink
         self.prob += (
-            pulp.lpSum([self.x[(i, j)] for (i, j) in self.G.edges()]) >= 2,
+            pulp.lpSum([self.x[(i, j)] for (i, j) in self.sub_G.edges()]) >= 2,
             "at_least_1_stop",
         )
 
@@ -121,28 +131,30 @@ class SubProblemLP(SubProblemBase):
 
     def add_time_windows(self):
         # Big-M definition
-        M = self.G.nodes["Sink"]["upper"]
+        M = self.sub_G.nodes["Sink"]["upper"]
         # Add varibles
         self.t = pulp.LpVariable.dicts(
-            "t", self.G.nodes(), lowBound=0, cat=pulp.LpContinuous
+            "t", self.sub_G.nodes(), lowBound=0, cat=pulp.LpContinuous
         )
         # Add big-M constraints
-        for (i, j) in self.G.edges():
+        for (i, j) in self.sub_G.edges():
             self.prob += (
-                self.t[i] + self.G.nodes[i]["service_time"] + self.G.edges[i, j]["time"]
+                self.t[i]
+                + self.sub_G.nodes[i]["service_time"]
+                + self.sub_G.edges[i, j]["time"]
                 <= self.t[j] + M * (1 - self.x[(i, j)]),
                 "time_window_%s_%s" % (i, j),
             )
         # Add node constraints
-        for v in self.G.nodes():
-            self.prob += self.t[v] <= self.G.nodes[v]["upper"], "node_%s_up" % v
-            self.prob += self.t[v] >= self.G.nodes[v]["lower"], "node_%s_low" % v
+        for v in self.sub_G.nodes():
+            self.prob += self.t[v] <= self.sub_G.nodes[v]["upper"], "node_%s_up" % v
+            self.prob += self.t[v] >= self.sub_G.nodes[v]["lower"], "node_%s_low" % v
 
     def add_max_stops(self):
         # Add max stop constraint
         # S stops => S+1 arcs
         self.prob += (
-            pulp.lpSum([self.x[(i, j)] for (i, j) in self.G.edges()])
+            pulp.lpSum([self.x[(i, j)] for (i, j) in self.sub_G.edges()])
             <= self.num_stops + 1,
             "max_{}".format(self.num_stops),
         )
@@ -152,8 +164,8 @@ class SubProblemLP(SubProblemBase):
         self.prob += (
             pulp.lpSum(
                 [
-                    self.G.nodes[j]["demand"] * self.x[(i, j)]
-                    for (i, j) in self.G.edges()
+                    self.sub_G.nodes[j]["demand"] * self.x[(i, j)]
+                    for (i, j) in self.sub_G.edges()
                 ]
             )
             <= self.load_capacity,
@@ -165,9 +177,12 @@ class SubProblemLP(SubProblemBase):
         self.prob += (
             pulp.lpSum(
                 [
-                    (self.G.edges[i, j]["time"] + self.G.nodes[i]["service_time"])
+                    (
+                        self.sub_G.edges[i, j]["time"]
+                        + self.sub_G.nodes[i]["service_time"]
+                    )
                     * self.x[(i, j)]
-                    for (i, j) in self.G.edges()
+                    for (i, j) in self.sub_G.edges()
                 ]
             )
             <= self.duration,
@@ -177,25 +192,25 @@ class SubProblemLP(SubProblemBase):
     def add_elementarity(self):
         """Ensures a node is visited at most once."""
         # Big-M definition
-        M = len(self.G.nodes())
+        M = len(self.sub_G.nodes())
         # Add rank varibles
         # y[v] = rank of node v in the path
         self.y = pulp.LpVariable.dicts(
             "y",
-            self.G.nodes(),
+            self.sub_G.nodes(),
             lowBound=0,
-            upBound=len(self.G.nodes()),
+            upBound=len(self.sub_G.nodes()),
             cat=pulp.LpInteger,
         )
         # Add big-M constraints
-        for (i, j) in self.G.edges():
+        for (i, j) in self.sub_G.edges():
             self.prob += (
                 self.y[i] + 1 <= self.y[j] + M * (1 - self.x[(i, j)]),
                 "elementary_%s_%s" % (i, j),
             )
         # Source is first, Sink is last (optional)
         self.prob += self.y["Source"] == 0, "Source_is_first"
-        for v in self.G.nodes():
+        for v in self.sub_G.nodes():
             if v != "Sink":
                 self.prob += self.y[v] <= self.y["Sink"], "Sink_after_%s" % v
 
@@ -205,14 +220,14 @@ class SubProblemLP(SubProblemBase):
         self.prob += (
             pulp.lpSum(
                 [
-                    self.G.nodes[v]["id"] * self.x[("Source", v)]
-                    for v in self.G.successors("Source")
+                    self.sub_G.nodes[v]["id"] * self.x[("Source", v)]
+                    for v in self.sub_G.successors("Source")
                 ]
             )
             <= pulp.lpSum(
                 [
-                    self.G.nodes[v]["id"] * self.x[(v, "Sink")]
-                    for v in self.G.predecessors("Sink")
+                    self.sub_G.nodes[v]["id"] * self.x[(v, "Sink")]
+                    for v in self.sub_G.predecessors("Sink")
                 ]
             ),
             "break_symmetry",
@@ -223,17 +238,17 @@ class SubProblemLP(SubProblemBase):
         Adds precedence and consistency constraints
         for pickup and delivery options.
         """
-        for v in self.G.nodes():
-            if "request" in self.G.nodes[v]:
-                delivery_node = self.G.nodes[v]["request"]
+        for v in self.sub_G.nodes():
+            if "request" in self.sub_G.nodes[v]:
+                delivery_node = self.sub_G.nodes[v]["request"]
 
                 # same vehicle for pickup and delivery node
                 self.prob += (
-                    pulp.lpSum([self.x[(v, u)] for u in self.G.successors(v)])
+                    pulp.lpSum([self.x[(v, u)] for u in self.sub_G.successors(v)])
                     == pulp.lpSum(
                         [
                             self.x[(delivery_node, u)]
-                            for u in self.G.successors(delivery_node)
+                            for u in self.sub_G.successors(delivery_node)
                         ]
                     ),
                     "nodes_%s_%s_together" % (v, delivery_node),
@@ -256,7 +271,7 @@ class SubProblemLP(SubProblemBase):
         # Variables to track the distribution load on each edge
         self.unload = pulp.LpVariable.dicts(
             "unload",
-            self.G.edges(),
+            self.sub_G.edges(),
             lowBound=0,
             upBound=self.load_capacity,
             cat=pulp.LpContinuous,
@@ -264,44 +279,48 @@ class SubProblemLP(SubProblemBase):
         # Variables to track the collection load on each edge
         self.load = pulp.LpVariable.dicts(
             "load",
-            self.G.edges(),
+            self.sub_G.edges(),
             lowBound=0,
             upBound=self.load_capacity,
             cat=pulp.LpContinuous,
         )
         # unload definition (distribution)
-        for v in self.G.nodes():
+        for v in self.sub_G.nodes():
             if v not in ["Source", "Sink"]:
-                demand_v = self.G.nodes[v]["demand"]
+                demand_v = self.sub_G.nodes[v]["demand"]
                 distribution_load_from_v = pulp.lpSum(
-                    [self.unload[(v, u)] for u in self.G.successors(v)]
+                    [self.unload[(v, u)] for u in self.sub_G.successors(v)]
                 )
                 distribution_load_to_v = pulp.lpSum(
-                    [self.unload[(u, v)] for u in self.G.predecessors(v)]
+                    [self.unload[(u, v)] for u in self.sub_G.predecessors(v)]
                 )
-                is_used_v = pulp.lpSum([self.x[(u, v)] for u in self.G.predecessors(v)])
+                is_used_v = pulp.lpSum(
+                    [self.x[(u, v)] for u in self.sub_G.predecessors(v)]
+                )
                 self.prob += (
                     demand_v * is_used_v
                     == distribution_load_to_v - distribution_load_from_v,
                     "demand_%s" % v,
                 )
         # load definition (collection)
-        for v in self.G.nodes():
+        for v in self.sub_G.nodes():
             if v not in ["Source", "Sink"]:
-                collect_v = self.G.nodes[v]["collect"]
+                collect_v = self.sub_G.nodes[v]["collect"]
                 collect_load_from_v = pulp.lpSum(
-                    [self.load[(v, u)] for u in self.G.successors(v)]
+                    [self.load[(v, u)] for u in self.sub_G.successors(v)]
                 )
                 collect_load_to_v = pulp.lpSum(
-                    [self.load[(u, v)] for u in self.G.predecessors(v)]
+                    [self.load[(u, v)] for u in self.sub_G.predecessors(v)]
                 )
-                is_used_v = pulp.lpSum([self.x[(u, v)] for u in self.G.predecessors(v)])
+                is_used_v = pulp.lpSum(
+                    [self.x[(u, v)] for u in self.sub_G.predecessors(v)]
+                )
                 self.prob += (
                     collect_v * is_used_v == collect_load_from_v - collect_load_to_v,
                     "collect_%s" % v,
                 )
         # Max load per edge
-        for (u, v) in self.G.edges():
+        for (u, v) in self.sub_G.edges():
             self.prob += (
                 self.load[(u, v)] + self.unload[(u, v)]
                 <= self.load_capacity * self.x[(u, v)],
