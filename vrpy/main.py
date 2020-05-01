@@ -2,7 +2,6 @@ from networkx import DiGraph
 import logging
 from pandas import DataFrame
 
-
 from vrpy.master_solve_pulp import MasterSolvePulp
 from vrpy.subproblem_lp import SubProblemLP
 from vrpy.subproblem_cspy import SubProblemCSPY
@@ -191,9 +190,11 @@ class VehicleRoutingProblem:
 
         # solve as MIP
         logger.info("MIP solution")
-        masterproblem_mip = MasterSolvePulp(
-            self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
-        )
+        masterproblem_mip = MasterSolvePulp(self.G,
+                                            self.routes_with_node,
+                                            self.routes,
+                                            self.drop_penalty,
+                                            relax=False)
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
     def prune_graph(self):
@@ -205,10 +206,8 @@ class VehicleRoutingProblem:
         # remove infeasible arcs (capacities)
         if self.load_capacity:
             for (i, j) in self.G.edges():
-                if (
-                    self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"]
-                    > self.load_capacity
-                ):
+                if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
+                        self.load_capacity):
                     infeasible_arcs.append((i, j))
 
         # remove infeasible arcs (time windows)
@@ -218,10 +217,8 @@ class VehicleRoutingProblem:
                 service_time = self.G.nodes[i]["service_time"]
                 tail_inf_time_window = self.G.nodes[i]["lower"]
                 head_sup_time_window = self.G.nodes[j]["upper"]
-                if (
-                    tail_inf_time_window + travel_time + service_time
-                    > head_sup_time_window
-                ):
+                if (tail_inf_time_window + travel_time + service_time >
+                        head_sup_time_window):
                     infeasible_arcs.append((i, j))
 
             # strengthen time windows
@@ -230,13 +227,14 @@ class VehicleRoutingProblem:
                     # earliest time is coming straight from depot
                     self.G.nodes[v]["lower"] = max(
                         self.G.nodes[v]["lower"],
-                        self.G.nodes["Source"]["lower"]
-                        + self.G.edges["Source", v]["time"],
+                        self.G.nodes["Source"]["lower"] +
+                        self.G.edges["Source", v]["time"],
                     )
                     # latest time is going straight to depot
                     self.G.nodes[v]["upper"] = min(
                         self.G.nodes[v]["upper"],
-                        self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
+                        self.G.nodes["Sink"]["upper"] -
+                        self.G.edges[v, "Sink"]["time"],
                     )
         # remove Source-Sink
         if ("Source", "Sink") in self.G.edges():
@@ -315,7 +313,7 @@ class VehicleRoutingProblem:
             -pickup and delivery
             -simultaneous distribution and collection
         """
-        if self.pickup_delivery or self.distribution_collection:
+        if self.pickup_delivery:
             raise NotImplementedError
 
     def add_default_service_time(self):

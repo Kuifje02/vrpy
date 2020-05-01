@@ -25,18 +25,25 @@ class SubProblemCSPY(SubProblemBase):
         super(SubProblemCSPY, self).__init__(*args)
         # Resource names
         self.alg = None
-        self.resources = ["stops/mono", "load", "time", "time windows"]
+        self.resources = [
+            "stops/mono", "load", "time", "time windows", "collect", "deliver"
+        ]
         self.exact = exact
         # Set number of resources as attribute of graph
         self.sub_G.graph["n_res"] = len(self.resources)
         # Default lower and upper bounds
-        self.min_res = [0 for x in range(len(self.resources))]
+        self.min_res = [0] * len(self.resources)
         # Add upper bounds for mono, stops, load and time, and time windows
+        total_demand = sum(
+            [self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
         self.max_res = [
-            len(self.sub_G.nodes()),
-            sum([self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()]),
-            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()]),
-            1,
+            len(self.sub_G.nodes()),  # stop/mono
+            total_demand,  # load
+            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()
+                ]),  # time
+            1,  # time windows
+            total_demand,  # pickup
+            total_demand,  # deliver
         ]
         # Initialize cspy edge attributes
         for edge in self.sub_G.edges(data=True):
@@ -88,7 +95,7 @@ class SubProblemCSPY(SubProblemBase):
             logger.debug("subproblem")
             logger.debug("cost = %s" % self.alg.total_cost)
             logger.debug("resources = %s" % self.alg.consumed_resources)
-            if self.alg.total_cost < -(10 ** -5):
+            if self.alg.total_cost < -(10**-5):
                 more_routes = True
                 self.add_new_route()
                 logger.debug("new route %s" % self.alg.path)
@@ -122,14 +129,15 @@ class SubProblemCSPY(SubProblemBase):
             self.max_res[3] = 0
         if self.duration or self.time_windows:
             # Maximum feasible arrival time
-            self.T = max(
-                [
-                    self.sub_G.nodes[v]["upper"]
-                    + self.sub_G.nodes[v]["service_time"]
-                    + self.sub_G.edges[v, "Sink"]["time"]
-                    for v in self.sub_G.predecessors("Sink")
-                ]
-            )
+            self.T = max([
+                self.sub_G.nodes[v]["upper"] +
+                self.sub_G.nodes[v]["service_time"] +
+                self.sub_G.edges[v, "Sink"]["time"]
+                for v in self.sub_G.predecessors("Sink")
+            ])
+        if self.load_capacity and self.distribution_collection:
+            self.max_res[4] = self.load_capacity
+            self.max_res[5] = self.load_capacity
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""
@@ -176,8 +184,14 @@ class SubProblemCSPY(SubProblemBase):
             travel_time = self.sub_G.edges[i, j]["time"]
             self.sub_G.edges[i, j]["res_cost"][2] = travel_time
 
+    """
+    Custom REFs.
+    Based on Righini and Salani (2006).
+    Used for time, time windows, and/or distribution collection.
+    """
+
     def get_REF(self, type_):
-        if self.duration or self.time_windows:
+        if self.duration or self.time_windows or self.distribution_collection:
             # Use custom REF
             if type_ == "forward":
                 return self.REF_forward
@@ -191,7 +205,7 @@ class SubProblemCSPY(SubProblemBase):
 
     def REF_forward(self, cumulative_res, edge):
         """
-        Resource extension function based on Righini and Salani's paper
+        Resource extension for forward paths.
         """
         new_res = array(cumulative_res)
         # extract data
@@ -214,11 +228,18 @@ class SubProblemCSPY(SubProblemBase):
         else:
             new_res[3] = 1
 
+        if self.distribution_collection:
+            # Pickup
+            new_res[4] += self.sub_G.nodes[j]["collect"]
+            # Delivery
+            new_res[5] = max(new_res[5] + self.sub_G.nodes[j]["demand"],
+                             new_res[4])
+
         return new_res
 
     def REF_backward(self, cumulative_res, edge):
         """
-        Resource extension function based on Righini and Salani's paper
+        Resource extension for backward paths.
         """
         new_res = array(cumulative_res)
         i, j, edge_data = edge[0:3]
@@ -235,18 +256,29 @@ class SubProblemCSPY(SubProblemBase):
         a_j = self.sub_G.nodes[j]["lower"]
         # Upper time windows
         b_i = self.sub_G.nodes[i]["upper"]
-        new_res[2] = max(new_res[2] + theta_j + travel_time, self.T - b_i - theta_i,)
+        new_res[2] = max(new_res[2] + theta_j + travel_time,
+                         self.T - b_i - theta_i)
 
         # time-window feasibility
-        if not self.time_windows or (new_res[2] <= self.T - a_i - theta_i):
+        if not self.time_windows or new_res[2] <= self.T - a_i - theta_i:
             new_res[3] = 0
         else:
             new_res[3] = 1
 
+        if self.distribution_collection:
+            # Delivery
+            new_res[5] += new_res[5] + self.sub_G.nodes[i]["demand"]
+            # Pickup
+            new_res[4] = max(new_res[5],
+                             new_res[4] + self.sub_G.nodes[i]["collect"])
+
         return new_res
 
     def REF_join(self, fwd_res, bwd_res, edge):
-        final_res = [0, 0, 0, 0]
+        """
+        Appropriate joining of forward and backward resources.
+        """
+        final_res = zeros(len(self.resources))
         i, j, edge_data = edge[0:3]
 
         # Get relevant service times (thetas) and travel time
@@ -264,9 +296,13 @@ class SubProblemCSPY(SubProblemBase):
         # time
         final_res[2] = fwd_res[2] + theta_i + travel_time + theta_j + bwd_res[2]
         # Time windows
-        if final_res[2] <= self.T:
+        if not self.time_windows or final_res[2] <= self.T:
             final_res[3] = fwd_res[3] + bwd_res[3]
         else:
             final_res[3] = 1
+
+        if self.distribution_collection:
+            final_res[4] = fwd_res[4] + bwd_res[4]
+            final_res[5] = fwd_res[5] + bwd_res[5]
 
         return array(final_res)

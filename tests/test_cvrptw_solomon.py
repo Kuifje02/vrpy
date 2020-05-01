@@ -2,20 +2,21 @@ from networkx import DiGraph
 import sys
 
 sys.path.append("../")
-sys.path.append("../vrpy/")
+
 from vrpy.main import VehicleRoutingProblem
 
 from examples.benchmarks.cvrptw_solomon import DataSet
 
 
 class TestsSolomon:
+
     def setup(self):
         """
         Solomon instance c101, 25 first nodes only including depot
         """
-        self.data = DataSet(
-            path="../examples/benchmarks/data/", instance_name="c101.txt", n_vertices=25
-        )
+        self.data = DataSet(path="../examples/benchmarks/data/",
+                            instance_name="c101.txt",
+                            n_vertices=25)
         self.G = self.data.G
         self.n_vertices = 25
 

@@ -15,6 +15,7 @@ from examples.ortools.cvrpsdc import CVRPSDC
 
 
 class TestsOrTools:
+
     def setup(self):
         """
         Examples from the ortools routing library.
@@ -70,18 +71,21 @@ class TestsOrTools:
         initial_routes = []
         for pickup_node in data.pickups_deliveries:
             if pickup_node in data.G.nodes():
-                initial_routes.append(
-                    [
-                        "Source",
-                        pickup_node,
-                        data.pickups_deliveries[pickup_node],
-                        "Sink",
-                    ]
-                )
+                initial_routes.append([
+                    "Source",
+                    pickup_node,
+                    data.pickups_deliveries[pickup_node],
+                    "Sink",
+                ])
         data.solve(initial_routes=initial_routes, cspy=False)
         assert int(data.best_value) == 6916
 
     def test_cvrpsdc_subproblem_lp(self):
         data = CVRPSDC()
         data.solve(cspy=False)
+        assert int(data.best_value) == 6208
+
+    def test_cvrpsdc_subproblem_cspy(self):
+        data = CVRPSDC()
+        data.solve(cspy=True)
         assert int(data.best_value) == 6208
