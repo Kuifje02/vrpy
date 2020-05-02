@@ -106,8 +106,6 @@ class SubProblemBase:
         except NetworkXException:
             self.run_subsolve = False
 
-        """
-        for v in self.G.nodes():
-            if v not in ["Source", "Sink"] and self.duals[v] <= 0:
-                self.sub_G.remove_node(v)
-        """
+        # for v in self.G.nodes():
+        #    if v not in ["Source", "Sink"] and self.duals[v] <= 0:
+        #        self.sub_G.remove_node(v)
