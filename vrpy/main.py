@@ -1,5 +1,6 @@
 from networkx import DiGraph
 import logging
+from knapsack import knapsack
 from pandas import DataFrame
 
 from vrpy.master_solve_pulp import MasterSolvePulp
@@ -83,6 +84,10 @@ class VehicleRoutingProblem:
         # Add index attribute for each node
         if self.undirected:
             self.create_index_for_nodes()
+
+        # Compute upper bound on number of stops as knapsack problem
+        if self.load_capacity:
+            self.get_num_stops_upper_bound()
 
         # Attributes to keep track of solution
         self.best_solution = None
@@ -190,11 +195,9 @@ class VehicleRoutingProblem:
 
         # solve as MIP
         logger.info("MIP solution")
-        masterproblem_mip = MasterSolvePulp(self.G,
-                                            self.routes_with_node,
-                                            self.routes,
-                                            self.drop_penalty,
-                                            relax=False)
+        masterproblem_mip = MasterSolvePulp(
+            self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
+        )
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
     def prune_graph(self):
@@ -206,8 +209,10 @@ class VehicleRoutingProblem:
         # remove infeasible arcs (capacities)
         if self.load_capacity:
             for (i, j) in self.G.edges():
-                if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
-                        self.load_capacity):
+                if (
+                    self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"]
+                    > self.load_capacity
+                ):
                     infeasible_arcs.append((i, j))
 
         # remove infeasible arcs (time windows)
@@ -217,8 +222,10 @@ class VehicleRoutingProblem:
                 service_time = self.G.nodes[i]["service_time"]
                 tail_inf_time_window = self.G.nodes[i]["lower"]
                 head_sup_time_window = self.G.nodes[j]["upper"]
-                if (tail_inf_time_window + travel_time + service_time >
-                        head_sup_time_window):
+                if (
+                    tail_inf_time_window + travel_time + service_time
+                    > head_sup_time_window
+                ):
                     infeasible_arcs.append((i, j))
 
             # strengthen time windows
@@ -227,14 +234,13 @@ class VehicleRoutingProblem:
                     # earliest time is coming straight from depot
                     self.G.nodes[v]["lower"] = max(
                         self.G.nodes[v]["lower"],
-                        self.G.nodes["Source"]["lower"] +
-                        self.G.edges["Source", v]["time"],
+                        self.G.nodes["Source"]["lower"]
+                        + self.G.edges["Source", v]["time"],
                     )
                     # latest time is going straight to depot
                     self.G.nodes[v]["upper"] = min(
                         self.G.nodes[v]["upper"],
-                        self.G.nodes["Sink"]["upper"] -
-                        self.G.edges[v, "Sink"]["time"],
+                        self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
         # remove Source-Sink
         if ("Source", "Sink") in self.G.edges():
@@ -311,7 +317,6 @@ class VehicleRoutingProblem:
         """
         The following options need are not implemented yet with cspy:
             -pickup and delivery
-            -simultaneous distribution and collection
         """
         if self.pickup_delivery:
             raise NotImplementedError
@@ -322,6 +327,28 @@ class VehicleRoutingProblem:
             for v in self.G.nodes():
                 if "service_time" not in self.G.nodes[v]:
                     self.G.nodes[v]["service_time"] = 0
+
+    def get_num_stops_upper_bound(self):
+        """
+        Finds upper bound on number of stops, from here :
+        https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
+
+        A knapsack problem is solved to maximize the number of
+        visits, subject to capacity constraints.
+        """
+        # solve the knapsack problem
+        # objects are vertices
+        # maximize sum of vertices
+        # such that sum of sizes (demands) respect capacity constraints
+        size = [self.G.nodes[v]["demand"] for v in self.G.nodes()]
+        weight = [1] * len(self.G.nodes())
+        max_num_stops = knapsack(size, weight).solve(self.load_capacity)[0]
+        # update num_stops attribute
+        if self.num_stops:
+            self.num_stops = min(max_num_stops, self.num_stops)
+        else:
+            self.num_stops = max_num_stops
+        logger.info("new upper bound : max num stops = %s" % self.num_stops)
 
     def create_index_for_nodes(self):
         """An index is created for each node ;
