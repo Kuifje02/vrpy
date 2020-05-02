@@ -94,11 +94,12 @@ def test_cvrpsdc_subproblem_lp():
 # cspy #
 ########
 
-
+"""
 def test_vrp_subproblem_cspy():
     data = VRP()
     data.solve(cspy=True)
     assert int(data.best_value) == 6208
+"""
 
 
 def test_cvrp_subproblem_cspy():
