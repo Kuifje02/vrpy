@@ -336,12 +336,12 @@ class VehicleRoutingProblem:
         A knapsack problem is solved to maximize the number of
         visits, subject to capacity constraints.
         """
-        # solve the knapsack problem
         # objects are vertices
         # maximize sum of vertices
         # such that sum of sizes (demands) respect capacity constraints
         size = [self.G.nodes[v]["demand"] for v in self.G.nodes()]
         weight = [1] * len(self.G.nodes())
+        # solve the knapsack problem
         max_num_stops = knapsack(size, weight).solve(self.load_capacity)[0]
         # update num_stops attribute
         if self.num_stops:

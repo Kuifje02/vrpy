@@ -1,5 +1,6 @@
 ###### Requirements without Version Specifiers ######
 # cspy
+knapsack
 matplotlib
 networkx
 numpy
