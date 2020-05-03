@@ -46,20 +46,6 @@ def test_cvrp_subproblem_lp():
     assert int(data.best_value) == 6208
 
 
-"""
-def test_cvrp_drop_subproblem_lp(self):
-    data = Drop()
-    initial_routes = [
-        ["Source", 9, 14, 16, "Sink"],
-        ["Source", 12, 11, 4, 3, 1, "Sink"],
-        ["Source", 7, 13, "Sink"],
-        ["Source", 8, 10, 2, 5, "Sink"],
-    ]
-    data.solve(initial_routes=initial_routes, cspy=False)
-    assert int(data.best_value) == 7776
-"""
-
-
 def test_vrptw_subproblem_lp():
     data = VRPTW()
     initial_routes = [
@@ -90,6 +76,20 @@ def test_cvrpsdc_subproblem_lp():
     assert int(data.best_value) == 6208
 
 
+"""
+def test_cvrp_drop_subproblem_lp(self):
+    data = Drop()
+    initial_routes = [
+        ["Source", 9, 14, 16, "Sink"],
+        ["Source", 12, 11, 4, 3, 1, "Sink"],
+        ["Source", 7, 13, "Sink"],
+        ["Source", 8, 10, 2, 5, "Sink"],
+    ]
+    data.solve(initial_routes=initial_routes, cspy=False)
+    assert int(data.best_value) == 7776
+"""
+
+
 ########
 # cspy #
 ########
@@ -114,20 +114,6 @@ def test_cvrp_subproblem_cspy():
     assert int(data.best_value) == 6208
 
 
-"""
-def test_cvrp_drop_subproblem_cspy(self):
-    data = Drop()
-    initial_routes = [
-        ["Source", 9, 14, 16, "Sink"],
-        ["Source", 12, 11, 4, 3, 1, "Sink"],
-        ["Source", 7, 13, "Sink"],
-        ["Source", 8, 10, 2, 5, "Sink"],
-    ]
-    data.solve(initial_routes=initial_routes, cspy=True)
-    assert int(data.best_value) == 7776
-"""
-
-
 def test_vrptw_subproblem_cspy():
     data = VRPTW()
     initial_routes = [
@@ -144,3 +130,17 @@ def test_cvrpsdc_subproblem_cspy():
     data = CVRPSDC()
     data.solve(cspy=True)
     assert int(data.best_value) == 6208
+
+
+"""
+def test_cvrp_drop_subproblem_cspy(self):
+    data = Drop()
+    initial_routes = [
+        ["Source", 9, 14, 16, "Sink"],
+        ["Source", 12, 11, 4, 3, 1, "Sink"],
+        ["Source", 7, 13, "Sink"],
+        ["Source", 8, 10, 2, 5, "Sink"],
+    ]
+    data.solve(initial_routes=initial_routes, cspy=True)
+    assert int(data.best_value) == 7776
+"""
