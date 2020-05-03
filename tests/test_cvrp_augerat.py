@@ -33,11 +33,11 @@ class TestsAugerat:
 
     def test_subproblem_lp(self):
         self.data.solve()
-        assert round(self.data.best_value, 1) == 457.9
+        assert round(self.data.best_value, -1) in [450, 460]
 
     def test_subproblem_cspy(self):
         self.data.solve(cspy=True)
-        assert round(self.data.best_value, 1) == 457.9
+        assert round(self.data.best_value, -1) in [450, 460]
 
     def test_subproblem_lp_with_initial_routes(self):
         # benchmark result

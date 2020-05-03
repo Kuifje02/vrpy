@@ -118,19 +118,20 @@ class VehicleRoutingProblem:
         if cspy:
             self.update_attributes_for_cspy()
             self.check_options_consistency()
+
         # Initialization
         more_routes = True
         if not self.initial_routes:
             self.initial_solution()
         else:
             self.initial_routes_to_digraphs()
-
         k = 0
         no_improvement = 0
-        # generate interesting columns
+
+        # Generate interesting columns
         while more_routes and k < 500 and no_improvement < 100:
-            k += 1
-            # solve restricted relaxed master problem
+
+            # Solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(
                 self.G,
                 self.routes_with_node,
@@ -141,6 +142,34 @@ class VehicleRoutingProblem:
             duals, relaxed_cost = masterproblem.solve()
             logger.info("iteration %s, %s" % (k, relaxed_cost))
 
+            # Solve sub problem heuristically
+            for beta in [3, 5, 7, 9]:
+                alpha = None
+                logger.info("subproblem with beta = %s" % (beta))
+                subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
+                self.routes, more_routes = subproblem.solve()
+                if more_routes:
+                    break
+
+            # If no column was found, second heuristic is tried
+            if not more_routes:
+                for alpha in [0.3, 0.5, 0.7, 0.9]:
+                    beta = None
+                    logger.info("subproblem with alpha = %s" % (alpha))
+                    subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
+                    self.routes, more_routes = subproblem.solve()
+                    if more_routes:
+                        break
+
+            # If no column was found heuristically, solve subproblem exactly
+            if not more_routes:
+                alpha, beta = None, None
+                logger.info("solving exact subproblem")
+                subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
+                self.routes, more_routes = subproblem.solve()
+
+            # Keep track of convergence rate
+            k += 1
             if k > 1 and relaxed_cost == self.lower_bound[-1]:
                 no_improvement += 1
             else:
@@ -148,57 +177,54 @@ class VehicleRoutingProblem:
             self.iteration.append(k)
             self.lower_bound.append(relaxed_cost)
 
-            # solve sub problem
-            # if alpha = 1, the subproblem is solved exactly
-            for alpha in [0.1, 0.3, 0.6, 0.9, 1]:
-                logger.info("subproblem with alpha = %s" % alpha)
-                if cspy:
-                    # with cspy
-                    subproblem = SubProblemCSPY(
-                        self.G,
-                        duals,
-                        self.routes_with_node,
-                        self.routes,
-                        self.num_stops,
-                        self.load_capacity,
-                        self.duration,
-                        self.time_windows,
-                        self.pickup_delivery,
-                        self.distribution_collection,
-                        self.undirected,
-                        alpha,
-                        exact=exact,
-                    )
-                else:
-                    # as LP
-                    subproblem = SubProblemLP(
-                        self.G,
-                        duals,
-                        self.routes_with_node,
-                        self.routes,
-                        self.num_stops,
-                        self.load_capacity,
-                        self.duration,
-                        self.time_windows,
-                        self.pickup_delivery,
-                        self.distribution_collection,
-                        self.undirected,
-                        alpha,
-                    )
-                self.routes, more_routes = subproblem.solve()
-                if more_routes:
-                    break
-
-        # export relaxed_cost = f(iteration) to Excel file
-        # self.export_convergence_rate()
-        # print(more_routes, k, no_improvement)
-
-        # solve as MIP
+        # Solve as MIP
         logger.info("MIP solution")
         masterproblem_mip = MasterSolvePulp(
             self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
         )
         self.best_value, self.best_routes = masterproblem_mip.solve()
+
+        # Export relaxed_cost = f(iteration) to Excel file
+        self.export_convergence_rate()
+
+    def def_subproblem(self, duals, alpha, beta, cspy, exact):
+        """Instanciates the subproblem."""
+        if cspy:
+            # With cspy
+            subproblem = SubProblemCSPY(
+                self.G,
+                duals,
+                self.routes_with_node,
+                self.routes,
+                self.num_stops,
+                self.load_capacity,
+                self.duration,
+                self.time_windows,
+                self.pickup_delivery,
+                self.distribution_collection,
+                self.undirected,
+                alpha,
+                beta,
+                exact=exact,
+            )
+        else:
+            # As LP
+            subproblem = SubProblemLP(
+                self.G,
+                duals,
+                self.routes_with_node,
+                self.routes,
+                self.num_stops,
+                self.load_capacity,
+                self.duration,
+                self.time_windows,
+                self.pickup_delivery,
+                self.distribution_collection,
+                self.undirected,
+                alpha,
+                beta,
+            )
+        return subproblem
 
     def prune_graph(self):
         """Preprocessing:
@@ -206,7 +232,7 @@ class VehicleRoutingProblem:
            - Strengthens time windows
         """
         infeasible_arcs = []
-        # remove infeasible arcs (capacities)
+        # Remove infeasible arcs (capacities)
         if self.load_capacity:
             for (i, j) in self.G.edges():
                 if (
@@ -215,7 +241,7 @@ class VehicleRoutingProblem:
                 ):
                     infeasible_arcs.append((i, j))
 
-        # remove infeasible arcs (time windows)
+        # Remove infeasible arcs (time windows)
         if self.time_windows:
             for (i, j) in self.G.edges():
                 travel_time = self.G.edges[i, j]["time"]
@@ -228,7 +254,7 @@ class VehicleRoutingProblem:
                 ):
                     infeasible_arcs.append((i, j))
 
-            # strengthen time windows
+            # Strengthen time windows
             for v in self.G.nodes():
                 if v not in ["Source", "Sink"]:
                     # earliest time is coming straight from depot
@@ -237,12 +263,12 @@ class VehicleRoutingProblem:
                         self.G.nodes["Source"]["lower"]
                         + self.G.edges["Source", v]["time"],
                     )
-                    # latest time is going straight to depot
+                    # Latest time is going straight to depot
                     self.G.nodes[v]["upper"] = min(
                         self.G.nodes[v]["upper"],
                         self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
-        # remove Source-Sink
+        # Remove Source-Sink
         if ("Source", "Sink") in self.G.edges():
             infeasible_arcs.append(("Source", "Sink"))
 
@@ -258,13 +284,13 @@ class VehicleRoutingProblem:
                 if ("Source", v) in self.G.edges():
                     cost_1 = self.G.edges["Source", v]["cost"]
                 else:
-                    # if edge does not exist, create it with a high cost
+                    # If edge does not exist, create it with a high cost
                     cost_1 = 1e10
                     self.G.add_edge("Source", v, cost=cost_1)
                 if (v, "Sink") in self.G.edges():
                     cost_2 = self.G.edges[v, "Sink"]["cost"]
                 else:
-                    # if edge does not exist, create it with a high cost
+                    # If edge does not exist, create it with a high cost
                     cost_2 = 1e10
                     self.G.add_edge(v, "Sink", cost=cost_2)
                 total_cost = cost_1 + cost_2
@@ -336,14 +362,12 @@ class VehicleRoutingProblem:
         A knapsack problem is solved to maximize the number of
         visits, subject to capacity constraints.
         """
-        # objects are vertices
-        # maximize sum of vertices
-        # such that sum of sizes (demands) respect capacity constraints
-        size = [self.G.nodes[v]["demand"] for v in self.G.nodes()]
-        weight = [1] * len(self.G.nodes())
-        # solve the knapsack problem
-        max_num_stops = knapsack(size, weight).solve(self.load_capacity)[0]
-        # update num_stops attribute
+        # Maximize sum of vertices such that sum of demands respect capacity constraints
+        demands = [self.G.nodes[v]["demand"] for v in self.G.nodes()]
+        vertices = [1] * len(self.G.nodes())
+        # Solve the knapsack problem
+        max_num_stops = knapsack(demands, vertices).solve(self.load_capacity)[0]
+        # Update num_stops attribute
         if self.num_stops:
             self.num_stops = min(max_num_stops, self.num_stops)
         else:
