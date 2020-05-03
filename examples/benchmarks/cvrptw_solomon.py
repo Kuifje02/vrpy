@@ -115,7 +115,7 @@ class DataSet:
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
         return sqrt(delta_x ** 2 + delta_y ** 2)
 
-    def solve(self, num_stops=None, cspy=False, exact=False):
+    def solve(self, initial_routes=None, num_stops=None, cspy=False, exact=False):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -124,7 +124,12 @@ class DataSet:
         print(self.G.graph["name"], self.G.graph["subproblem"])
         print("===========")
         prob = VehicleRoutingProblem(
-            self.G, num_stops=num_stops, load_capacity=self.max_load, time_windows=True
+            self.G,
+            initial_routes=initial_routes,
+            edge_cost_function=self.distance,
+            num_stops=num_stops,
+            load_capacity=self.max_load,
+            time_windows=True,
         )
         prob.solve(cspy=cspy, exact=exact)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
@@ -183,25 +188,31 @@ if __name__ == "__main__":
     res_cspy_heuristic = []
     time_cspy_heuristic = []
 
+    initial_routes = [
+        ["Source", 13, 17, 15, 16, 14, 12, "Sink"],
+        ["Source", 5, 3, 7, 8, 10, 11, 9, 6, 4, 2, 1, "Sink"],
+    ]
+    initial_routes = None
+
     for n in range(2, 30):
         solomon_data = DataSet(path="./data/", instance_name="c101.txt", n_vertices=n)
         instance.append(solomon_data.G.graph["name"])
         nodes.append(n)
         # LP
         start = time.time()
-        solomon_data.solve(cspy=False)
+        solomon_data.solve(initial_routes=initial_routes, cspy=False)
         time_lp.append(float(time.time() - start))
         res_lp.append(solomon_data.best_value)
 
         # cspy exact
         start_cspy = time.time()
-        solomon_data.solve(cspy=True, exact=True)
+        solomon_data.solve(initial_routes=initial_routes, cspy=True, exact=True)
         time_cspy.append(float(time.time() - start_cspy))
         res_cspy.append(solomon_data.best_value)
 
         # cspy heuristic
         start_cspy = time.time()
-        solomon_data.solve(cspy=True, exact=False)
+        # solomon_data.solve(cspy=True, exact=False)
         time_cspy_heuristic.append(float(time.time() - start_cspy))
         res_cspy_heuristic.append(solomon_data.best_value)
 
