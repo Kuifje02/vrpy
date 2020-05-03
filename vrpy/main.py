@@ -185,7 +185,7 @@ class VehicleRoutingProblem:
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
         # Export relaxed_cost = f(iteration) to Excel file
-        self.export_convergence_rate()
+        # self.export_convergence_rate()
 
     def def_subproblem(self, duals, alpha, beta, cspy, exact):
         """Instanciates the subproblem."""
