@@ -399,7 +399,7 @@ class VehicleRoutingProblem:
             return sol[n - 1][capacity]
 
         # Maximize sum of vertices such that sum of demands respect capacity constraints
-        demands = [self.G.nodes[v]["demand"] for v in self.G.nodes()]
+        demands = [int(self.G.nodes[v]["demand"]) for v in self.G.nodes()]
         # Solve the knapsack problem
         max_num_stops = knapsack(demands, self.load_capacity)
         # Update num_stops attribute
