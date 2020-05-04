@@ -1,6 +1,5 @@
 from networkx import DiGraph
 import logging
-from knapsack import knapsack
 from pandas import DataFrame
 from time import time
 
@@ -372,11 +371,37 @@ class VehicleRoutingProblem:
         A knapsack problem is solved to maximize the number of
         visits, subject to capacity constraints.
         """
+
+        def knapsack(weights, capacity):
+            """
+            Binary knapsack solver with identical profits of weight 1.
+            Args:
+                weights (list) : list of integers
+                capacity (int) : maximum capacity
+            Returns:
+                (int) : maximum number of objects
+            """
+            n = len(weights)
+            # sol : [items, remaining capacity]
+            sol = [[0] * (capacity + 1) for i in range(n)]
+            added = [[False] * (capacity + 1) for i in range(n)]
+            for i in range(n):
+                for j in range(capacity + 1):
+                    if weights[i] > j:
+                        sol[i][j] = sol[i - 1][j]
+                    else:
+                        sol_add = 1 + sol[i - 1][j - weights[i]]
+                        if sol_add > sol[i - 1][j]:
+                            sol[i][j] = sol_add
+                            added[i][j] = True
+                        else:
+                            sol[i][j] = sol[i - 1][j]
+            return sol[n - 1][capacity]
+
         # Maximize sum of vertices such that sum of demands respect capacity constraints
         demands = [self.G.nodes[v]["demand"] for v in self.G.nodes()]
-        vertices = [1] * len(self.G.nodes())
         # Solve the knapsack problem
-        max_num_stops = knapsack(demands, vertices).solve(self.load_capacity)[0]
+        max_num_stops = knapsack(demands, self.load_capacity)
         # Update num_stops attribute
         if self.num_stops:
             self.num_stops = min(max_num_stops, self.num_stops)
