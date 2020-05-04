@@ -22,12 +22,13 @@ class SubProblemLP(SubProblemBase):
         self.x = pulp.LpVariable.dicts("x", self.sub_G.edges(), cat=pulp.LpBinary)
 
     # @profile
-    def solve(self):
+    def solve(self, time_limit):
         if not self.run_subsolve:
             return self.routes, False
         self.formulate()
         # self.prob.writeLP("prob.lp")
-        self.prob.solve()
+        # self.prob.solve()
+        self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
         # if you have CPLEX
         # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
         logger.debug("")

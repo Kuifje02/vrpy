@@ -55,7 +55,7 @@ class SubProblemCSPY(SubProblemBase):
             edge[2]["res_cost"] = zeros(len(self.resources))
 
     # @profile
-    def solve(self):
+    def solve(self, time_limit):
         """
         Solves the subproblem with cspy.
 
@@ -63,6 +63,8 @@ class SubProblemCSPY(SubProblemBase):
         1. heuristic algorithm gives a new route (column with -ve reduced cost);
         2. exact algorithm gives a new route;
         3. neither heuristic nor exact give a new route.
+
+        Note : time_limit has no effect for the moment
         """
         if not self.run_subsolve:
             return self.routes, False

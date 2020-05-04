@@ -151,7 +151,7 @@ class VehicleRoutingProblem:
                 alpha = None
                 logger.debug("subproblem with beta = %s" % (beta))
                 subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
-                self.routes, more_routes = subproblem.solve()
+                self.routes, more_routes = subproblem.solve(time_limit)
                 if more_routes:
                     break
 
@@ -161,7 +161,7 @@ class VehicleRoutingProblem:
                     beta = None
                     logger.debug("subproblem with alpha = %s" % (alpha))
                     subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
-                    self.routes, more_routes = subproblem.solve()
+                    self.routes, more_routes = subproblem.solve(time_limit)
                     if more_routes:
                         break
 
@@ -170,7 +170,7 @@ class VehicleRoutingProblem:
                 alpha, beta = None, None
                 logger.info("solving exact subproblem")
                 subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
-                self.routes, more_routes = subproblem.solve()
+                self.routes, more_routes = subproblem.solve(time_limit)
 
             # Keep track of convergence rate
             k += 1
