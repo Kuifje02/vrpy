@@ -2,6 +2,7 @@ from networkx import DiGraph
 import logging
 from knapsack import knapsack
 from pandas import DataFrame
+from time import time
 
 from vrpy.master_solve_pulp import MasterSolvePulp
 from vrpy.subproblem_lp import SubProblemLP
@@ -99,7 +100,7 @@ class VehicleRoutingProblem:
         self.routes_with_node = {}
 
     # @profile
-    def solve(self, cspy=True, exact=True):
+    def solve(self, cspy=True, exact=True, time_limit=None):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -111,6 +112,9 @@ class VehicleRoutingProblem:
                 Otherwise, heuristitics will be used until they produce +ve
                 reduced cost columns, after which the exact algorithm is used.
                 Defaults to True.
+            time_limit (int, optional):
+                Maximum number of seconds allowed for solving (for finding columns).
+                Defaults to None.
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
@@ -127,9 +131,10 @@ class VehicleRoutingProblem:
             self.initial_routes_to_digraphs()
         k = 0
         no_improvement = 0
+        start = time()
 
         # Generate interesting columns
-        while more_routes and k < 500 and no_improvement < 100:
+        while more_routes and k < 500 and no_improvement < 200:
 
             # Solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(
@@ -145,7 +150,7 @@ class VehicleRoutingProblem:
             # Solve sub problem heuristically
             for beta in [3, 5, 7, 9]:
                 alpha = None
-                logger.info("subproblem with beta = %s" % (beta))
+                logger.debug("subproblem with beta = %s" % (beta))
                 subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
                 self.routes, more_routes = subproblem.solve()
                 if more_routes:
@@ -155,7 +160,7 @@ class VehicleRoutingProblem:
             if not more_routes:
                 for alpha in [0.3, 0.5, 0.7, 0.9]:
                     beta = None
-                    logger.info("subproblem with alpha = %s" % (alpha))
+                    logger.debug("subproblem with alpha = %s" % (alpha))
                     subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
                     self.routes, more_routes = subproblem.solve()
                     if more_routes:
@@ -177,6 +182,11 @@ class VehicleRoutingProblem:
             self.iteration.append(k)
             self.lower_bound.append(relaxed_cost)
 
+            # Stop if time limit is passed
+            if time_limit:
+                if time() - start > time_limit:
+                    break
+
         # Solve as MIP
         logger.info("MIP solution")
         masterproblem_mip = MasterSolvePulp(
@@ -185,7 +195,7 @@ class VehicleRoutingProblem:
         self.best_value, self.best_routes = masterproblem_mip.solve()
 
         # Export relaxed_cost = f(iteration) to Excel file
-        # self.export_convergence_rate()
+        self.export_convergence_rate()
 
     def def_subproblem(self, duals, alpha, beta, cspy, exact):
         """Instanciates the subproblem."""
