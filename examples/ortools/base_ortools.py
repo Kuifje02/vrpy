@@ -1,4 +1,9 @@
-from networkx import DiGraph, draw_networkx_edges, draw_networkx_nodes
+from networkx import (
+    DiGraph,
+    draw_networkx_edges,
+    draw_networkx_nodes,
+    draw_networkx_labels,
+)
 import sys
 import matplotlib.pyplot
 import numpy as np
@@ -96,7 +101,7 @@ class OrToolsBase:
         prob.solve(cspy=cspy, exact=exact)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
 
-    def plot_solution(self):
+    def plot(self, solution=False):
         """Plots the solution after optimization."""
         # Store coordinates
         pos = {}
@@ -104,24 +109,29 @@ class OrToolsBase:
             pos[v] = np.array([self.G.nodes[v]["x"], self.G.nodes[v]["y"]])
 
         # Draw customers
-        draw_networkx_nodes(
-            self.G, pos, node_size=10,
-        )
+        draw_networkx_nodes(self.G, pos, node_size=10)
         # Draw Source and Sink
         draw_networkx_nodes(
             self.G, pos, nodelist=["Source", "Sink"], node_size=50, node_color="r"
         )
-        # Draw best routes
-        options = {
-            "node_color": "blue",
-            "node_size": 10,
-            "line_color": "grey",
-            "linewidths": 0,
-            "width": 0.1,
-        }
-        for r in self.best_routes:
-            draw_networkx_edges(r, pos, **options)
 
-        # matplotlib.pyplot.show() # Display best routes
+        # Raise text positions
+        # for p in pos:
+        #    pos[p][1] += 0.07
+        #    draw_networkx_labels(self.G, pos)
+
+        # Draw best routes
+        if solution:
+            options = {
+                "node_color": "blue",
+                "node_size": 10,
+                "line_color": "grey",
+                "linewidths": 0,
+                "width": 0.1,
+            }
+            for r in self.best_routes:
+                draw_networkx_edges(r, pos, **options)
+
+        # matplotlib.pyplot.show()  # Display best routes
         # Save best routes as image
-        matplotlib.pyplot.savefig("%s.pdf" % self.G.graph["name"])
+        # matplotlib.pyplot.savefig("%s.pdf" % self.G.graph["name"])
