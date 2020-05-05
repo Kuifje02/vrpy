@@ -45,7 +45,17 @@ prob.solve()
 
 ## Running the tests
 
+### Unit Tests
+
 ```sh
 cd tests
-pytest
+pytest unittests/
 ```
+
+### Benchmarks
+
+```
+cd tests
+pytest benchmarks/
+```
+
