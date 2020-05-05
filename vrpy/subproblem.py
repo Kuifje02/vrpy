@@ -38,9 +38,6 @@ class SubProblemBase:
         distribution_collection (bool, optional):
             True if distribution and collection are simultaneously enforced.
             Defaults to False.
-        undirected (bool, optional):
-            True if underlying network is undirected.
-            Defaults to True.
         alpha (float, optional):
             Parameter in range (0,1) for pruning the graph.
             Defaults to None.
@@ -66,7 +63,6 @@ class SubProblemBase:
         time_windows=False,
         pickup_delivery=False,
         distribution_collection=False,
-        undirected=True,
         alpha=None,
         beta=None,
     ):
@@ -81,7 +77,6 @@ class SubProblemBase:
         self.time_windows = time_windows
         self.pickup_delivery = pickup_delivery
         self.distribution_collection = distribution_collection
-        self.undirected = undirected
         self.run_subsolve = True
 
         # Add reduced cost to "weight" attribute

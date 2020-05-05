@@ -36,9 +36,13 @@ class MasterSolvePulp(MasterProblemBase):
             for r in self.routes:
                 val = pulp.value(self.y[r.graph["name"]])
                 if val is not None and val > 0:
-                    logger.info(
-                        "%s cost %s"
-                        % (shortest_path(r, "Source", "Sink"), r.graph["cost"])
+                    logger.debug(
+                        "%s cost %s load %s"
+                        % (
+                            shortest_path(r, "Source", "Sink"),
+                            r.graph["cost"],
+                            sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
+                        )
                     )
                     best_routes.append(r)
             if self.drop_penalty:

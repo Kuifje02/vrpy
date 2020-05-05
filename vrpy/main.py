@@ -1,4 +1,4 @@
-from networkx import DiGraph
+from networkx import DiGraph, shortest_path
 import logging
 from pandas import DataFrame
 from time import time
@@ -62,28 +62,23 @@ class VehicleRoutingProblem:
         pickup_delivery=False,
         distribution_collection=False,
         drop_penalty=None,
-        undirected=True,
     ):
         self.G = G
         # VRP options/constraints
-        self.initial_routes = initial_routes
-        self.edge_cost_function = edge_cost_function
-        self.num_stops = num_stops
-        self.load_capacity = load_capacity
-        self.duration = duration
-        self.time_windows = time_windows
-        self.pickup_delivery = pickup_delivery
-        self.distribution_collection = distribution_collection
-        self.drop_penalty = drop_penalty
-        self.undirected = undirected
+        self._initial_routes = initial_routes
+        self._edge_cost_function = edge_cost_function
+        self._num_stops = num_stops
+        self._load_capacity = load_capacity
+        self._duration = duration
+        self._time_windows = time_windows
+        self._pickup_delivery = pickup_delivery
+        self._distribution_collection = distribution_collection
+        self._drop_penalty = drop_penalty
 
         # Set default attributes
         self.add_default_service_time()
         # Remove infeasible arcs
         self.prune_graph()
-        # Add index attribute for each node
-        if self.undirected:
-            self.create_index_for_nodes()
 
         # Compute upper bound on number of stops as knapsack problem
         if self.load_capacity:
@@ -191,7 +186,8 @@ class VehicleRoutingProblem:
         masterproblem_mip = MasterSolvePulp(
             self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
         )
-        self.best_value, self.best_routes = masterproblem_mip.solve()
+        self.best_value, self.best_routes_as_graphs = masterproblem_mip.solve()
+        self.best_routes_as_node_lists()
 
         # Export relaxed_cost = f(iteration) to Excel file
         # self.export_convergence_rate()
@@ -211,7 +207,6 @@ class VehicleRoutingProblem:
                 self.time_windows,
                 self.pickup_delivery,
                 self.distribution_collection,
-                self.undirected,
                 alpha,
                 beta,
                 exact=exact,
@@ -229,7 +224,6 @@ class VehicleRoutingProblem:
                 self.time_windows,
                 self.pickup_delivery,
                 self.distribution_collection,
-                self.undirected,
                 alpha,
                 beta,
             )
@@ -334,6 +328,11 @@ class VehicleRoutingProblem:
 
     def update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""
+
+        if not self.load_capacity:
+            for v in self.G.nodes():
+                if "demand" not in self.G.nodes[v]:
+                    self.G.nodes[v]["demand"] = 0
         if not self.time_windows:
             for v in self.G.nodes():
                 if "lower" not in self.G.nodes[v]:
@@ -403,23 +402,18 @@ class VehicleRoutingProblem:
         # Solve the knapsack problem
         max_num_stops = knapsack(demands, self.load_capacity)
         # Update num_stops attribute
-        if self.num_stops:
-            self.num_stops = min(max_num_stops, self.num_stops)
+        if self._num_stops:
+            self._num_stops = min(max_num_stops, self.num_stops)
         else:
-            self.num_stops = max_num_stops
+            self._num_stops = max_num_stops
         logger.info("new upper bound : max num stops = %s" % self.num_stops)
 
-    def create_index_for_nodes(self):
-        """An index is created for each node ;
-           usefull if node names are not integers.
-        """
-        self.G.nodes["Source"]["id"] = 0
-        self.G.nodes["Sink"]["id"] = len(self.G.nodes()) - 1
-        index = 0
-        for v in self.G.nodes():
-            if v not in ["Source", "Sink"]:
-                index += 1
-                self.G.nodes[v]["id"] = index
+    def best_routes_as_node_lists(self):
+        """Converts route as DiGraph to route as node list."""
+        self.best_routes = []
+        for route in self.best_routes_as_graphs:
+            node_list = shortest_path(route, "Source", "Sink")
+            self.best_routes.append(node_list)
 
     def export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file.
@@ -429,3 +423,39 @@ class VehicleRoutingProblem:
         convergence = dict(zip(keys, values))
         df = DataFrame(convergence, columns=keys)
         df.to_excel("convergence.xls", index=False)
+
+    @property
+    def initial_routes(self):
+        return self._initial_routes
+
+    @property
+    def edge_cost_function(self):
+        return self._edge_cost_function
+
+    @property
+    def num_stops(self):
+        return self._num_stops
+
+    @property
+    def load_capacity(self):
+        return self._load_capacity
+
+    @property
+    def duration(self):
+        return self._duration
+
+    @property
+    def time_windows(self):
+        return self._time_windows
+
+    @property
+    def pickup_delivery(self):
+        return self._pickup_delivery
+
+    @property
+    def distribution_collection(self):
+        return self._distribution_collection
+
+    @property
+    def drop_penalty(self):
+        return self._drop_penalty

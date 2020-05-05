@@ -1,4 +1,4 @@
-from networkx import DiGraph, negative_edge_cycle  # , shortest_path
+from networkx import DiGraph, negative_edge_cycle
 import pulp
 import logging
 from vrpy.subproblem import SubProblemBase
@@ -126,10 +126,6 @@ class SubProblemLP(SubProblemBase):
         if self.distribution_collection:
             self.add_distribution_collection()
 
-        # Break some symmetry
-        # if self.undirected and not self.time_windows:
-        #    self.break_symmetry()
-
     def add_time_windows(self):
         # Big-M definition
         M = self.sub_G.nodes["Sink"]["upper"]
@@ -214,25 +210,6 @@ class SubProblemLP(SubProblemBase):
         for v in self.sub_G.nodes():
             if v != "Sink":
                 self.prob += self.y[v] <= self.y["Sink"], "Sink_after_%s" % v
-
-    def break_symmetry(self):
-        """If the graph is undirected, divide the number of possible paths by 2."""
-        # index of first node < index of last node
-        self.prob += (
-            pulp.lpSum(
-                [
-                    self.sub_G.nodes[v]["id"] * self.x[("Source", v)]
-                    for v in self.sub_G.successors("Source")
-                ]
-            )
-            <= pulp.lpSum(
-                [
-                    self.sub_G.nodes[v]["id"] * self.x[(v, "Sink")]
-                    for v in self.sub_G.predecessors("Sink")
-                ]
-            ),
-            "break_symmetry",
-        )
 
     def add_pickup_delivery(self):
         """

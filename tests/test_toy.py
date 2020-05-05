@@ -81,37 +81,45 @@ class TestsToy:
 
     def test_LP_stops(self):
         """Tests column generation procedure on toy graph with stop constraints"""
-        prob = VehicleRoutingProblem(self.G, num_stops=3, undirected=False)
+        prob = VehicleRoutingProblem(self.G, num_stops=3)
         prob.solve(cspy=False)
         assert prob.best_value == 70
 
     def test_LP_stops_capacity(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(
-            self.G, num_stops=3, load_capacity=10, undirected=False
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10)
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
         prob = VehicleRoutingProblem(
-            self.G, num_stops=3, load_capacity=10, duration=62, undirected=False
+            self.G, num_stops=3, load_capacity=10, duration=62,
         )
         prob.solve(cspy=False)
         assert prob.best_value == 85
 
     def test_LP_stops_time_windows(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(
-            self.G, num_stops=3, time_windows=True, undirected=False
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
     def test_LP_stops_elementarity(self):
         """Tests column generation procedure on toy graph"""
         self.G.add_edge(2, 1, cost=2)
-        prob = VehicleRoutingProblem(self.G, num_stops=3, undirected=False)
+        prob = VehicleRoutingProblem(self.G, num_stops=3,)
         prob.solve(cspy=False)
         assert prob.best_value == 67
+
+    """
+    def test_all(self):
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, time_windows=True, duration=63, load_capacity=10
+        )
+        prob.solve(cspy=False)
+        lp_best = prob.best_value
+        prob.solve(cspy=True)
+        cspy_best = prob.best_value
+        assert int(lp_best) == int(cspy_best)
+    """
