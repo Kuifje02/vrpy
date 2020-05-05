@@ -1,21 +1,21 @@
 from networkx import DiGraph
 import sys
 
-sys.path.append("../")
-sys.path.append("../vrpy/")
+sys.path.append("../../vrpy/")
+
 from vrpy.main import VehicleRoutingProblem
 
 from examples.benchmarks.cvrp_augerat import DataSet
 
 
 class TestsAugerat:
+
     def setup(self):
         """
         Augerat instance P-n16-k8.vrp
         """
-        self.data = DataSet(
-            path="../examples/benchmarks/data/", instance_name="P-n16-k8.vrp"
-        )
+        self.data = DataSet(path="../examples/benchmarks/data/",
+                            instance_name="P-n16-k8.vrp")
         self.G = self.data.G
 
     def test_setup_instance_name(self):
