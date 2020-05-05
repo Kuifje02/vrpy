@@ -65,15 +65,15 @@ class VehicleRoutingProblem:
     ):
         self.G = G
         # VRP options/constraints
-        self._initial_routes = initial_routes
-        self._edge_cost_function = edge_cost_function
-        self._num_stops = num_stops
-        self._load_capacity = load_capacity
-        self._duration = duration
-        self._time_windows = time_windows
-        self._pickup_delivery = pickup_delivery
-        self._distribution_collection = distribution_collection
-        self._drop_penalty = drop_penalty
+        self.initial_routes = initial_routes
+        self.edge_cost_function = edge_cost_function
+        self.num_stops = num_stops
+        self.load_capacity = load_capacity
+        self.duration = duration
+        self.time_windows = time_windows
+        self.pickup_delivery = pickup_delivery
+        self.distribution_collection = distribution_collection
+        self.drop_penalty = drop_penalty
 
         # Set default attributes
         self.add_default_service_time()
@@ -402,10 +402,10 @@ class VehicleRoutingProblem:
         # Solve the knapsack problem
         max_num_stops = knapsack(demands, self.load_capacity)
         # Update num_stops attribute
-        if self._num_stops:
-            self._num_stops = min(max_num_stops, self.num_stops)
+        if self.num_stops:
+            self.num_stops = min(max_num_stops, self.num_stops)
         else:
-            self._num_stops = max_num_stops
+            self.num_stops = max_num_stops
         logger.info("new upper bound : max num stops = %s" % self.num_stops)
 
     def best_routes_as_node_lists(self):
@@ -423,39 +423,3 @@ class VehicleRoutingProblem:
         convergence = dict(zip(keys, values))
         df = DataFrame(convergence, columns=keys)
         df.to_excel("convergence.xls", index=False)
-
-    @property
-    def initial_routes(self):
-        return self._initial_routes
-
-    @property
-    def edge_cost_function(self):
-        return self._edge_cost_function
-
-    @property
-    def num_stops(self):
-        return self._num_stops
-
-    @property
-    def load_capacity(self):
-        return self._load_capacity
-
-    @property
-    def duration(self):
-        return self._duration
-
-    @property
-    def time_windows(self):
-        return self._time_windows
-
-    @property
-    def pickup_delivery(self):
-        return self._pickup_delivery
-
-    @property
-    def distribution_collection(self):
-        return self._distribution_collection
-
-    @property
-    def drop_penalty(self):
-        return self._drop_penalty
