@@ -179,6 +179,7 @@ class ClarkWright:
 
         if (
             not merged
+            and (j, i) in self.G.edges()
             and i not in self.processed_nodes  # 1
             and self.constraints_met(j, i)  # 2
             and j in self.route[j].successors("Source")  # 3a
