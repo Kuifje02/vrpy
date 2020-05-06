@@ -45,9 +45,6 @@ class VehicleRoutingProblem:
         drop_penalty (int, optional):
             Value of penalty if node is dropped.
             Defaults to None.
-        undirected (bool, optional):
-            True if underlying network is undirected.
-            Defaults to True.
     """
 
     def __init__(
@@ -74,15 +71,6 @@ class VehicleRoutingProblem:
         self.pickup_delivery = pickup_delivery
         self.distribution_collection = distribution_collection
         self.drop_penalty = drop_penalty
-
-        # Set default attributes
-        self.add_default_service_time()
-        # Remove infeasible arcs
-        self.prune_graph()
-
-        # Compute upper bound on number of stops as knapsack problem
-        if self.load_capacity:
-            self.get_num_stops_upper_bound()
 
         # Attributes to keep track of solution
         self.best_solution = None
@@ -112,10 +100,8 @@ class VehicleRoutingProblem:
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
-        # Setup attributes if cspy
-        if cspy:
-            self.update_attributes_for_cspy()
-            self.check_options_consistency()
+        # Pre-processing
+        self.pre_solve(cspy)
 
         # Initialization
         more_routes = True
@@ -191,6 +177,20 @@ class VehicleRoutingProblem:
 
         # Export relaxed_cost = f(iteration) to Excel file
         # self.export_convergence_rate()
+
+    def pre_solve(self, cspy):
+        """Some pre-processing."""
+        # Set default attributes
+        self.add_default_service_time()
+        # Remove infeasible arcs
+        self.prune_graph()
+        # Compute upper bound on number of stops as knapsack problem
+        if self.load_capacity:
+            self.get_num_stops_upper_bound()
+        # Setup attributes if cspy
+        if cspy:
+            self.update_attributes_for_cspy()
+            self.check_options_consistency()
 
     def def_subproblem(self, duals, alpha, beta, cspy, exact):
         """Instanciates the subproblem."""
@@ -271,9 +271,6 @@ class VehicleRoutingProblem:
                         self.G.nodes[v]["upper"],
                         self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
-        # Remove Source-Sink
-        if ("Source", "Sink") in self.G.edges():
-            infeasible_arcs.append(("Source", "Sink"))
 
         self.G.remove_edges_from(infeasible_arcs)
 

@@ -9,13 +9,13 @@ from examples.benchmarks.cvrp_augerat import DataSet
 
 
 class TestsAugerat:
-
     def setup(self):
         """
         Augerat instance P-n16-k8.vrp
         """
-        self.data = DataSet(path="../examples/benchmarks/data/",
-                            instance_name="P-n16-k8.vrp")
+        self.data = DataSet(
+            path="../examples/benchmarks/data/", instance_name="P-n16-k8.vrp"
+        )
         self.G = self.data.G
 
     def test_setup_instance_name(self):
@@ -29,7 +29,7 @@ class TestsAugerat:
         assert len(self.G.nodes()) == 16 + 1
 
     def test_setup_edges(self):
-        assert len(self.G.edges()) == 16 * (16 - 1)
+        assert len(self.G.edges()) == 16 * (16 - 1) + 1
 
     def test_subproblem_lp(self):
         self.data.solve()

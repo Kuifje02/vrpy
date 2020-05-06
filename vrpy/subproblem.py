@@ -5,7 +5,6 @@ from networkx import (
     add_path,
     has_path,
     shortest_simple_paths,
-    strongly_connected_components,
 )
 from itertools import islice
 

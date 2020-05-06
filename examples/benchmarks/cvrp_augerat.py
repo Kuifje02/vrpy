@@ -1,9 +1,8 @@
 from math import sqrt
-from networkx import relabel_nodes, DiGraph, draw_networkx_edges, draw_networkx_nodes
+from networkx import relabel_nodes, DiGraph
 import numpy as np
 from pandas import read_csv
 import sys
-import matplotlib.pyplot
 
 sys.path.append("../../")
 sys.path.append("../../../cspy")
@@ -53,6 +52,9 @@ class DataSet:
         # Read vehicle capacity
         with open(path + instance_name) as fp:
             for i, line in enumerate(fp):
+                if i == 1:
+                    best = line.split()[-1][:-1]
+                    self.best_known_solution = int(best)
                 if i == 5:
                     self.max_load = int(line.split()[2])
         fp.close()
@@ -61,7 +63,10 @@ class DataSet:
         self.G = DiGraph(name=instance_name[:-4], vehicle_capacity=self.max_load,)
 
         # Read nodes from txt file
-        n_vertices = int(instance_name[3:5])
+        if instance_name[5] == "-":
+            n_vertices = int(instance_name[3:5])
+        else:
+            n_vertices = int(instance_name[3:6])
         df_augerat = read_csv(
             path + instance_name, sep="\t", skiprows=6, nrows=n_vertices,
         )
@@ -91,7 +96,7 @@ class DataSet:
             if u != "Sink":
                 for v in self.G.nodes():
                     if v != "Source":
-                        if u != v and (u, v) != ("Source", "Sink"):
+                        if u != v:
                             self.G.add_edge(u, v, cost=round(self.distance(u, v), 1))
 
         # relabel
@@ -114,7 +119,14 @@ class DataSet:
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
         return sqrt(delta_x ** 2 + delta_y ** 2)
 
-    def solve(self, initial_routes=None, cspy=False, num_stops=None, exact=True):
+    def solve(
+        self,
+        initial_routes=None,
+        cspy=False,
+        num_stops=None,
+        exact=True,
+        time_limit=None,
+    ):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -129,109 +141,5 @@ class DataSet:
             load_capacity=self.max_load,
             num_stops=num_stops,
         )
-        prob.solve(cspy=cspy, exact=exact)
+        prob.solve(cspy=cspy, exact=exact, time_limit=time_limit)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
-
-    def plot_solution(self):
-        """Plots the solution after optimization."""
-        # Store coordinates
-        pos = {}
-        for v in self.G.nodes():
-            pos[v] = np.array([self.G.nodes[v]["x"], self.G.nodes[v]["y"]])
-
-        # Draw customers
-        draw_networkx_nodes(
-            self.G, pos, node_size=10,
-        )
-        # Draw Source and Sink
-        draw_networkx_nodes(
-            self.G, pos, nodelist=["Source", "Sink"], node_size=50, node_color="r"
-        )
-        # Draw best routes
-        options = {
-            "node_color": "blue",
-            "node_size": 10,
-            "line_color": "grey",
-            "linewidths": 0,
-            "width": 0.1,
-        }
-        for r in self.best_routes:
-            draw_networkx_edges(r, pos, **options)
-
-        # matplotlib.pyplot.show() # Display best routes
-        # Save best routes as image
-        matplotlib.pyplot.savefig("%s.pdf" % self.G.graph["name"])
-
-
-if __name__ == "__main__":
-    import time
-
-    keys = [
-        "instance",
-        "nodes",
-        "stops",
-        "lp",
-        "time lp (s)",
-        "cspy exact",
-        "time cspy exact (s)",
-        "cspy heur",
-        "time cspy heur (s)",
-    ]
-    instance = []
-    nodes = []
-    num_stops = []
-    # LP
-    res_lp = []
-    time_lp = []
-    # cspy exact
-    res_cspy = []
-    time_cspy = []
-    # cspy heuristic
-    res_cspy_h = []
-    time_cspy_h = []
-
-    data = DataSet(path="./data/", instance_name="P-n16-k8.vrp")
-
-    for stops in [2, 3, 4, 5]:
-        print("N stops :", stops)
-        instance.append("P-n16-k8.vrp")
-        nodes.append(16)
-        num_stops.append(stops)
-
-        # LP
-        start = time.time()
-        data.solve(
-            cspy=False, num_stops=stops,
-        )
-        res_lp.append(data.best_value)
-        time_lp.append(float(time.time() - start))
-
-        # cspy exact
-        start = time.time()
-        data.solve(cspy=True, num_stops=stops, exact=True)
-        res_cspy.append(data.best_value)
-        time_cspy.append(float(time.time() - start))
-        # print(float(time.time() - start))
-
-        # cspy heuristic
-        start = time.time()
-        # data.solve(cspy=True, num_stops=stops, exact=False)
-        res_cspy_h.append(0)  # data.best_value)
-        time_cspy_h.append(float(time.time() - start))
-
-    from pandas import DataFrame
-
-    values = [
-        instance,
-        nodes,
-        num_stops,
-        res_lp,
-        time_lp,
-        res_cspy,
-        time_cspy,
-        res_cspy_h,
-        time_cspy_h,
-    ]
-    compar = dict(zip(keys, values))
-    df = DataFrame(compar, columns=keys)
-    df.to_excel("compar.xls", index=False)
