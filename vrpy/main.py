@@ -6,6 +6,7 @@ from time import time
 from vrpy.master_solve_pulp import MasterSolvePulp
 from vrpy.subproblem_lp import SubProblemLP
 from vrpy.subproblem_cspy import SubProblemCSPY
+from vrpy.clark_wright import ClarkWright, RoundTrip
 
 logger = logging.getLogger(__name__)
 
@@ -275,31 +276,30 @@ class VehicleRoutingProblem:
         self.G.remove_edges_from(infeasible_arcs)
 
     def initial_solution(self):
-        """If no initial solution is given, creates one"""
-        initial_routes = []
-        route_id = 0
-        for v in self.G.nodes():
-            if v not in ["Source", "Sink"]:
-                route_id += 1
-                if ("Source", v) in self.G.edges():
-                    cost_1 = self.G.edges["Source", v]["cost"]
-                else:
-                    # If edge does not exist, create it with a high cost
-                    cost_1 = 1e10
-                    self.G.add_edge("Source", v, cost=cost_1)
-                if (v, "Sink") in self.G.edges():
-                    cost_2 = self.G.edges[v, "Sink"]["cost"]
-                else:
-                    # If edge does not exist, create it with a high cost
-                    cost_2 = 1e10
-                    self.G.add_edge(v, "Sink", cost=cost_2)
-                total_cost = cost_1 + cost_2
-                route = DiGraph(name=route_id, cost=total_cost)
-                route.add_edge("Source", v, cost=cost_1)
-                route.add_edge(v, "Sink", cost=cost_2)
-                initial_routes.append(route)
-                self.routes_with_node[v] = [route]
+        """
+        If no initial solution is given, creates one :
+            - with Clark & Wright if possible;
+            - with a round trip otherwise.
+        """
+        # Run Clark & Wright if possible
+        if (
+            True
+            and not self.time_windows
+            and not self.pickup_delivery
+            and not self.distribution_collection
+            and not self.drop_penalty
+        ):
+            alg = ClarkWright(self.G, self.load_capacity, self.duration, self.num_stops)
+            alg.run()
+            initial_routes = alg.best_routes
 
+        # Otherwise compute round trips
+        else:
+            alg = RoundTrip(self.G)
+            alg.run()
+            initial_routes = alg.round_trips
+
+        self.routes_with_node = alg.route
         self.routes = initial_routes
 
     def initial_routes_to_digraphs(self):
