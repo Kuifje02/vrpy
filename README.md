@@ -21,13 +21,13 @@ A python framework for solving the VRP and its variants with column generation.
 
 ## Documentation (work in progress)
 
-## Usage (work in progress)
+## Usage
 
 ```python
 from networkx import DiGraph
 from vrpy.main import VehicleRoutingProblem
 
-# Define the graph, must contain "Source" and "Sink" nodes
+# Define the network
 G = DiGraph()
 G.add_edge("Source",1,cost=1,time=2)
 G.add_edge("Source",2,cost=2,time=1)
@@ -37,10 +37,12 @@ G.add_edge(1,2,cost=1,time=1)
 G.nodes[1]["demand"] = 5
 G.nodes[2]["demand"] = 4
 
-# Solve the VRP
-# Optional values define constraints
+# Define the Vehicle Routing Problem
 prob = VehicleRoutingProblem(G, num_stops=4, load_capacity=10, duration=4)
+
+# Solve and display solution value
 prob.solve()
+prob.best_value
 ```
 
 ## Running the tests
@@ -54,8 +56,7 @@ pytest unittests/
 
 ### Benchmarks
 
-```
+```sh
 cd tests
 pytest benchmarks/
 ```
-
