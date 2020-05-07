@@ -5,7 +5,7 @@ from networkx import DiGraph, add_path
 
 sys.path.append("../../cspy")
 
-from cspy import BiDirectional, Tabu, GreedyElim
+from cspy import BiDirectional, GreedyElim  # Tabu
 from vrpy.subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)
@@ -39,13 +39,13 @@ class SubProblemCSPY(SubProblemBase):
         # Default lower and upper bounds
         self.min_res = [0] * len(self.resources)
         # Add upper bounds for mono, stops, load and time, and time windows
-        total_demand = sum(
-            [self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
+        total_demand = sum([self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
         self.max_res = [
             len(self.sub_G.nodes()),  # stop/mono
             total_demand,  # load
-            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()
-                ]),  # time
+            sum(
+                [self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()]
+            ),  # time
             1,  # time windows
             total_demand,  # pickup
             total_demand,  # deliver
@@ -102,7 +102,7 @@ class SubProblemCSPY(SubProblemBase):
             logger.debug("subproblem")
             logger.debug("cost = %s" % self.alg.total_cost)
             logger.debug("resources = %s" % self.alg.consumed_resources)
-            if self.alg.total_cost < -(10**-3):
+            if self.alg.total_cost < -(10 ** -3):
                 more_routes = True
                 self.add_new_route()
                 logger.debug("new route %s" % self.alg.path)
@@ -136,12 +136,14 @@ class SubProblemCSPY(SubProblemBase):
             self.max_res[3] = 0
         if self.duration or self.time_windows:
             # Maximum feasible arrival time
-            self.T = max([
-                self.sub_G.nodes[v]["upper"] +
-                self.sub_G.nodes[v]["service_time"] +
-                self.sub_G.edges[v, "Sink"]["time"]
-                for v in self.sub_G.predecessors("Sink")
-            ])
+            self.T = max(
+                [
+                    self.sub_G.nodes[v]["upper"]
+                    + self.sub_G.nodes[v]["service_time"]
+                    + self.sub_G.edges[v, "Sink"]["time"]
+                    for v in self.sub_G.predecessors("Sink")
+                ]
+            )
         if self.load_capacity and self.distribution_collection:
             self.max_res[4] = self.load_capacity
             self.max_res[5] = self.load_capacity
@@ -191,13 +193,11 @@ class SubProblemCSPY(SubProblemBase):
             travel_time = self.sub_G.edges[i, j]["time"]
             self.sub_G.edges[i, j]["res_cost"][2] = travel_time
 
-    """
-    Custom REFs.
-    Based on Righini and Salani (2006).
-    Used for time, time windows, and/or distribution collection.
-    """
-
     def get_REF(self, type_):
+        """
+        Returns custom REFs if time, time windows, and/or distribution collection.
+        Based on Righini and Salani (2006).
+        """
         if self.duration or self.time_windows or self.distribution_collection:
             # Use custom REF
             if type_ == "forward":
@@ -216,7 +216,7 @@ class SubProblemCSPY(SubProblemBase):
         """
         new_res = array(cumulative_res)
         # extract data
-        i, j, edge_data = edge[0:3]
+        i, j = edge[0:2]
         # stops/monotone resource
         new_res[0] += 1
         # load
@@ -239,8 +239,7 @@ class SubProblemCSPY(SubProblemBase):
             # Pickup
             new_res[4] += self.sub_G.nodes[j]["collect"]
             # Delivery
-            new_res[5] = max(new_res[5] + self.sub_G.nodes[j]["demand"],
-                             new_res[4])
+            new_res[5] = max(new_res[5] + self.sub_G.nodes[j]["demand"], new_res[4])
 
         return new_res
 
@@ -249,7 +248,7 @@ class SubProblemCSPY(SubProblemBase):
         Resource extension for backward paths.
         """
         new_res = array(cumulative_res)
-        i, j, edge_data = edge[0:3]
+        i, j = edge[0:2]
         # monotone resource
         new_res[0] -= 1
         # load
@@ -260,11 +259,9 @@ class SubProblemCSPY(SubProblemBase):
         travel_time = self.sub_G.edges[i, j]["time"]
         # Lower time windows
         a_i = self.sub_G.nodes[i]["lower"]
-        a_j = self.sub_G.nodes[j]["lower"]
         # Upper time windows
         b_i = self.sub_G.nodes[i]["upper"]
-        new_res[2] = max(new_res[2] + theta_j + travel_time,
-                         self.T - b_i - theta_i)
+        new_res[2] = max(new_res[2] + theta_j + travel_time, self.T - b_i - theta_i)
 
         # time-window feasibility
         if not self.time_windows or new_res[2] <= self.T - a_i - theta_i:
@@ -276,8 +273,7 @@ class SubProblemCSPY(SubProblemBase):
             # Delivery
             new_res[5] += new_res[5] + self.sub_G.nodes[i]["demand"]
             # Pickup
-            new_res[4] = max(new_res[5],
-                             new_res[4] + self.sub_G.nodes[i]["collect"])
+            new_res[4] = max(new_res[5], new_res[4] + self.sub_G.nodes[i]["collect"])
 
         return new_res
 
@@ -286,7 +282,7 @@ class SubProblemCSPY(SubProblemBase):
         Appropriate joining of forward and backward resources.
         """
         final_res = zeros(len(self.resources))
-        i, j, edge_data = edge[0:3]
+        i, j = edge[0:2]
 
         # Get relevant service times (thetas) and travel time
         theta_i = self.sub_G.nodes[i]["service_time"]
