@@ -1,5 +1,4 @@
 import logging
-from logging.handlers import RotatingFileHandler
 
 
 def setup_logger():
@@ -12,13 +11,6 @@ def setup_logger():
     # Add formatter
     formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
 
-    """
-    # Export messages to vrpy.log
-    file_handler = RotatingFileHandler("vrpy.log", maxBytes=1000000)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    """
     # Show messages on terminal
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
