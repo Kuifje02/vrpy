@@ -33,7 +33,7 @@ class ClarkWright:
         self.update_routes()
 
     def initialize_routes(self):
-        """Initialization with routes Source - node - Sink."""
+        """Initialization with round trips (Source - node - Sink)."""
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
                 # Create round trip
@@ -54,7 +54,7 @@ class ClarkWright:
                     )
 
     def update_routes(self):
-        """Stores best routes found with id."""
+        """Stores best routes found and creates its id."""
         route_id = 1
         for route in list(set(self.route.values())):
             route.graph["name"] = route_id
@@ -127,7 +127,7 @@ class ClarkWright:
         return route
 
     def constraints_met(self, existing_node, new_node):
-        """Tests if new_node can be merge in route without violating constraints."""
+        """Tests if new_node can be merged in route without violating constraints."""
         route = self.route[existing_node]
         # test if new_node already in route
         if new_node in route.nodes():
@@ -189,8 +189,7 @@ class ClarkWright:
 
 class RoundTrip:
     """
-    Computes simple round trips from the depot to each node :
-    routes created are (Source-node-Sink) for each node.
+    Computes simple round trips from the depot to each node (Source-node-Sink).
 
     Args:
         G (DiGraph): Graph on which round trips are computed.
