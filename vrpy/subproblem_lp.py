@@ -1,4 +1,4 @@
-from networkx import DiGraph, negative_edge_cycle
+from networkx import DiGraph, negative_edge_cycle, shortest_path
 import pulp
 import logging
 from vrpy.subproblem import SubProblemBase
@@ -30,12 +30,14 @@ class SubProblemLP(SubProblemBase):
         # self.prob.solve()
         self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
         # if you have CPLEX
-        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
+        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0, timelimit=60))
         logger.debug("")
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective %s" % pulp.value(self.prob.objective))
-        if pulp.value(self.prob.objective) < -(10 ** -3):
+        if pulp.value(self.prob.objective) is not None and pulp.value(
+            self.prob.objective
+        ) < -(10 ** -3):
             more_routes = True
             self.add_new_route()
             return self.routes, more_routes
@@ -64,7 +66,10 @@ class SubProblemLP(SubProblemBase):
 
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
-        logger.debug("new route %s %s" % (route_id, new_route.edges()))
+        logger.debug(
+            "new route %s %s" % (route_id, shortest_path(new_route, "Source", "Sink"))
+        )
+        logger.debug("new route reduced cost %s" % pulp.value(self.prob.objective))
         logger.debug("new route cost = %s" % self.total_cost)
         # for (i, j) in new_route.edges():
         #    print(i, j, self.sub_G.edges[i, j])
@@ -289,9 +294,6 @@ class SubProblemLP(SubProblemBase):
                 )
                 collect_load_to_v = pulp.lpSum(
                     [self.load[(u, v)] for u in self.sub_G.predecessors(v)]
-                )
-                is_used_v = pulp.lpSum(
-                    [self.x[(u, v)] for u in self.sub_G.predecessors(v)]
                 )
                 self.prob += (
                     collect_v * is_used_v == collect_load_from_v - collect_load_to_v,
