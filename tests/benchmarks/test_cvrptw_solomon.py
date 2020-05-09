@@ -1,10 +1,6 @@
-from networkx import DiGraph
 import sys
 
 sys.path.append("../")
-
-from vrpy.main import VehicleRoutingProblem
-
 from examples.benchmarks.cvrptw_solomon import DataSet
 
 

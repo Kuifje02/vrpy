@@ -1,9 +1,6 @@
-from networkx import DiGraph
 import sys
 
 sys.path.append("../../vrpy/")
-
-from vrpy.main import VehicleRoutingProblem
 
 from examples.benchmarks.cvrp_augerat import DataSet
 
