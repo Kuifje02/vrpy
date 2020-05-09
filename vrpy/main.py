@@ -78,7 +78,7 @@ class VehicleRoutingProblem:
         self,
         initial_routes=None,
         edge_cost_function=None,
-        pricing_strategy="Exact",  # ???
+        pricing_strategy="Exact",
         cspy=True,
         exact=True,
         time_limit=None,
@@ -94,6 +94,14 @@ class VehicleRoutingProblem:
                 Mapping with a cost for each edge.
                 Only necessary if initial_routes is not None.
                 Defaults to None.
+            pricing_strategy (str, optional):
+                Strategy used for solving the sub problem.
+                Four options available :
+                    1. "Exact": the subproblem is solved exactly,
+                    2. "Stops": the subproblem is solved with a limited number of stops;
+                    3. "PrunePaths": the subproblem is solved on a subgraph of G;
+                    4. "PruneEdges": the subproblem is solved on a subgraph of G;
+                Defaults to "Exact".
             cspy (bool, optional):
                 True if cspy is used for subproblem.
                 Defaults to True.
