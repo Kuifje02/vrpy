@@ -40,17 +40,18 @@ class SubProblemBase:
         distribution_collection (bool, optional):
             True if distribution and collection are simultaneously enforced.
             Defaults to False.
-        alpha (float, optional):
-            Parameter in range (0,1) for pruning the graph.
-            Defaults to None.
-        beta (int, optional):
-            Parameter > 1 for pruning the graph.
-            Defaults to None.
         sub_G (DiGraph):
             Subgraph of G.
             The subproblem is based on sub_G.
         run_subsolve (boolean):
             True if the subproblem is solved.
+        pricing_strategy (string):
+            Strategy used for solving subproblem.
+            Either "Exact", "Stops", "PrunePaths", "PruneEdges".
+            Defaults to "Exact".
+        pricing_parameter (float):
+            Parameter used depending on pricing_strategy.
+            Defaults to None.
     """
 
     def __init__(
