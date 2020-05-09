@@ -52,7 +52,7 @@ class TestsAugerat:
         r_8 = ["Source", 3, 1, "Sink"]
         ini = [r_1, r_2, r_3, r_4, r_5, r_6, r_7, r_8]
         self.data.solve(initial_routes=ini)
-        assert int(self.data.best_value) == 451
+        assert int(self.data.best_value) == 450
 
     def test_subproblem_cspy_with_initial_routes(self):
         # benchmark result
@@ -67,4 +67,4 @@ class TestsAugerat:
         r_8 = ["Source", 3, 1, "Sink"]
         ini = [r_1, r_2, r_3, r_4, r_5, r_6, r_7, r_8]
         self.data.solve(initial_routes=ini, cspy=True)
-        assert int(self.data.best_value) == 451
+        assert int(self.data.best_value) == 450

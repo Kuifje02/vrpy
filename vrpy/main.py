@@ -17,14 +17,6 @@ class VehicleRoutingProblem:
 
     Args:
         G (DiGraph): The underlying network.
-        initial_routes (list, optional):
-            List of paths (list of nodes).
-            Feasible solution for first iteration.
-            Defaults to None.
-        edge_cost_function (function, optional):
-            Mapping with a cost for each edge.
-            Only necessary if initial_routes is not None.
-            Defaults to None.
         num_stops (int, optional):
             Maximum number of stops.
             Defaults to None.
@@ -51,8 +43,6 @@ class VehicleRoutingProblem:
     def __init__(
         self,
         G,
-        initial_routes=None,
-        edge_cost_function=None,
         num_stops=None,
         load_capacity=None,
         duration=None,
@@ -63,8 +53,6 @@ class VehicleRoutingProblem:
     ):
         self.G = G
         # VRP options/constraints
-        self.initial_routes = initial_routes
-        self.edge_cost_function = edge_cost_function
         self.num_stops = num_stops
         self.load_capacity = load_capacity
         self.duration = duration
@@ -80,13 +68,32 @@ class VehicleRoutingProblem:
         self.lower_bound = []
 
         # Keep track of paths containing nodes
+        self.routes = []
         self.routes_with_node = {}
+        for v in self.G.nodes():
+            if v not in ["Source", "Sink"]:
+                self.routes_with_node[v] = []
 
-    # @profile
-    def solve(self, cspy=True, exact=True, time_limit=None):
+    def solve(
+        self,
+        initial_routes=None,
+        edge_cost_function=None,
+        pricing_strategy="Exact",  # ???
+        cspy=True,
+        exact=True,
+        time_limit=None,
+    ):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
+            initial_routes (list, optional):
+                List of paths (list of nodes).
+                Feasible solution for first iteration.
+                Defaults to None.
+            edge_cost_function (function, optional):
+                Mapping with a cost for each edge.
+                Only necessary if initial_routes is not None.
+                Defaults to None.
             cspy (bool, optional):
                 True if cspy is used for subproblem.
                 Defaults to True.
@@ -106,16 +113,16 @@ class VehicleRoutingProblem:
 
         # Initialization
         more_routes = True
-        if not self.initial_routes:
+        if not initial_routes:
             self.initial_solution()
         else:
-            self.initial_routes_to_digraphs()
+            self.convert_to_digraphs(initial_routes, edge_cost_function)
         k = 0
         no_improvement = 0
         start = time()
 
         # Generate interesting columns
-        while more_routes and k < 500 and no_improvement < 200:
+        while more_routes and k < 1000 and no_improvement < 1000:
 
             # Solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(
@@ -128,30 +135,37 @@ class VehicleRoutingProblem:
             duals, relaxed_cost = masterproblem.solve()
             logger.info("iteration %s, %s" % (k, relaxed_cost))
 
-            # Solve sub problem heuristically
-            for beta in [3, 5, 7, 9]:
-                alpha = None
-                logger.debug("subproblem with beta = %s" % (beta))
-                subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
-                self.routes, more_routes = subproblem.solve(time_limit)
-                if more_routes:
-                    break
+            # The pricing problem is solved with a heuristic strategy
+            if pricing_strategy == "Stops":
+                for stop in range(2, self.num_stops):
+                    subproblem = self.def_subproblem(
+                        duals, cspy, exact, pricing_strategy, stop
+                    )
+                    self.routes, more_routes = subproblem.solve(time_limit)
+                    if more_routes:
+                        break
 
-            # If no column was found, second heuristic is tried
-            if not more_routes:
+            if pricing_strategy == "PrunePaths":
+                for k_shortest_paths in [3, 5, 7, 9]:
+                    subproblem = self.def_subproblem(
+                        duals, cspy, exact, pricing_strategy, k_shortest_paths
+                    )
+                    self.routes, more_routes = subproblem.solve(time_limit)
+                    if more_routes:
+                        break
+
+            if pricing_strategy == "PruneEdges":
                 for alpha in [0.3, 0.5, 0.7, 0.9]:
-                    beta = None
-                    logger.debug("subproblem with alpha = %s" % (alpha))
-                    subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
+                    subproblem = self.def_subproblem(
+                        duals, cspy, exact, pricing_strategy, alpha
+                    )
                     self.routes, more_routes = subproblem.solve(time_limit)
                     if more_routes:
                         break
 
             # If no column was found heuristically, solve subproblem exactly
-            if not more_routes:
-                alpha, beta = None, None
-                logger.info("solving exact subproblem")
-                subproblem = self.def_subproblem(duals, alpha, beta, cspy, exact)
+            if not more_routes or pricing_strategy == "Exact":
+                subproblem = self.def_subproblem(duals, cspy, exact)
                 self.routes, more_routes = subproblem.solve(time_limit)
 
             # Keep track of convergence rate
@@ -166,6 +180,7 @@ class VehicleRoutingProblem:
             # Stop if time limit is passed
             if time_limit:
                 if time() - start > time_limit:
+                    logger.info("time up !")
                     break
 
         # Solve as MIP
@@ -193,7 +208,9 @@ class VehicleRoutingProblem:
             self.update_attributes_for_cspy()
             self.check_options_consistency()
 
-    def def_subproblem(self, duals, alpha, beta, cspy, exact):
+    def def_subproblem(
+        self, duals, cspy, exact, pricing_strategy="Exact", pricing_parameter=None
+    ):
         """Instanciates the subproblem."""
         if cspy:
             # With cspy
@@ -208,8 +225,8 @@ class VehicleRoutingProblem:
                 self.time_windows,
                 self.pickup_delivery,
                 self.distribution_collection,
-                alpha,
-                beta,
+                pricing_strategy,
+                pricing_parameter,
                 exact=exact,
             )
         else:
@@ -225,13 +242,14 @@ class VehicleRoutingProblem:
                 self.time_windows,
                 self.pickup_delivery,
                 self.distribution_collection,
-                alpha,
-                beta,
+                pricing_strategy,
+                pricing_parameter,
             )
         return subproblem
 
     def prune_graph(self):
-        """Preprocessing:
+        """
+        Preprocessing:
            - Removes useless edges from graph
            - Strengthens time windows
         """
@@ -283,45 +301,43 @@ class VehicleRoutingProblem:
         """
         # Run Clark & Wright if possible
         if (
-            True
-            and not self.time_windows
+            not self.time_windows
             and not self.pickup_delivery
             and not self.distribution_collection
             and not self.drop_penalty
         ):
             alg = ClarkWright(self.G, self.load_capacity, self.duration, self.num_stops)
             alg.run()
-            initial_routes = alg.best_routes
+            logger.info("Initial solution found with value %s" % alg.best_value)
+            self.routes = alg.best_routes
 
         # Otherwise compute round trips
         else:
             alg = RoundTrip(self.G)
             alg.run()
-            initial_routes = alg.round_trips
+            self.routes = alg.round_trips
 
-        self.routes_with_node = alg.route
-        self.routes = initial_routes
+        # Keep track of which routes per node
+        for v in alg.route:
+            self.routes_with_node[v] += [alg.route[v]]
 
-    def initial_routes_to_digraphs(self):
+    def convert_to_digraphs(self, initial_routes, edge_cost_function):
         """Converts list of initial routes to list of Digraphs."""
         route_id = 0
         self.routes = []
-        for r in self.initial_routes:
+        for r in initial_routes:
             total_cost = 0
             route_id += 1
             G = DiGraph(name=route_id)
             edges = list(zip(r[:-1], r[1:]))
             for (i, j) in edges:
-                dist = round(self.edge_cost_function(i, j), 1)
+                dist = round(edge_cost_function(i, j), 1)
                 G.add_edge(i, j, cost=dist)
                 total_cost += dist
             G.graph["cost"] = total_cost
             self.routes.append(G)
             for v in r:
                 self.routes_with_node[v] = [G]
-        for v in self.G.nodes():
-            if v not in self.routes_with_node:
-                self.routes_with_node[v] = []
 
     def update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""
@@ -413,8 +429,7 @@ class VehicleRoutingProblem:
             self.best_routes.append(node_list)
 
     def export_convergence_rate(self):
-        """Exports evolution of lowerbound to excel file.
-        """
+        """Exports evolution of lowerbound to excel file."""
         keys = ["k", "z"]
         values = [self.iteration, self.lower_bound]
         convergence = dict(zip(keys, values))

@@ -7,10 +7,9 @@ from vrpy.main import VehicleRoutingProblem
 
 
 class TestsToy:
-
     def setup(self):
         """
-        Creates a toy graph and sets the initial routes for first iteration
+        Creates a toy graph.
         """
         self.G = DiGraph()
         for v in [1, 2, 3, 4, 5]:
@@ -56,10 +55,7 @@ class TestsToy:
         """Tests column generation procedure on toy graph
            with stop, capacity and duration constraints
         """
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     load_capacity=10,
-                                     duration=62)
+        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
         prob.solve(exact=False)
         assert prob.best_value == 85
 
@@ -67,11 +63,7 @@ class TestsToy:
         """Tests column generation procedure on toy graph
            with stop, capacity and time_window constraints
         """
-        prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-            time_windows=True,
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
         prob.solve()
         assert prob.best_value == 80
 
@@ -99,42 +91,57 @@ class TestsToy:
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
         prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-            load_capacity=10,
-            duration=62,
+            self.G, num_stops=3, load_capacity=10, duration=62,
         )
         prob.solve(cspy=False)
         assert prob.best_value == 85
 
     def test_LP_stops_time_windows(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-            time_windows=True,
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
     def test_LP_stops_elementarity(self):
         """Tests column generation procedure on toy graph"""
         self.G.add_edge(2, 1, cost=2)
-        prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3,)
         prob.solve(cspy=False)
         assert prob.best_value == 67
 
     def test_all(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     time_windows=True,
-                                     duration=63,
-                                     load_capacity=10)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, time_windows=True, duration=63, load_capacity=10
+        )
         prob.solve(cspy=False)
         lp_best = prob.best_value
         prob.solve(cspy=True)
         cspy_best = prob.best_value
         assert int(lp_best) == int(cspy_best)
+
+    def test_initial_solution(self):
+        prob = VehicleRoutingProblem(self.G, num_stops=4)
+        routes = [
+            ["Source", 1, "Sink"],
+            ["Source", 2, 3, "Sink"],
+            ["Source", 4, 5, "Sink"],
+        ]
+
+        def constant_dist(u, v):
+            return 10
+
+        prob.solve(initial_routes=routes, edge_cost_function=constant_dist, cspy=False)
+        assert prob.best_value == 70
+
+    def test_knapsack(self):
+        prob = VehicleRoutingProblem(self.G, load_capacity=10)
+        prob.get_num_stops_upper_bound()
+        assert prob.num_stops == 4
+
+    def test_pricing_strategies(self):
+        prob = VehicleRoutingProblem(self.G, num_stops=4)
+        sol = []
+        for strategy in ["Exact", "Stops", "PrunePaths", "PruneEdges"]:
+            prob.solve(pricing_strategy=strategy)
+            sol.append(prob.best_value)
+        assert len(set(sol)) == 1

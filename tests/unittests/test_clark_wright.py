@@ -28,7 +28,7 @@ class TestsClarkWright:
     def test_round_trip(self):
         round_trips = RoundTrip(self.G)
         round_trips.run()
-        assert round_trips.route[1][0].graph["cost"] == 20
+        assert round_trips.route[1].graph["cost"] == 20
         assert len(round_trips.round_trips) == 3
 
     def test_initialization(self):
@@ -44,7 +44,7 @@ class TestsClarkWright:
     def test_result_load(self):
         self.alg.run()
         assert self.alg.best_value == 42
-        assert shortest_path(self.alg.route[1][0], "Source", "Sink") == [
+        assert shortest_path(self.alg.route[1], "Source", "Sink") == [
             "Source",
             1,
             2,
@@ -55,7 +55,7 @@ class TestsClarkWright:
         self.alg.duration = 4
         self.alg.run()
         assert self.alg.best_value == 50
-        assert shortest_path(self.alg.route[1][0], "Source", "Sink") == [
+        assert shortest_path(self.alg.route[1], "Source", "Sink") == [
             "Source",
             1,
             3,
@@ -66,7 +66,7 @@ class TestsClarkWright:
         self.alg.num_stops = 1
         self.alg.run()
         assert self.alg.best_value == 65
-        assert shortest_path(self.alg.route[1][0], "Source", "Sink") == [
+        assert shortest_path(self.alg.route[1], "Source", "Sink") == [
             "Source",
             1,
             "Sink",

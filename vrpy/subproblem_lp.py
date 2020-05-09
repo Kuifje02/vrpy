@@ -30,7 +30,7 @@ class SubProblemLP(SubProblemBase):
         # self.prob.solve()
         self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
         # if you have CPLEX
-        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0, timelimit=60))
+        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0, timelimit=5 * 30))
         logger.debug("")
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
@@ -294,6 +294,9 @@ class SubProblemLP(SubProblemBase):
                 )
                 collect_load_to_v = pulp.lpSum(
                     [self.load[(u, v)] for u in self.sub_G.predecessors(v)]
+                )
+                is_used_v = pulp.lpSum(
+                    [self.x[(u, v)] for u in self.sub_G.predecessors(v)]
                 )
                 self.prob += (
                     collect_v * is_used_v == collect_load_from_v - collect_load_to_v,

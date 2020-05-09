@@ -117,7 +117,7 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x ** 2 + delta_y ** 2)
+        return round(sqrt(delta_x ** 2 + delta_y ** 2), 0)
 
     def solve(
         self,
@@ -126,6 +126,7 @@ class DataSet:
         num_stops=None,
         exact=True,
         time_limit=None,
+        pricing_strategy="PrunePaths",
     ):
         """Instantiates instance as VRP and solves."""
         if cspy:
@@ -135,11 +136,14 @@ class DataSet:
         print(self.G.graph["name"], self.G.graph["subproblem"])
         print("===========")
         prob = VehicleRoutingProblem(
-            self.G,
+            self.G, load_capacity=self.max_load, num_stops=num_stops,
+        )
+        prob.solve(
             initial_routes=initial_routes,
             edge_cost_function=self.distance,
-            load_capacity=self.max_load,
-            num_stops=num_stops,
+            cspy=cspy,
+            exact=exact,
+            time_limit=time_limit,
+            pricing_strategy=pricing_strategy,
         )
-        prob.solve(cspy=cspy, exact=exact, time_limit=time_limit)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes

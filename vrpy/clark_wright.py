@@ -45,9 +45,9 @@ class ClarkWright:
                 self.route[v] = route
                 # Initialize route attributes
                 if self.load_capacity:
-                    self.route[v].graph["load"] = self.G.nodes[v]["demand"]
+                    route.graph["load"] = self.G.nodes[v]["demand"]
                 if self.duration:
-                    self.route[v].graph["time"] = (
+                    route.graph["time"] = (
                         self.G.nodes[v]["service_time"]
                         + self.G.edges["Source", v]["time"]
                         + self.G.edges[v, "Sink"]["time"]
@@ -61,8 +61,8 @@ class ClarkWright:
             route_id += 1
             self.best_routes.append(route)
         self.best_value = sum([r.graph["cost"] for r in self.best_routes])
-        for v in self.route:
-            self.route[v] = [self.route[v]]
+        # for v in self.route:
+        #    self.route[v] = [self.route[v]]
 
     def get_savings(self):
         """Computes Clark & Wright savings and orders edges by non increasing savings."""
@@ -221,5 +221,5 @@ class RoundTrip:
                 route = DiGraph(name=route_id, cost=total_cost)
                 route.add_edge("Source", v, cost=cost_1)
                 route.add_edge(v, "Sink", cost=cost_2)
-                self.route[v] = [route]
+                self.route[v] = route
                 self.round_trips.append(route)

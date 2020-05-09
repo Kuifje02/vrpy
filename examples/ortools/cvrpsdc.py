@@ -51,6 +51,5 @@ class CVRPSDC(OrToolsBase):
 
 if __name__ == "__main__":
     data = CVRPSDC()
-    data.solve(cspy=False)
+    data.solve(cspy=False, pricing_strategy="Exact")
     data.show_vehicle_loads()
-    data.plot_solution()

@@ -122,13 +122,10 @@ class DataSet:
             self.G.graph["subproblem"] = "lp"
         print(self.G.graph["name"], self.G.graph["subproblem"])
         print("===========")
-        prob = VehicleRoutingProblem(
-            self.G,
-            initial_routes=initial_routes,
-            edge_cost_function=self.distance,
-            load_capacity=self.max_load,
+        prob = VehicleRoutingProblem(self.G, load_capacity=self.max_load,)
+        prob.solve(
+            initial_routes=initial_routes, edge_cost_function=self.distance, cspy=cspy
         )
-        prob.solve(cspy=cspy)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
 
     def plot_solution(self):

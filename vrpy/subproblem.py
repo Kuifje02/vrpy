@@ -7,6 +7,9 @@ from networkx import (
     shortest_simple_paths,
 )
 from itertools import islice
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SubProblemBase:
@@ -62,8 +65,8 @@ class SubProblemBase:
         time_windows=False,
         pickup_delivery=False,
         distribution_collection=False,
-        alpha=None,
-        beta=None,
+        pricing_strategy="Exact",
+        pricing_parameter=None,
     ):
         # Input attributes
         self.G = G
@@ -81,12 +84,22 @@ class SubProblemBase:
         # Add reduced cost to "weight" attribute
         self.add_reduced_cost_attribute()
 
-        # Heuristically prune the graph
-        if not self.pickup_delivery:  # this variant requires special treatment
-            if beta:
-                self.prune_subgraph_beta(beta)
-            elif alpha:
-                self.prune_subgraph_alpha(alpha)
+        # Define the graph on which the sub problem is solved according to the pricing strategy
+        if pricing_strategy == "Exact":
+            # The graph remains as is
+            self.sub_G = self.G.copy()
+        if pricing_strategy == "Stops":
+            # The maximum number of stops is modified
+            self.sub_G = self.G.copy()
+            self.num_stops = pricing_parameter
+        if pricing_strategy == "PrunePaths":
+            # The graph is pruned
+            self.prune_paths(pricing_parameter)
+        if pricing_strategy == "PruneEdges":
+            # The graph is pruned
+            self.prune_edges(pricing_parameter)
+
+        logger.info("Pricing strategy %s, %s" % (pricing_strategy, pricing_parameter))
 
     def add_reduced_cost_attribute(self):
         """Substracts the dual values to compute reduced cost on each edge."""
@@ -95,10 +108,8 @@ class SubProblemBase:
             for v in self.duals:
                 if edge[0] == v:
                     edge[2]["weight"] -= self.duals[v]
-        # Create a copy of G on which the subproblem is solved
-        self.sub_G = self.G.copy()
 
-    def prune_subgraph_alpha(self, alpha):
+    def prune_edges(self, alpha):
         """
         Removes edges based on criteria described here :
         https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
@@ -106,7 +117,7 @@ class SubProblemBase:
         Edges for which [cost > alpha x largest dual value] are removed,
         where 0 < alpha < 1 is a parameter.
         """
-
+        self.sub_G = self.G.copy()
         largest_dual = max([self.duals[v] for v in self.duals])
         for (u, v) in self.G.edges():
             if self.G.edges[u, v]["cost"] > alpha * largest_dual:
@@ -120,7 +131,7 @@ class SubProblemBase:
         except NetworkXException:
             self.run_subsolve = False
 
-    def prune_subgraph_beta(self, beta):
+    def prune_paths(self, beta):
         """
         Heuristic pruning:
         1. Normalize weights in interval [-1,1]
@@ -157,4 +168,4 @@ class SubProblemBase:
         induced_graph = compose_all(best_paths_list)
 
         # Create subgraph induced by the edges of this graph
-        self.sub_G = self.sub_G.edge_subgraph(induced_graph.edges()).copy()
+        self.sub_G = self.G.edge_subgraph(induced_graph.edges()).copy()

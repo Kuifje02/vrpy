@@ -66,13 +66,13 @@ def test_pdp_subproblem_lp():
             initial_routes.append(
                 ["Source", pickup_node, data.pickups_deliveries[pickup_node], "Sink",]
             )
-    data.solve(initial_routes=initial_routes, cspy=False)
+    data.solve(initial_routes=initial_routes, cspy=False, pricing_strategy="Exact")
     assert int(data.best_value) == 6916
 
 
 def test_cvrpsdc_subproblem_lp():
     data = CVRPSDC()
-    data.solve(cspy=False)
+    data.solve(cspy=False, pricing_strategy="Exact")
     assert int(data.best_value) == 6208
 
 
@@ -128,7 +128,7 @@ def test_vrptw_subproblem_cspy():
 
 def test_cvrpsdc_subproblem_cspy():
     data = CVRPSDC()
-    data.solve(cspy=True)
+    data.solve(cspy=True, pricing_strategy="Exact")
     assert int(data.best_value) == 6208
 
 

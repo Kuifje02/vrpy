@@ -73,7 +73,9 @@ class OrToolsBase:
         abs_y = abs(self.G.nodes[u]["y"] - self.G.nodes[v]["y"])
         return abs_x + abs_y
 
-    def solve(self, initial_routes=None, cspy=False, exact=True):
+    def solve(
+        self, initial_routes=None, cspy=False, exact=True, pricing_strategy="PrunePaths"
+    ):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -83,14 +85,18 @@ class OrToolsBase:
         print("===========")
         prob = VehicleRoutingProblem(
             self.G,
-            initial_routes=initial_routes,
             duration=self.max_duration,
             load_capacity=self.max_load,
-            edge_cost_function=self.manhattan,
             drop_penalty=self.penalty,
             pickup_delivery=self.activate_pickup_delivery,
             distribution_collection=self.activate_distribution_collection,
             time_windows=self.activate_time_windows,
         )
-        prob.solve(cspy=cspy, exact=exact)
-        self.best_value, self.best_routes = prob.best_value, prob.best_routes
+        prob.solve(
+            initial_routes=initial_routes,
+            edge_cost_function=self.manhattan,
+            cspy=cspy,
+            exact=exact,
+            pricing_strategy=pricing_strategy,
+        )
+        self.best_value, self.best_routes = prob.best_value, prob.best_routes_as_graphs
