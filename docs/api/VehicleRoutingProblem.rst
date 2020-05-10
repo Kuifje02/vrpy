@@ -1,5 +1,5 @@
-vrpy.main module
-================
+VehicleRoutingProblem
+=====================
 
 
 .. automodule:: vrpy.main
