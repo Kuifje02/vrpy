@@ -8,12 +8,8 @@ vrpy Documentation
    how_to
    vrp_variants
    solving_options
+   api/index
 
-.. toctree::
-   :maxdepth: 1
-   :caption: API
-
-   api/vrpy.VehicleRoutingProblem
 
 Indices and tables
 ==================
