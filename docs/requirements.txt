@@ -1,11 +1,6 @@
 ###### Requirements without Version Specifiers ######
-#cspy
-matplotlib
+cspy
 networkx
-numpy
-pandas
 pulp
-pytest
-
 ###### Requirements with Version Specifiers ######
 
