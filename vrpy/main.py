@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class VehicleRoutingProblem:
-    """Stores the underlying network of the VRP and parameters for solving
-       with a column generation approach.
+    """
+    Stores the underlying network of the VRP and parameters for solving with a column generation approach.
 
     Args:
         G (DiGraph): The underlying network.
@@ -117,14 +117,14 @@ class VehicleRoutingProblem:
             float: Optimal solution of MIP based on generated columns
         """
         # Pre-processing
-        self.pre_solve(cspy)
+        self._pre_solve(cspy)
 
         # Initialization
         more_routes = True
         if not initial_routes:
-            self.initial_solution()
+            self._initial_solution()
         else:
-            self.convert_to_digraphs(initial_routes, edge_cost_function)
+            self._convert_to_digraphs(initial_routes, edge_cost_function)
         k = 0
         no_improvement = 0
         start = time()
@@ -146,7 +146,7 @@ class VehicleRoutingProblem:
             # The pricing problem is solved with a heuristic strategy
             if pricing_strategy == "Stops":
                 for stop in range(2, self.num_stops):
-                    subproblem = self.def_subproblem(
+                    subproblem = self._def_subproblem(
                         duals, cspy, exact, pricing_strategy, stop
                     )
                     self.routes, more_routes = subproblem.solve(time_limit)
@@ -155,7 +155,7 @@ class VehicleRoutingProblem:
 
             if pricing_strategy == "PrunePaths":
                 for k_shortest_paths in [3, 5, 7, 9]:
-                    subproblem = self.def_subproblem(
+                    subproblem = self._def_subproblem(
                         duals, cspy, exact, pricing_strategy, k_shortest_paths
                     )
                     self.routes, more_routes = subproblem.solve(time_limit)
@@ -164,7 +164,7 @@ class VehicleRoutingProblem:
 
             if pricing_strategy == "PruneEdges":
                 for alpha in [0.3, 0.5, 0.7, 0.9]:
-                    subproblem = self.def_subproblem(
+                    subproblem = self._def_subproblem(
                         duals, cspy, exact, pricing_strategy, alpha
                     )
                     self.routes, more_routes = subproblem.solve(time_limit)
@@ -173,7 +173,7 @@ class VehicleRoutingProblem:
 
             # If no column was found heuristically, solve subproblem exactly
             if not more_routes or pricing_strategy == "Exact":
-                subproblem = self.def_subproblem(duals, cspy, exact)
+                subproblem = self._def_subproblem(duals, cspy, exact)
                 self.routes, more_routes = subproblem.solve(time_limit)
 
             # Keep track of convergence rate
@@ -197,26 +197,26 @@ class VehicleRoutingProblem:
             self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
         )
         self.best_value, self.best_routes_as_graphs = masterproblem_mip.solve()
-        self.best_routes_as_node_lists()
+        self._best_routes_as_node_lists()
 
         # Export relaxed_cost = f(iteration) to Excel file
         # self.export_convergence_rate()
 
-    def pre_solve(self, cspy):
+    def _pre_solve(self, cspy):
         """Some pre-processing."""
         # Set default attributes
-        self.add_default_service_time()
+        self._add_default_service_time()
         # Remove infeasible arcs
-        self.prune_graph()
+        self._prune_graph()
         # Compute upper bound on number of stops as knapsack problem
         if self.load_capacity:
-            self.get_num_stops_upper_bound()
+            self._get_num_stops_upper_bound()
         # Setup attributes if cspy
         if cspy:
-            self.update_attributes_for_cspy()
-            self.check_options_consistency()
+            self._update_attributes_for_cspy()
+            self._check_options_consistency()
 
-    def def_subproblem(
+    def _def_subproblem(
         self, duals, cspy, exact, pricing_strategy="Exact", pricing_parameter=None
     ):
         """Instanciates the subproblem."""
@@ -255,7 +255,7 @@ class VehicleRoutingProblem:
             )
         return subproblem
 
-    def prune_graph(self):
+    def _prune_graph(self):
         """
         Preprocessing:
            - Removes useless edges from graph
@@ -301,7 +301,7 @@ class VehicleRoutingProblem:
 
         self.G.remove_edges_from(infeasible_arcs)
 
-    def initial_solution(self):
+    def _initial_solution(self):
         """
         If no initial solution is given, creates one :
             - with Clark & Wright if possible;
@@ -329,7 +329,7 @@ class VehicleRoutingProblem:
         for v in alg.route:
             self.routes_with_node[v] += [alg.route[v]]
 
-    def convert_to_digraphs(self, initial_routes, edge_cost_function):
+    def _convert_to_digraphs(self, initial_routes, edge_cost_function):
         """Converts list of initial routes to list of Digraphs."""
         route_id = 0
         self.routes = []
@@ -347,7 +347,7 @@ class VehicleRoutingProblem:
             for v in r:
                 self.routes_with_node[v] = [G]
 
-    def update_attributes_for_cspy(self):
+    def _update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""
 
         if not self.load_capacity:
@@ -368,7 +368,7 @@ class VehicleRoutingProblem:
                 if "collect" not in self.G.nodes[v]:
                     self.G.nodes[v]["collect"] = 0
 
-    def check_options_consistency(self):
+    def _check_options_consistency(self):
         """
         The following options need are not implemented yet with cspy:
             -pickup and delivery
@@ -376,14 +376,14 @@ class VehicleRoutingProblem:
         if self.pickup_delivery:
             raise NotImplementedError
 
-    def add_default_service_time(self):
+    def _add_default_service_time(self):
         """Adds dummy service time."""
         if self.duration or self.time_windows:
             for v in self.G.nodes():
                 if "service_time" not in self.G.nodes[v]:
                     self.G.nodes[v]["service_time"] = 0
 
-    def get_num_stops_upper_bound(self):
+    def _get_num_stops_upper_bound(self):
         """
         Finds upper bound on number of stops, from here :
         https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
@@ -429,14 +429,14 @@ class VehicleRoutingProblem:
             self.num_stops = max_num_stops
         logger.info("new upper bound : max num stops = %s" % self.num_stops)
 
-    def best_routes_as_node_lists(self):
+    def _best_routes_as_node_lists(self):
         """Converts route as DiGraph to route as node list."""
         self.best_routes = []
         for route in self.best_routes_as_graphs:
             node_list = shortest_path(route, "Source", "Sink")
             self.best_routes.append(node_list)
 
-    def export_convergence_rate(self):
+    def _export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file."""
         keys = ["k", "z"]
         values = [self.iteration, self.lower_bound]

@@ -37,8 +37,10 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.imgmath",
     "sphinx.ext.napoleon",
+    "sphinx.ext.autosectionlabel",
 ]
 master_doc = "index"
+# autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -59,4 +61,4 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_static_path = []

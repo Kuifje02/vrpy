@@ -13,7 +13,7 @@ vrpy Documentation
    :maxdepth: 1
    :caption: API
 
-   api/VehicleRoutingProblem
+   api/vrpy.VehicleRoutingProblem
 
 Indices and tables
 ==================

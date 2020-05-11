@@ -46,6 +46,7 @@ Once the problem is solved, we can query useful attributes as
 
 ``prob.best_value`` is the overall cost of the solution, ``prob.best_routes`` is the list of routes found by the algorithm. A route is represented as a list of nodes.
 
-Different options and constraints are detailed in `VRP variants`_.
 
-_VRP variants: https://cspy.readthedocs.io/en/latest/api/cspy.BiDirectional.html
+Different options and constraints are detailed in the CVRP section : :ref:`cvrp`
+
+

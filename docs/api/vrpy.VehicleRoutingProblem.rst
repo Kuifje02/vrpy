@@ -1,5 +1,5 @@
-VehicleRoutingProblem
-=====================
+vrpy.VehicleRoutingProblem
+==========================
 
 
 .. automodule:: vrpy.main
@@ -7,4 +7,5 @@ VehicleRoutingProblem
    :undoc-members:
    :show-inheritance:
    :inherited-members:
+   :noindex:
 

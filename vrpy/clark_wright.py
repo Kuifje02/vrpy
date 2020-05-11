@@ -25,14 +25,14 @@ class ClarkWright:
 
     def run(self):
         """Runs Clark & Wrights savings algorithm."""
-        self.initialize_routes()
-        self.get_savings()
+        self._initialize_routes()
+        self._get_savings()
         self.processed_nodes = []
         for (i, j) in self.ordered_edges:
-            self.process_edge(i, j)
-        self.update_routes()
+            self._process_edge(i, j)
+        self._update_routes()
 
-    def initialize_routes(self):
+    def _initialize_routes(self):
         """Initialization with round trips (Source - node - Sink)."""
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
@@ -53,7 +53,7 @@ class ClarkWright:
                         + self.G.edges[v, "Sink"]["time"]
                     )
 
-    def update_routes(self):
+    def _update_routes(self):
         """Stores best routes found and creates its id."""
         route_id = 1
         for route in list(set(self.route.values())):
@@ -64,7 +64,7 @@ class ClarkWright:
         # for v in self.route:
         #    self.route[v] = [self.route[v]]
 
-    def get_savings(self):
+    def _get_savings(self):
         """Computes Clark & Wright savings and orders edges by non increasing savings."""
         for (i, j) in self.G.edges():
             if i != "Source" and j != "Sink":
@@ -75,7 +75,7 @@ class ClarkWright:
                 )
         self.ordered_edges = sorted(self.savings, key=self.savings.get, reverse=True)
 
-    def merge_route(self, existing_node, new_node, depot):
+    def _merge_route(self, existing_node, new_node, depot):
         """
         Merges new_node in existing_node's route.
         Two possibilities:
@@ -126,7 +126,7 @@ class ClarkWright:
         self.route[new_node] = route
         return route
 
-    def constraints_met(self, existing_node, new_node):
+    def _constraints_met(self, existing_node, new_node):
         """Tests if new_node can be merged in route without violating constraints."""
         route = self.route[existing_node]
         # test if new_node already in route
@@ -158,7 +158,7 @@ class ClarkWright:
                 return False
         return True
 
-    def process_edge(self, i, j):
+    def _process_edge(self, i, j):
         """
         Attemps to merge nodes i and j together.
         Merge is possible if :
@@ -171,20 +171,20 @@ class ClarkWright:
         merged = False
         if (
             j not in self.processed_nodes  # 1
-            and self.constraints_met(i, j)  # 2
+            and self._constraints_met(i, j)  # 2
             and i in self.route[i].predecessors("Sink")  # 3b
         ):
-            self.merge_route(i, j, "Sink")
+            self._merge_route(i, j, "Sink")
             merged = True
 
         if (
             not merged
             and (j, i) in self.G.edges()
             and i not in self.processed_nodes  # 1
-            and self.constraints_met(j, i)  # 2
+            and self._constraints_met(j, i)  # 2
             and j in self.route[j].successors("Source")  # 3a
         ):
-            self.merge_route(j, i, "Source")
+            self._merge_route(j, i, "Source")
 
 
 class RoundTrip:

@@ -135,7 +135,7 @@ class TestsToy:
 
     def test_knapsack(self):
         prob = VehicleRoutingProblem(self.G, load_capacity=10)
-        prob.get_num_stops_upper_bound()
+        prob._get_num_stops_upper_bound()
         assert prob.num_stops == 4
 
     def test_pricing_strategies(self):

@@ -32,12 +32,12 @@ class TestsClarkWright:
         assert len(round_trips.round_trips) == 3
 
     def test_initialization(self):
-        self.alg.initialize_routes()
+        self.alg._initialize_routes()
         assert self.alg.route[1].graph["load"] == self.G.nodes[1]["demand"]
         assert len(self.alg.route[1].nodes()) == 3
 
     def test_savings(self):
-        self.alg.get_savings()
+        self.alg._get_savings()
         assert self.alg.savings[(1, 2)] == 23
         assert self.alg.ordered_edges[0] == (1, 2)
 
