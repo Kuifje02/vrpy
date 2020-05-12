@@ -98,4 +98,4 @@ class OrToolsBase:
             exact=exact,
             pricing_strategy=pricing_strategy,
         )
-        self.best_value, self.best_routes = prob.best_value, prob.best_routes_as_graphs
+        self.best_value, self.best_routes = prob.best_value, prob._best_routes_as_graphs

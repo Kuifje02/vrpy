@@ -62,8 +62,6 @@ class VehicleRoutingProblem:
         self.drop_penalty = drop_penalty
 
         # Attributes to keep track of solution
-        self.best_solution = None
-        self.best_routes = None
         self.iteration = []
         self.lower_bound = []
 
@@ -196,7 +194,7 @@ class VehicleRoutingProblem:
         masterproblem_mip = MasterSolvePulp(
             self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
         )
-        self.best_value, self.best_routes_as_graphs = masterproblem_mip.solve()
+        self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve()
         self._best_routes_as_node_lists()
 
         # Export relaxed_cost = f(iteration) to Excel file
@@ -431,10 +429,10 @@ class VehicleRoutingProblem:
 
     def _best_routes_as_node_lists(self):
         """Converts route as DiGraph to route as node list."""
-        self.best_routes = []
-        for route in self.best_routes_as_graphs:
+        self._best_routes = []
+        for route in self._best_routes_as_graphs:
             node_list = shortest_path(route, "Source", "Sink")
-            self.best_routes.append(node_list)
+            self._best_routes.append(node_list)
 
     def _export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file."""
@@ -443,3 +441,13 @@ class VehicleRoutingProblem:
         convergence = dict(zip(keys, values))
         df = DataFrame(convergence, columns=keys)
         df.to_excel("convergence.xls", index=False)
+
+    @property
+    def best_value(self):
+        """Returns value of best solution found."""
+        return self._best_value
+
+    @property
+    def best_routes(self):
+        """Returns list of best routes found, where a route is a list of nodes."""
+        return self._best_routes
