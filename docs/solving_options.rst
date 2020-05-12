@@ -31,14 +31,21 @@ The sub problem consists in finding variables which are likely to improve the ma
 pricing problem - can be solved either with linear programming, or with dynamic programming. 
 
 Switching to linear programming can be done by deactivating the ``cspy`` argument when calling the ``solve`` method. 
-In this case the CBC solver of COIN-OR is used. 
+In this case the CBC_ solver of COIN-OR is used. 
 
 .. code-block:: python
 
 	>>> prob.solve(cspy=False)
 	
 The subproblems that are solved are typically NP-hard, and using dynamic programming is typically quicker, as such algorithms run in pseudo-polynomial time.
-However, solving the subproblems as MIPs may be more effective for small data sets. 
+However, solving the subproblems as MIPs may also be effective depending on the data set. Also, using commercial solvers may significantly help accelerating the procedure.
+If one has CPLEX or GUROBI at hand, they can be used by setting the ``solver`` parameter to "cplex" or "gurobi".
+
+.. code-block:: python
+
+	>>> prob.solve(cspy=False, solver="gurobi")
+
+.. _CBC : https://github.com/coin-or/Cbc
 	
 Pricing strategy
 ~~~~~~~~~~~~~~~~
