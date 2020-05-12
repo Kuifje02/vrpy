@@ -87,8 +87,10 @@ CVRP with Simultaneous Distribution and Collection (CVRPSDC)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this variant, when a customer is visited, two operations are done simultaneously. Some good is delivered, and some waste material is picked-up. 
-The amount that is picked-up is set with the ``collect`` attribute, on each node, and the ``distribution_collection`` attribute is set to ``True.``
 The total load must not exceed the vehicle's capacity.
+
+The amount that is picked-up is set with the ``collect`` attribute, on each node, and the ``distribution_collection`` attribute is set to ``True.``
+
 
 Following the above example:
 
@@ -147,7 +149,7 @@ Open VRP
 The `open` VRP refers to the case where vehicles can start and/or end their trip anywhere, instead of having to leave from
 the depot, and to return there after service. 
 
-This is straightforward to model : setting distances (or costs) to 0 on every edge outgoing from the Source 
+This is straightforward to model : setting distances (or costs) to `0` on every edge outgoing from the Source 
 and incoming to the Sink achieves this.
 	
 	

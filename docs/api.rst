@@ -1,7 +1,10 @@
-vrpy.VehicleRoutingProblem
-==========================
+API
+===
 
-.. automodule:: vrpy.main
+vrpy.VehicleRoutingProblem
+--------------------------
+
+.. automodule:: vrpy.VehicleRoutingProblem
    :members:
    :inherited-members:
    

@@ -2,10 +2,10 @@ from networkx import DiGraph, shortest_path
 import sys
 
 sys.path.append("../../vrpy/")
-from vrpy.clark_wright import ClarkWright, RoundTrip
+from vrpy.clarke_wright import ClarkeWright, RoundTrip
 
 
-class TestsClarkWright:
+class TestsClarkeWright:
     def setup(self):
         self.G = DiGraph()
         self.G.add_edge("Source", 1, cost=10, time=1)
@@ -23,7 +23,7 @@ class TestsClarkWright:
         self.G.nodes[2]["service_time"] = 1
         self.G.nodes[3]["service_time"] = 0
 
-        self.alg = ClarkWright(self.G, load_capacity=4)
+        self.alg = ClarkeWright(self.G, load_capacity=4)
 
     def test_round_trip(self):
         round_trips = RoundTrip(self.G)

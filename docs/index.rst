@@ -12,7 +12,7 @@ vrpy Documentation
    vrp_variants
    solving_options
    examples
-   api/index
+   api
 
 
 Indices and tables

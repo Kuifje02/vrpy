@@ -6,7 +6,7 @@ from time import time
 from vrpy.master_solve_pulp import MasterSolvePulp
 from vrpy.subproblem_lp import SubProblemLP
 from vrpy.subproblem_cspy import SubProblemCSPY
-from vrpy.clark_wright import ClarkWright, RoundTrip
+from vrpy.clarke_wright import ClarkeWright, RoundTrip
 
 logger = logging.getLogger(__name__)
 
@@ -323,17 +323,19 @@ class VehicleRoutingProblem:
     def _get_initial_solution(self):
         """
         If no initial solution is given, creates one :
-            - with Clark & Wright if possible;
+            - with Clarke & Wright if possible;
             - with a round trip otherwise.
         """
-        # Run Clark & Wright if possible
+        # Run Clarke & Wright if possible
         if (
             not self.time_windows
             and not self.pickup_delivery
             and not self.distribution_collection
             and not self.drop_penalty
         ):
-            alg = ClarkWright(self.G, self.load_capacity, self.duration, self.num_stops)
+            alg = ClarkeWright(
+                self.G, self.load_capacity, self.duration, self.num_stops
+            )
             alg.run()
             logger.info("Initial solution found with value %s" % alg.best_value)
             self._initial_routes = alg.best_routes

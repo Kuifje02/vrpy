@@ -1,9 +1,9 @@
 from networkx import DiGraph, add_path, shortest_path
 
 
-class ClarkWright:
+class ClarkeWright:
     """
-    Clark & Wrights savings algorithm.
+    Clarke & Wrights savings algorithm.
 
     Args:
         G (DiGraph): Graph on which algorithm is run.
