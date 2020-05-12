@@ -60,21 +60,23 @@ class VehicleRoutingProblem:
         self.pickup_delivery = pickup_delivery
         self.distribution_collection = distribution_collection
         self.drop_penalty = drop_penalty
+        self._preassignment_cost = 0
 
         # Attributes to keep track of solution
-        self.iteration = []
-        self.lower_bound = []
+        self._iteration = []
+        self._lower_bound = []
 
         # Keep track of paths containing nodes
-        self.routes = []
-        self.routes_with_node = {}
+        self._routes = []
+        self._routes_with_node = {}
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
-                self.routes_with_node[v] = []
+                self._routes_with_node[v] = []
 
     def solve(
         self,
         initial_routes=None,
+        preassignments=[],
         pricing_strategy="Exact",
         cspy=True,
         exact=True,
@@ -88,6 +90,10 @@ class VehicleRoutingProblem:
                 List of paths (list of nodes).
                 Feasible solution for first iteration.
                 Defaults to None.
+            preassignments (list, optional):
+                List of preassigned routes, where a route is a list of nodes.
+                If the route contains Source and Sink nodes, it is locked, otherwise it may be extended.
+                Defaults to an emtpy list.
             pricing_strategy (str, optional):
                 Strategy used for solving the sub problem.
                 Five options available :
@@ -116,7 +122,7 @@ class VehicleRoutingProblem:
             float: Optimal solution of MIP based on generated columns
         """
         # Pre-processing
-        self._pre_solve(cspy)
+        self._pre_solve(cspy, preassignments)
 
         # Initialization
         more_routes = True
@@ -134,8 +140,8 @@ class VehicleRoutingProblem:
             # Solve restricted relaxed master problem
             masterproblem = MasterSolvePulp(
                 self.G,
-                self.routes_with_node,
-                self.routes,
+                self._routes_with_node,
+                self._routes,
                 self.drop_penalty,
                 relax=True,
             )
@@ -177,12 +183,12 @@ class VehicleRoutingProblem:
 
             # Keep track of convergence rate
             k += 1
-            if k > 1 and relaxed_cost == self.lower_bound[-1]:
+            if k > 1 and relaxed_cost == self._lower_bound[-1]:
                 no_improvement += 1
             else:
                 no_improvement = 0
-            self.iteration.append(k)
-            self.lower_bound.append(relaxed_cost)
+            self._iteration.append(k)
+            self._lower_bound.append(relaxed_cost)
 
             # Stop if time limit is passed
             if time_limit:
@@ -193,18 +199,21 @@ class VehicleRoutingProblem:
         # Solve as MIP
         logger.info("MIP solution")
         masterproblem_mip = MasterSolvePulp(
-            self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
+            self.G, self._routes_with_node, self._routes, self.drop_penalty, relax=False
         )
         self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
             solver, time_limit
         )
-        self._best_routes_as_node_lists()
+        self._best_routes_as_node_lists(preassignments)
 
         # Export relaxed_cost = f(iteration) to Excel file
         # self.export_convergence_rate()
 
-    def _pre_solve(self, cspy):
+    def _pre_solve(self, cspy, preassignments):
         """Some pre-processing."""
+        # Lock preassigned routes
+        if preassignments:
+            self._lock(preassignments)
         # Set default attributes
         self._add_default_service_time()
         # Remove infeasible arcs
@@ -232,8 +241,8 @@ class VehicleRoutingProblem:
             subproblem = SubProblemCSPY(
                 self.G,
                 duals,
-                self.routes_with_node,
-                self.routes,
+                self._routes_with_node,
+                self._routes,
                 self.num_stops,
                 self.load_capacity,
                 self.duration,
@@ -249,8 +258,8 @@ class VehicleRoutingProblem:
             subproblem = SubProblemLP(
                 self.G,
                 duals,
-                self.routes_with_node,
-                self.routes,
+                self._routes_with_node,
+                self._routes,
                 self.num_stops,
                 self.load_capacity,
                 self.duration,
@@ -324,22 +333,22 @@ class VehicleRoutingProblem:
             alg = ClarkWright(self.G, self.load_capacity, self.duration, self.num_stops)
             alg.run()
             logger.info("Initial solution found with value %s" % alg.best_value)
-            self.routes = alg.best_routes
+            self._routes = alg.best_routes
 
         # Otherwise compute round trips
         else:
             alg = RoundTrip(self.G)
             alg.run()
-            self.routes = alg.round_trips
+            self._routes = alg.round_trips
 
         # Keep track of which routes per node
         for v in alg.route:
-            self.routes_with_node[v] += [alg.route[v]]
+            self._routes_with_node[v] += [alg.route[v]]
 
     def _convert_to_digraphs(self, initial_routes):
         """Converts list of initial routes to list of Digraphs."""
         route_id = 0
-        self.routes = []
+        self._routes = []
         for r in initial_routes:
             total_cost = 0
             route_id += 1
@@ -350,9 +359,9 @@ class VehicleRoutingProblem:
                 G.add_edge(i, j, cost=edge_cost)
                 total_cost += edge_cost
             G.graph["cost"] = total_cost
-            self.routes.append(G)
+            self._routes.append(G)
             for v in r:
-                self.routes_with_node[v] = [G]
+                self._routes_with_node[v] = [G]
 
     def _update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""
@@ -436,17 +445,49 @@ class VehicleRoutingProblem:
             self.num_stops = max_num_stops
         logger.info("new upper bound : max num stops = %s" % self.num_stops)
 
-    def _best_routes_as_node_lists(self):
+    def _lock(self, preassignments):
+        """Processes preassigned routes."""
+        for route in preassignments:
+            extend = True
+            edges = list(zip(route[:-1], route[1:]))
+            # If the route cannot be extended
+            if route[0] == "Source" and route[-1] == "Sink":
+                logger.info("locking %s" % route)
+                # Compute route cost and remove it from the VRP
+                self._preassignment_cost += sum(
+                    [self.G.edges[i, j]["cost"] for (i, j) in edges]
+                )
+                self.G.remove_nodes_from(route[1:-1])
+                extend = False
+            # If the route is partial with Source
+            elif route[0] == "Source":
+                self._preassignment_cost += self.G.edges["Source", route[1]]["cost"]
+                self.G.edges["Source", route[1]]["cost"] = 0
+            # If the route is partial with Sink
+            elif route[-1] == "Sink":
+                self._preassignment_cost += self.G.edges[route[-2], "Sink"]["cost"]
+                self.G.edges[route[-2], "Sink"]["cost"] = 0
+            if extend:
+                for (i, j) in edges:
+                    if i != "Source" and j != "Sink":
+                        self._preassignment_cost += self.G.edges[i, j]["cost"]
+                        self.G.edges[i, j]["cost"] = 0
+
+    def _best_routes_as_node_lists(self, preassignments):
         """Converts route as DiGraph to route as node list."""
         self._best_routes = []
         for route in self._best_routes_as_graphs:
             node_list = shortest_path(route, "Source", "Sink")
             self._best_routes.append(node_list)
+        # Merge with preassigned complete routes
+        for route in preassignments:
+            if route[0] == "Source" and route[-1] == "Sink":
+                self._best_routes.append(route)
 
     def _export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file."""
         keys = ["k", "z"]
-        values = [self.iteration, self.lower_bound]
+        values = [self._iteration, self._lower_bound]
         convergence = dict(zip(keys, values))
         df = DataFrame(convergence, columns=keys)
         df.to_excel("convergence.xls", index=False)
@@ -454,7 +495,7 @@ class VehicleRoutingProblem:
     @property
     def best_value(self):
         """Returns value of best solution found."""
-        return self._best_value
+        return self._best_value + self._preassignment_cost
 
     @property
     def best_routes(self):

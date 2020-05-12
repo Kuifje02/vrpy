@@ -142,3 +142,21 @@ class TestsToy:
             prob.solve(pricing_strategy=strategy)
             sol.append(prob.best_value)
         assert len(set(sol)) == 1
+
+    def test_lock(self):
+        routes = [["Source", 3, "Sink"]]
+        prob = VehicleRoutingProblem(self.G, num_stops=4)
+        prob.solve(preassignments=routes)
+        assert prob.best_value == 80
+
+    def test_partial_lock(self):
+        routes = [["Source", 3]]
+        prob = VehicleRoutingProblem(self.G, num_stops=4)
+        prob.solve(preassignments=routes)
+        assert prob.best_value == 75
+
+    def test_extend_preassignment(self):
+        routes = [[2, 3]]
+        prob = VehicleRoutingProblem(self.G, num_stops=4)
+        prob.solve(preassignments=routes)
+        assert prob.best_value == 70

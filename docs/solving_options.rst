@@ -1,8 +1,8 @@
 Solving Options
 ===============
 
-Initial routes
-~~~~~~~~~~~~~~
+Setting initial routes for a search
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, an initial solution is computed with the well known Clarke and Wright algorithm. If one already has a feasible solution at hand,
 it is possible to use it as an initial solution. The solution is passed to the solver as a list of routes, where a route is a list
@@ -11,12 +11,30 @@ of nodes starting from the Source and ending at the Sink.
 .. code-block:: python
 
 	>>> prob.solve(initial_solution = [["Source",1,"Sink"],["Source",2,"Sink"]])
+	
+
+Locking routes
+~~~~~~~~~~~~~~
+
+It is possible to constrain the problem with partial routes if preassignments are known. There are two possibilites : either a complete route is known, 
+and it should not be optimized, either only a partial route is known, and it may be extended. Such routes are given to the solver
+with the ``preassignments`` argument. A route with `Source` and `Sink` nodes is considered complete and is locked. Otherwise, the solver will extend it if it yields savings.
+
+In the following example, one route must start with customer `1`, one route must contain edge `(4,5)`, and one complete route,
+`Source-2-3-Sink`, must be locked.
+
+.. code-block:: python
+
+	>>> prob.solve(preassignments = [["Source",1],[4,5],["Source",2,3,"Sink"]])
 
 
-Time limit
-~~~~~~~~~~
+Setting a time limit
+~~~~~~~~~~~~~~~~~~~~
 
-The ``time_limit`` argument can be used to set a time limit, in seconds. For example, for a 1 minute time limit:
+The ``time_limit`` argument can be used to set a time limit, in seconds. 
+The solver will return the best solution found after the time limit has been exceeded.
+
+For example, for a 1 minute time limit:
 
 .. code-block:: python
 
@@ -26,7 +44,7 @@ The ``time_limit`` argument can be used to set a time limit, in seconds. For exa
 Linear programming or dynamic programming
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-vrpy's ``solve`` method relies on a column generation procedure. At every iteration, a master problem and a sub problem are solved.
+`vrpy`'s ``solve`` method relies on a column generation procedure. At every iteration, a master problem and a sub problem are solved.
 The sub problem consists in finding variables which are likely to improve the master problem's objective function. The sub problem - or 
 pricing problem - can be solved either with linear programming, or with dynamic programming. 
 
