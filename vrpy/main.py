@@ -122,7 +122,7 @@ class VehicleRoutingProblem:
         if not initial_routes:
             self._initial_solution()
         else:
-            self._convert_to_digraphs(initial_routes, edge_cost_function)
+            self._convert_to_digraphs(initial_routes)
         k = 0
         no_improvement = 0
         start = time()
@@ -296,7 +296,6 @@ class VehicleRoutingProblem:
                         self.G.nodes[v]["upper"],
                         self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
-
         self.G.remove_edges_from(infeasible_arcs)
 
     def _initial_solution(self):
@@ -327,7 +326,7 @@ class VehicleRoutingProblem:
         for v in alg.route:
             self.routes_with_node[v] += [alg.route[v]]
 
-    def _convert_to_digraphs(self, initial_routes, edge_cost_function):
+    def _convert_to_digraphs(self, initial_routes):
         """Converts list of initial routes to list of Digraphs."""
         route_id = 0
         self.routes = []
@@ -337,9 +336,9 @@ class VehicleRoutingProblem:
             G = DiGraph(name=route_id)
             edges = list(zip(r[:-1], r[1:]))
             for (i, j) in edges:
-                dist = round(edge_cost_function(i, j), 1)
-                G.add_edge(i, j, cost=dist)
-                total_cost += dist
+                edge_cost = self.G.edges[i, j]["cost"]
+                G.add_edge(i, j, cost=edge_cost)
+                total_cost += edge_cost
             G.graph["cost"] = total_cost
             self.routes.append(G)
             for v in r:

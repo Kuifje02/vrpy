@@ -94,7 +94,7 @@ class DataSet:
             if u != "Sink":
                 for v in self.G.nodes():
                     if v != "Source":
-                        if u != v and (u, v) != ("Source", "Sink"):
+                        if u != v:
                             self.G.add_edge(
                                 u, v, cost=self.distance(u, v), time=self.distance(u, v)
                             )
@@ -120,6 +120,7 @@ class DataSet:
         cspy=False,
         exact=False,
         pricing_strategy="PrunePaths",
+        time_limit=None,
     ):
         """Instantiates instance as VRP and solves."""
         if cspy:
@@ -133,9 +134,9 @@ class DataSet:
         )
         prob.solve(
             initial_routes=initial_routes,
-            edge_cost_function=self.distance,
             cspy=cspy,
             exact=exact,
             pricing_strategy=pricing_strategy,
+            time_limit=time_limit,
         )
         self.best_value, self.best_routes = prob.best_value, prob.best_routes

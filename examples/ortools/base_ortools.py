@@ -93,7 +93,6 @@ class OrToolsBase:
         )
         prob.solve(
             initial_routes=initial_routes,
-            edge_cost_function=self.manhattan,
             cspy=cspy,
             exact=exact,
             pricing_strategy=pricing_strategy,

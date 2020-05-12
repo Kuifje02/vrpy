@@ -16,8 +16,9 @@ class TestsSolomon:
         self.n_vertices = 25
         self.initial_routes = [
             ["Source", 13, 17, 18, 19, 15, 16, 14, 12, 1, "Sink"],
-            ["Source", 20, 24, 23, 22, 21, 9, "Sink"],
+            ["Source", 20, 24, 23, 22, 21, "Sink"],
             ["Source", 5, 3, 7, 8, 10, 11, 6, 4, 2, "Sink"],
+            ["Source", 9, "Sink"],
         ]
 
     def test_setup_instance_name(self):
@@ -31,7 +32,7 @@ class TestsSolomon:
         assert len(self.G.nodes()) == self.n_vertices + 1
 
     def test_setup_edges(self):
-        assert len(self.G.edges()) == self.n_vertices * (self.n_vertices - 1)
+        assert len(self.G.edges()) == self.n_vertices * (self.n_vertices - 1) + 1
 
     def test_subproblem_lp(self):
         # benchmark result

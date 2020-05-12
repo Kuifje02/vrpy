@@ -127,10 +127,7 @@ class TestsToy:
             ["Source", 4, 5, "Sink"],
         ]
 
-        def constant_dist(u, v):
-            return 10
-
-        prob.solve(initial_routes=routes, edge_cost_function=constant_dist, cspy=False)
+        prob.solve(initial_routes=routes, cspy=False)
         assert prob.best_value == 70
 
     def test_knapsack(self):

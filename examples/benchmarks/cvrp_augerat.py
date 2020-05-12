@@ -140,7 +140,6 @@ class DataSet:
         )
         prob.solve(
             initial_routes=initial_routes,
-            edge_cost_function=self.distance,
             cspy=cspy,
             exact=exact,
             time_limit=time_limit,
