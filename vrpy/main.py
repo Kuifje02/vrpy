@@ -79,6 +79,7 @@ class VehicleRoutingProblem:
         cspy=True,
         exact=True,
         time_limit=None,
+        solver="cbc",
     ):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
@@ -89,8 +90,8 @@ class VehicleRoutingProblem:
                 Defaults to None.
             pricing_strategy (str, optional):
                 Strategy used for solving the sub problem.
-                Four options available :
-                    1. "Exact": the subproblem is solved exactly,
+                Five options available :
+                    1. "Exact": the subproblem is solved exactly;
                     2. "Stops": the subproblem is solved with a limited number of stops;
                     3. "PrunePaths": the subproblem is solved on a subgraph of G;
                     4. "PruneEdges": the subproblem is solved on a subgraph of G;
@@ -100,12 +101,17 @@ class VehicleRoutingProblem:
                 Defaults to True.
             exact (bool, optional):
                 True if only cspy's exact algorithm is used to generate columns.
-                Otherwise, heuristitics will be used until they produce +ve
+                Otherwise, heuristics will be used until they produce +ve
                 reduced cost columns, after which the exact algorithm is used.
                 Defaults to True.
             time_limit (int, optional):
                 Maximum number of seconds allowed for solving (for finding columns).
                 Defaults to None.
+            solver (str, optional):
+                Solver used.
+                Three options available: "cbc", "cplex", "gurobi".
+                Using "cplex" or "gurobi" requires installation. Not available by default.
+                Defaults to "cbc", available by default.
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
@@ -133,14 +139,14 @@ class VehicleRoutingProblem:
                 self.drop_penalty,
                 relax=True,
             )
-            duals, relaxed_cost = masterproblem.solve()
+            duals, relaxed_cost = masterproblem.solve(solver, time_limit)
             logger.info("iteration %s, %s" % (k, relaxed_cost))
 
             # The pricing problem is solved with a heuristic strategy
             if pricing_strategy == "Stops":
                 for stop in range(2, self.num_stops):
                     subproblem = self._def_subproblem(
-                        duals, cspy, exact, pricing_strategy, stop
+                        duals, cspy, exact, solver, pricing_strategy, stop,
                     )
                     self.routes, more_routes = subproblem.solve(time_limit)
                     if more_routes:
@@ -149,7 +155,7 @@ class VehicleRoutingProblem:
             if pricing_strategy == "PrunePaths":
                 for k_shortest_paths in [3, 5, 7, 9]:
                     subproblem = self._def_subproblem(
-                        duals, cspy, exact, pricing_strategy, k_shortest_paths
+                        duals, cspy, exact, solver, pricing_strategy, k_shortest_paths,
                     )
                     self.routes, more_routes = subproblem.solve(time_limit)
                     if more_routes:
@@ -158,7 +164,7 @@ class VehicleRoutingProblem:
             if pricing_strategy == "PruneEdges":
                 for alpha in [0.3, 0.5, 0.7, 0.9]:
                     subproblem = self._def_subproblem(
-                        duals, cspy, exact, pricing_strategy, alpha
+                        duals, cspy, exact, solver, pricing_strategy, alpha,
                     )
                     self.routes, more_routes = subproblem.solve(time_limit)
                     if more_routes:
@@ -166,7 +172,7 @@ class VehicleRoutingProblem:
 
             # If no column was found heuristically, solve subproblem exactly
             if not more_routes or pricing_strategy == "Exact":
-                subproblem = self._def_subproblem(duals, cspy, exact)
+                subproblem = self._def_subproblem(duals, cspy, exact, solver,)
                 self.routes, more_routes = subproblem.solve(time_limit)
 
             # Keep track of convergence rate
@@ -189,7 +195,9 @@ class VehicleRoutingProblem:
         masterproblem_mip = MasterSolvePulp(
             self.G, self.routes_with_node, self.routes, self.drop_penalty, relax=False
         )
-        self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve()
+        self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
+            solver, time_limit
+        )
         self._best_routes_as_node_lists()
 
         # Export relaxed_cost = f(iteration) to Excel file
@@ -210,7 +218,13 @@ class VehicleRoutingProblem:
             self._check_options_consistency()
 
     def _def_subproblem(
-        self, duals, cspy, exact, pricing_strategy="Exact", pricing_parameter=None
+        self,
+        duals,
+        cspy,
+        exact,
+        solver,
+        pricing_strategy="Exact",
+        pricing_parameter=None,
     ):
         """Instanciates the subproblem."""
         if cspy:
@@ -245,6 +259,7 @@ class VehicleRoutingProblem:
                 self.distribution_collection,
                 pricing_strategy,
                 pricing_parameter,
+                solver=solver,
             )
         return subproblem
 

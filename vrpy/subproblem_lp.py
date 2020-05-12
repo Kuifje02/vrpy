@@ -14,23 +14,27 @@ class SubProblemLP(SubProblemBase):
     Inherits problem parameters from `SubproblemBase`
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, solver):
         super(SubProblemLP, self).__init__(*args)
         # create problem
         self.prob = pulp.LpProblem("SubProblem", pulp.LpMinimize)
         # flow variables
         self.x = pulp.LpVariable.dicts("x", self.sub_G.edges(), cat=pulp.LpBinary)
+        self.solver = solver
 
     # @profile
     def solve(self, time_limit):
         if not self.run_subsolve:
             return self.routes, False
         self.formulate()
-        # self.prob.writeLP("prob.lp")
-        # self.prob.solve()
-        self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
-        # if you have CPLEX
-        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0, timelimit=5 * 30))
+        # self.prob.writeLP("subprob.lp")
+        if self.solver == "cbc":
+            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
+        elif self.solver == "cplex":
+            self.prob.solve(pulp.solvers.CPLEX_CMD(timelimit=time_limit))
+        elif self.solver == "gurobi":
+            gurobi_options = [("TimeLimit", time_limit)]
+            self.prob.solve(pulp.solvers.GUROBI_CMD(options=gurobi_options))
         logger.debug("")
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])

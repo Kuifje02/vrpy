@@ -13,12 +13,16 @@ class MasterSolvePulp(MasterProblemBase):
     Inherits problem parameters from MasterProblemBase
     """
 
-    def solve(self):
+    def solve(self, solver, time_limit):
         self.formulate()
-        self.prob.solve()
         # self.prob.writeLP("masterprob.lp")
-        # if you have CPLEX
-        # self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0))
+        if solver == "cbc":
+            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
+        elif solver == "cplex":
+            self.prob.solve(pulp.solvers.CPLEX_CMD(timelimit=time_limit))
+        elif solver == "gurobi":
+            gurobi_options = [("TimeLimit", time_limit)]
+            self.prob.solve(pulp.solvers.GUROBI_CMD(options=gurobi_options))
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
