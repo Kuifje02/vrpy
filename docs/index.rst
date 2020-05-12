@@ -1,9 +1,11 @@
 vrpy Documentation
 ====================
 
+
+
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide:
+   :caption: User Guide
    
    getting_started
    how_to

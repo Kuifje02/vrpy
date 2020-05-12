@@ -66,7 +66,8 @@ CVRP with Time Windows (CVRPTW)
 In this variant, deliveries must take place during a given time-window, which can be different for each customer.
 
 Such constraints can be taken into account by setting ``lower`` and ``upper`` attributes on each node, and by activating the
-``time_windows`` attribute to ``True.``
+``time_windows`` attribute to ``True.`` Additionally, services times can be taken into account on each node by setting the ``service_time``
+attribute.
 
 Following the above example:
 
@@ -76,6 +77,8 @@ Following the above example:
 	>>> G.nodes[1]["upper"] = 10
 	>>> G.nodes[2]["lower"] = 5
 	>>> G.nodes[2]["upper"] = 9
+	>>> G.nodes[1]["service_time"] = 1
+	>>> G.nodes[2]["service_time"] = 2
 	>>> prob.time_windows = True
 	>>> prob.solve()
 
@@ -85,6 +88,7 @@ CVRP with Simultaneous Distribution and Collection (CVRPSDC)
 
 In this variant, when a customer is visited, two operations are done simultaneously. Some good is delivered, and some waste material is picked-up. 
 The amount that is picked-up is set with the ``collect`` attribute, on each node, and the ``distribution_collection`` attribute is set to ``True.``
+The total load must not exceed the vehicle's capacity.
 
 Following the above example:
 
@@ -92,6 +96,7 @@ Following the above example:
 
 	>>> G.nodes[1]["collect"] = 2
 	>>> G.nodes[2]["collect"] = 1
+	>>> prob.load_capacity = 2
 	>>> prob.distribution_collection = True
 	>>> prob.solve()
 	
@@ -100,18 +105,24 @@ CVRP with Pickup and Deliveries
 
 In the pickup-and-delivery problem, each demand is made of a pickup node and a delivery node.
 Each pickup/delivery pair (or request) must be assigned to the same tour, and within this tour, the pickup node must be 
-visited prior to the delivery node (as an item that is yet to be picked up cannot be delivered).
+visited prior to the delivery node (as an item that is yet to be picked up cannot be delivered). 
+The total load must not exceed the vehicle's capacity.
 
 For every delivery node, the ``request`` attribute is set to the name of the pickup node. Also, the ``pickup_delivery`` attribute
-is set to ``True``.
+is set to ``True``. The amount of goods to be shipped is counted positively for the pickup node, and negatively for the delivery node.
+For example, if `2` units must be shipped from node 1 to node 2, the ``demand`` attribute is set to 2 for node 1, and -2 for node 2.
 
 .. code-block:: python
 
 	>>> G.nodes[2]["request"] = 1
+	>>> G.nodes[1]["demand"] = 2
+	>>> G.nodes[2]["demand"] = -2
 	>>> prob.pickup_delivery = True
+	>>> prob.load_capacity = 10
 	>>> prob.solve(cspy=False)
 
 .. note:: This variant has to be solved with the ``cspy`` attribute set to False. 
+
 
 Dropping visits
 ~~~~~~~~~~~~~~~
@@ -127,6 +138,18 @@ each time a node is dropped.
 .. code-block:: python
 
 	>>> prob.drop_penalty = 1000
+	
+This problem is sometimes referred to as the `capacitated profitable tour problem` or the `prize collecting tour problem.`
+	
+Open VRP
+~~~~~~~~
+
+The `open` VRP refers to the case where vehicles can start and/or end their trip anywhere, instead of having to leave from
+the depot, and to return there after service. 
+
+This is straightforward to model : setting distances (or costs) to 0 on every edge outgoing from the Source 
+and incoming to the Sink achieves this.
+	
 	
 Other VRPs
 ~~~~~~~~~~
