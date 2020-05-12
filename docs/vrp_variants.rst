@@ -66,7 +66,7 @@ CVRP with Time Windows (CVRPTW)
 In this variant, deliveries must take place during a given time-window, which can be different for each customer.
 
 Such constraints can be taken into account by setting ``lower`` and ``upper`` attributes on each node, and by activating the
-``time_windows`` attribute to ``True.`` Additionally, services times can be taken into account on each node by setting the ``service_time``
+``time_windows`` attribute to ``True.`` Additionally, service times can be taken into account on each node by setting the ``service_time``
 attribute.
 
 Following the above example:
@@ -114,7 +114,7 @@ For example, if `2` units must be shipped from node 1 to node 2, the ``demand`` 
 
 .. code-block:: python
 
-	>>> G.nodes[2]["request"] = 1
+	>>> G.nodes[1]["request"] = 2
 	>>> G.nodes[1]["demand"] = 2
 	>>> G.nodes[2]["demand"] = -2
 	>>> prob.pickup_delivery = True
