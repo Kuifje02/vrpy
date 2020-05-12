@@ -6,24 +6,11 @@ Initial routes
 
 By default, an initial solution is computed with the well known Clarke and Wright algorithm. If one already has a feasible solution at hand,
 it is possible to use it as an initial solution. The solution is passed to the solver as a list of routes, where a route is a list
-of nodes starting from the Source and ending at the Sink. Also, to compute the cost of this solution, a cost function must be given to the solver,
-which maps a pair of nodes to a positive value. 
-
-For example, if each node has a pair of :math:`(x,y)` coordinates, and if you are working with the "taxi distance", such a cost function can be defined as follows:
+of nodes starting from the Source and ending at the Sink. 
 
 .. code-block:: python
 
-	def manhattan_distance(node_1, node_2):
-	   Dx = abs(G.nodes[node_1]["x"]-G.nodes[node_2]["x"])
-	   Dy = abs(G.nodes[node_1]["y"]-G.nodes[node_2]["y"])
-	   return Dx + Dy
-
-The problem can then be solved, with the following arguments: 
-
-.. code-block:: python
-
-	>>> prob.solve(initial_solution = [["Source",1,"Sink"],["Source",2,"Sink"]], edge_cost_function=manhattan_distance)
-
+	>>> prob.solve(initial_solution = [["Source",1,"Sink"],["Source",2,"Sink"]])
 
 
 Time limit
@@ -60,18 +47,33 @@ By default, at each iteration the sub problem is solved optimally with a bidirec
 
 This may result in a slow convergence. To speed up the resolution, there are two ways to change this pricing strategy: 
 
-	1. By deactivating the ``exact`` attribute of the ``solve`` method, cspy calls one of its heuristics instead of the bidirectional search algorithm. The exact method is run only once the heuristic fails to find a column with negative reduced cost.
+1. By deactivating the ``exact`` attribute of the ``solve`` method, `cspy` calls one of its heuristics instead of the bidirectional search algorithm. The exact method is run only once the heuristic fails to find a column with negative reduced cost.
 
 .. code-block:: python
 
 	>>> prob.solve(exact=False)
 	
  
- 2. By modifying the ``pricing_strategy`` attribute of the ``solve`` method to one of the following:
-	- "Stops";
-	- "PrunePaths";
-	- "PruneEdges".
+2. By modifying the ``pricing_strategy`` attribute of the ``solve`` method to one of the following:
+	- `Stops`;
+	- `PrunePaths`;
+	- `PruneEdges`.
 
 .. code-block:: python
 
 	>>> prob.solve(pricing_strategy="Stops")
+	
+The idea behind the `Stops` pricing strategy is to look for routes with a bounded number of stops. This bound is increased iteratively
+if no route with negative reduced cost is found. 
+
+The two other strategies, `PrunePaths` and `PruneEdges`, look for routes in a subgraph of the original graph. That is, a subset of nodes and
+edges are removed to limit the search space. Both differ in the way the subgraph is created. `PruneEdges`, described for example by (`Dell'Amico et al 2006`_)
+removes all edges :math:`(i,j)` which verify :math:`c_{ij} > \alpha \; \pi_{max},` where :math:`c_{ij}` is the cost, :math:`\alpha \in ]0,1[` is parameter,
+and :math:`\pi_{max}` is the largest dual value returned by the current restricted relaxed master problem. The parameter :math:`\alpha` is increased iteratively until
+a route is found. As for `PrunePaths`, the idea is to look for routes in the subgraph induced by the :math:`k` shortest paths from the `Source` to the `Sink` (without any resource constraints), 
+where :math:`k` is a parameter that increases iteratively. 
+
+For each of these heuristic pricing strategies, if a route with negative reduced cost is found, it is fed to the master problem. Otherwise,
+the sub problem is solved exactly.
+
+ .. _Dell'Amico et al 2006: https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118

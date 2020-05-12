@@ -75,7 +75,6 @@ class VehicleRoutingProblem:
     def solve(
         self,
         initial_routes=None,
-        edge_cost_function=None,
         pricing_strategy="Exact",
         cspy=True,
         exact=True,
@@ -87,10 +86,6 @@ class VehicleRoutingProblem:
             initial_routes (list, optional):
                 List of paths (list of nodes).
                 Feasible solution for first iteration.
-                Defaults to None.
-            edge_cost_function (function, optional):
-                Mapping with a cost for each edge.
-                Only necessary if initial_routes is not None.
                 Defaults to None.
             pricing_strategy (str, optional):
                 Strategy used for solving the sub problem.
