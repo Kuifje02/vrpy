@@ -70,7 +70,7 @@ class SubProblemLP(SubProblemBase):
 
         new_route.graph["cost"] = self.total_cost
         self.routes.append(new_route)
-        logger.debug(
+        logger.info(
             "new route %s %s" % (route_id, shortest_path(new_route, "Source", "Sink"))
         )
         logger.debug("new route reduced cost %s" % pulp.value(self.prob.objective))
@@ -248,6 +248,32 @@ class SubProblemLP(SubProblemBase):
                     self.y[v] <= self.y[delivery_node],
                     "node_%s_before_%s" % (v, delivery_node),
                 )
+
+        # Variables to track the load on each node
+        self.load = pulp.LpVariable.dicts(
+            "load",
+            self.sub_G.nodes(),
+            lowBound=0,
+            upBound=self.load_capacity,
+            cat=pulp.LpContinuous,
+        )
+
+        # Load definition
+        M = self.load_capacity
+        for (i, j) in self.sub_G.edges():
+            self.prob += (
+                self.load[i] + self.sub_G.nodes[j]["demand"]
+                <= self.load[j] + M * (1 - self.x[(i, j)]),
+                "inf_load_%s_%s" % (i, j),
+            )
+            self.prob += (
+                self.load[i] + self.sub_G.nodes[j]["demand"]
+                >= self.load[j] - M * (1 - self.x[(i, j)]),
+                "sup_load_%s_%s" % (i, j),
+            )
+        # Empty load at depot
+        self.prob += self.load["Source"] == 0, "source_load"
+        self.prob += self.load["Sink"] == 0, "sink_load"
 
     def add_distribution_collection(self):
         """

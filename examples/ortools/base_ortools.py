@@ -73,7 +73,12 @@ class OrToolsBase:
         return abs_x + abs_y
 
     def solve(
-        self, initial_routes=None, cspy=False, exact=True, pricing_strategy="PrunePaths"
+        self,
+        initial_routes=None,
+        solver="cbc",
+        cspy=False,
+        exact=True,
+        pricing_strategy="PrunePaths",
     ):
         """Instantiates instance as VRP and solves."""
         if cspy:
@@ -96,5 +101,7 @@ class OrToolsBase:
             cspy=cspy,
             exact=exact,
             pricing_strategy=pricing_strategy,
+            solver=solver,
         )
         self.best_value, self.best_routes = prob.best_value, prob._best_routes_as_graphs
+        self.best_routes_nodes = prob.best_routes

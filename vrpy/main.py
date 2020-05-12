@@ -61,6 +61,7 @@ class VehicleRoutingProblem:
         self.distribution_collection = distribution_collection
         self.drop_penalty = drop_penalty
         self._preassignment_cost = 0
+        self._initial_routes = []
 
         # Attributes to keep track of solution
         self._iteration = []
@@ -126,10 +127,12 @@ class VehicleRoutingProblem:
 
         # Initialization
         more_routes = True
-        if not initial_routes:
-            self._initial_solution()
+        if initial_routes:
+            self._initial_routes = initial_routes
         else:
-            self._convert_to_digraphs(initial_routes)
+            self._get_initial_solution()
+        self._convert_initial_routes_to_digraphs()
+
         k = 0
         no_improvement = 0
         start = time()
@@ -219,7 +222,7 @@ class VehicleRoutingProblem:
         # Remove infeasible arcs
         self._prune_graph()
         # Compute upper bound on number of stops as knapsack problem
-        if self.load_capacity:
+        if self.load_capacity and not self.pickup_delivery:
             self._get_num_stops_upper_bound()
         # Setup attributes if cspy
         if cspy:
@@ -317,7 +320,7 @@ class VehicleRoutingProblem:
                     )
         self.G.remove_edges_from(infeasible_arcs)
 
-    def _initial_solution(self):
+    def _get_initial_solution(self):
         """
         If no initial solution is given, creates one :
             - with Clark & Wright if possible;
@@ -333,23 +336,26 @@ class VehicleRoutingProblem:
             alg = ClarkWright(self.G, self.load_capacity, self.duration, self.num_stops)
             alg.run()
             logger.info("Initial solution found with value %s" % alg.best_value)
-            self._routes = alg.best_routes
+            self._initial_routes = alg.best_routes
 
+        # If pickup and delivery initial routes are Source-pickup-delivery-Sink
+        elif self.pickup_delivery:
+            for v in self.G.nodes():
+                if "request" in self.G.nodes[v]:
+                    self._initial_routes.append(
+                        ["Source", v, self.G.nodes[v]["request"], "Sink"]
+                    )
         # Otherwise compute round trips
         else:
             alg = RoundTrip(self.G)
             alg.run()
-            self._routes = alg.round_trips
+            self._initial_routes = alg.round_trips
 
-        # Keep track of which routes per node
-        for v in alg.route:
-            self._routes_with_node[v] += [alg.route[v]]
-
-    def _convert_to_digraphs(self, initial_routes):
+    def _convert_initial_routes_to_digraphs(self):
         """Converts list of initial routes to list of Digraphs."""
         route_id = 0
         self._routes = []
-        for r in initial_routes:
+        for r in self._initial_routes:
             total_cost = 0
             route_id += 1
             G = DiGraph(name=route_id)
@@ -362,6 +368,10 @@ class VehicleRoutingProblem:
             self._routes.append(G)
             for v in r:
                 self._routes_with_node[v] = [G]
+
+        # Keep track of which routes per node
+        # for v in alg.route:
+        #    self._routes_with_node[v] += [alg.route[v]]
 
     def _update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""
