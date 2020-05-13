@@ -105,8 +105,8 @@ class SubProblemCSPY(SubProblemBase):
             if self.alg.total_cost < -(10 ** -3):
                 more_routes = True
                 self.add_new_route()
-                logger.debug("new route %s" % self.alg.path)
-                logger.debug("reduced cost = %s" % self.alg.total_cost)
+                logger.info("new route %s" % self.alg.path)
+                logger.info("reduced cost = %s" % self.alg.total_cost)
                 logger.debug("real cost = %s" % self.total_cost)
                 break
             # If not already solved exactly
@@ -147,6 +147,8 @@ class SubProblemCSPY(SubProblemBase):
         if self.load_capacity and self.distribution_collection:
             self.max_res[4] = self.load_capacity
             self.max_res[5] = self.load_capacity
+        if self.distribution_collection and not self.time_windows:
+            self.T = 1
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""

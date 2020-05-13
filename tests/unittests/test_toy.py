@@ -109,6 +109,10 @@ class TestsToy:
         prob.solve(cspy=False)
         assert prob.best_value == 67
 
+    #########
+    # other #
+    #########
+
     def test_all(self):
         prob = VehicleRoutingProblem(
             self.G, num_stops=3, time_windows=True, duration=63, load_capacity=10
@@ -173,3 +177,21 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, load_capacity=15, pickup_delivery=True,)
         prob.solve(pricing_strategy="Exact", cspy=False)
         assert prob.best_value == 65
+
+    def test_distribution_collection(self):
+        self.G.nodes[1]["collect"] = 12
+        self.G.nodes[2]["collect"] = 0
+        self.G.nodes[3]["collect"] = 0
+        self.G.nodes[4]["collect"] = 1
+        self.G.nodes[5]["collect"] = 0
+        self.G.nodes["Source"]["collect"] = 0
+        self.G.nodes["Sink"]["collect"] = 0
+        prob = VehicleRoutingProblem(
+            self.G, load_capacity=15, distribution_collection=True,
+        )
+        prob.solve(cspy=False)
+        lp_sol = prob.best_value
+        prob.solve(cspy=True)
+        cspy_sol = prob.best_value
+        assert lp_sol == cspy_sol
+        assert lp_sol == 80

@@ -371,10 +371,6 @@ class VehicleRoutingProblem:
             for v in r:
                 self._routes_with_node[v] = [G]
 
-        # Keep track of which routes per node
-        # for v in alg.route:
-        #    self._routes_with_node[v] += [alg.route[v]]
-
     def _update_attributes_for_cspy(self):
         """Adds dummy attributes on nodes and edges if missing."""
 
@@ -388,6 +384,8 @@ class VehicleRoutingProblem:
                     self.G.nodes[v]["lower"] = 0
                 if "upper" not in self.G.nodes[v]:
                     self.G.nodes[v]["upper"] = 0
+                if "service_time" not in self.G.nodes[v]:
+                    self.G.nodes[v]["service_time"] = 0
             for (i, j) in self.G.edges():
                 if "time" not in self.G.edges[i, j]:
                     self.G.edges[i, j]["time"] = 0
