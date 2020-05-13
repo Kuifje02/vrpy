@@ -104,6 +104,3 @@ the sub problem is solved exactly. Also, note that these strategies can be combi
 
  .. _Dell'Amico et al 2006: https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
  
-.. math::
-
-    a_1 x_1 + a_2 x_2 + a_3 x_3 + ... a_n x_n \{<= , =, >=\} b 

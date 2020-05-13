@@ -24,7 +24,7 @@ The objective is to assign a sequence of customers to each truck of the fleet, m
 	>>> G.add_edge(1,2,cost=1)
 	>>> G.nodes[1]["demand"]=2
 	>>> G.nodes[2]["demand"]=3
-	>>> from vrpy.main import VehicleRoutingProblem
+	>>> from vrpy import VehicleRoutingProblem
 	>>> prob = VehicleRoutingProblem(G,load_capacity=10)
 	>>> prob.solve()
 	

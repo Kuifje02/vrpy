@@ -33,7 +33,7 @@ To solve your routing problem, create a :class:`VehicleRoutingProblem`, specify 
 
 .. code-block:: python
 
-	>>> from vrpy.main import VehicleRoutingProblem
+	>>> from vrpy import VehicleRoutingProblem
 	>>> prob = VehicleRoutingProblem(G,load_capacity=10)
 	>>> prob.solve()
 
