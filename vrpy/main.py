@@ -1,6 +1,5 @@
 from networkx import DiGraph, shortest_path
 import logging
-from pandas import DataFrame
 from time import time
 
 from vrpy.master_solve_pulp import MasterSolvePulp
@@ -64,10 +63,6 @@ class VehicleRoutingProblem:
         self._preassignment_cost = 0
         self._initial_routes = []
 
-        # Attributes to keep track of solution
-        self._iteration = []
-        self._lower_bound = []
-
         # Keep track of paths containing nodes
         self._routes = []
         self._routes_with_node = {}
@@ -127,13 +122,8 @@ class VehicleRoutingProblem:
         self._pre_solve(cspy, preassignments)
 
         # Initialization
+        self._initialize(initial_routes)
         more_routes = True
-        if initial_routes:
-            self._initial_routes = initial_routes
-        else:
-            self._get_initial_solution()
-        self._convert_initial_routes_to_digraphs()
-
         k = 0
         no_improvement = 0
         start = time()
@@ -191,7 +181,6 @@ class VehicleRoutingProblem:
                 no_improvement += 1
             else:
                 no_improvement = 0
-            self._iteration.append(k)
             self._lower_bound.append(relaxed_cost)
 
             # Stop if time limit is passed
@@ -210,9 +199,6 @@ class VehicleRoutingProblem:
         )
         self._best_routes_as_node_lists(preassignments)
 
-        # Export relaxed_cost = f(iteration) to Excel file
-        # self.export_convergence_rate()
-
     def _pre_solve(self, cspy, preassignments):
         """Some pre-processing."""
         # Lock preassigned routes
@@ -229,6 +215,15 @@ class VehicleRoutingProblem:
         if cspy:
             self._update_attributes_for_cspy()
             self._check_options_consistency()
+
+    def _initialize(self, initial_routes):
+        """Initialization with initial solution."""
+        self._lower_bound = []
+        if initial_routes:
+            self._initial_routes = initial_routes
+        else:
+            self._get_initial_solution()
+        self._convert_initial_routes_to_digraphs()
 
     def _def_subproblem(
         self,
@@ -497,14 +492,6 @@ class VehicleRoutingProblem:
             if route[0] == "Source" and route[-1] == "Sink":
                 self._best_routes[route_id] = route
                 route_id += 1
-
-    def _export_convergence_rate(self):
-        """Exports evolution of lowerbound to excel file."""
-        keys = ["k", "z"]
-        values = [self._iteration, self._lower_bound]
-        convergence = dict(zip(keys, values))
-        df = DataFrame(convergence, columns=keys)
-        df.to_excel("convergence.xls", index=False)
 
     @property
     def best_value(self):

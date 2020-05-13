@@ -1,9 +1,6 @@
 ###### Requirements without Version Specifiers ######
 #cspy
-matplotlib
 networkx
-numpy
-pandas
 pulp
 pytest
 
