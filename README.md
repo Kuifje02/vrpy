@@ -5,7 +5,7 @@
 [![Documentation Status](https://readthedocs.org/projects/vrpy/badge/?version=latest)](https://vrpy.readthedocs.io/en/latest/?badge=master)
 
 # VRPy
-A python framework for solving the Vehicle Routing Problems.
+A python framework for solving Vehicle Routing Problems.
 
 ## Requirements
 
