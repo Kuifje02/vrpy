@@ -5,7 +5,14 @@
 [![Documentation Status](https://readthedocs.org/projects/vrpy/badge/?version=latest)](https://vrpy.readthedocs.io/en/latest/?badge=master)
 
 # VRPy
-A python framework for solving Vehicle Routing Problems.
+
+VRPy is a python framework for solving Vehicle Routing Problems (VRP) including:
+ - the Capacitated VRP (CVRP),
+ - the CVRP with resource constraints,
+ - the CVRP with time windows (CVRPTW),
+ - the CVRP with simultaneous distribution and collection.
+
+Check out the [docs](https://vrpy.readthedocs.io/en/latest/) to find more variants and options.
 
 ## Requirements
 
