@@ -486,14 +486,17 @@ class VehicleRoutingProblem:
 
     def _best_routes_as_node_lists(self, preassignments):
         """Converts route as DiGraph to route as node list."""
-        self._best_routes = []
+        self._best_routes = {}
+        route_id = 1
         for route in self._best_routes_as_graphs:
             node_list = shortest_path(route, "Source", "Sink")
-            self._best_routes.append(node_list)
+            self._best_routes[route_id] = node_list
+            route_id += 1
         # Merge with preassigned complete routes
         for route in preassignments:
             if route[0] == "Source" and route[-1] == "Sink":
-                self._best_routes.append(route)
+                self._best_routes[route_id] = route
+                route_id += 1
 
     def _export_convergence_rate(self):
         """Exports evolution of lowerbound to excel file."""
@@ -510,5 +513,106 @@ class VehicleRoutingProblem:
 
     @property
     def best_routes(self):
-        """Returns list of best routes found, where a route is a list of nodes."""
+        """
+        Returns dict of best routes found.
+        Keys : route_id; Values : list of ordered nodes."""
         return self._best_routes
+
+    @property
+    def best_routes_cost(self):
+        """Returns dict with route ids as keys and route costs as values."""
+        cost = {}
+        for route in self.best_routes:
+            edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
+            cost[route] = sum([self.G.edges[i, j]["cost"] for (i, j) in edges])
+        return cost
+
+    @property
+    def best_routes_load(self):
+        """Returns dict with route ids as keys and route loads as values."""
+        load = {}
+        for route in self.best_routes:
+            load[route] = sum(
+                [self.G.nodes[v]["demand"] for v in self.best_routes[route]]
+            )
+        return load
+
+    @property
+    def node_load(self):
+        """
+        Returns nested dict.
+        First key : route id ; Seconds key : node ; Value : load.
+        If truck is collecting, load refers to accumulated load on truck.
+        If truck is distributing, load refers to accumulated amount that has been unloaded.
+        """
+        load = {}
+        for i in self.best_routes:
+            load[i] = {}
+            amount = 0
+            for v in self.best_routes[i]:
+                amount += self.G.nodes[v]["demand"]
+                load[i][v] = amount
+            del load[i]["Source"]
+        return load
+
+    @property
+    def best_routes_duration(self):
+        """Returns dict with route ids as keys and route durations as values."""
+        duration = {}
+        for route in self.best_routes:
+            edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
+            # Travel times
+            duration[route] = sum([self.G.edges[i, j]["time"] for (i, j) in edges])
+            # Service times
+            duration[route] += sum(
+                [self.G.nodes[v]["service_time"] for v in self.best_routes[route]]
+            )
+        return duration
+
+    @property
+    def arrival_time(self):
+        """
+        Returns nested dict.
+        First key : route id ; Seconds key : node ; Values : arrival time.
+        """
+        arrival = {}
+        for i in self.best_routes:
+            arrival[i] = {}
+            arrival[i]["Source"] = self.G.nodes["Source"]["lower"]
+            route = self.best_routes[i]
+            for j in range(1, len(route)):
+                tail = route[j - 1]
+                head = route[j]
+                arrival[i][head] = max(
+                    arrival[i][tail]
+                    + self.G.nodes[tail]["service_time"]
+                    + self.G.edges[tail, head]["time"],
+                    self.G.nodes[head]["lower"],
+                )
+            del arrival[i]["Source"]
+        return arrival
+
+    @property
+    def departure_time(self):
+        """
+        Returns nested dict.
+        First key : route id ; Seconds key : node ; Value : departure time.
+        """
+        departure = {}
+        for i in self.best_routes:
+            departure[i] = {}
+            departure[i]["Source"] = self.G.nodes["Source"]["lower"]
+            route = self.best_routes[i]
+            for j in range(1, len(route) - 1):
+                tail = route[j - 1]
+                head = route[j]
+                departure[i][head] = (
+                    max(
+                        departure[i][tail]
+                        + self.G.nodes[tail]["service_time"]
+                        + self.G.edges[tail, head]["time"],
+                        self.G.nodes[head]["lower"],
+                    )
+                    + self.G.nodes[head]["service_time"]
+                )
+        return departure

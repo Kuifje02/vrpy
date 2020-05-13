@@ -42,6 +42,11 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, num_stops=3)
         prob.solve()
         assert prob.best_value == 70
+        assert prob.best_routes[1] in [
+            ["Source", 1, 2, 3, "Sink"],
+            ["Source", 4, 5, "Sink"],
+        ]
+        assert set(prob.best_routes_cost.values()) == {30, 40}
 
     def test_cspy_stops_capacity(self):
         """Tests column generation procedure on toy graph
@@ -50,6 +55,7 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10)
         prob.solve()
         assert prob.best_value == 80
+        assert set(prob.best_routes_load.values()) == {5, 10}
 
     def test_cspy_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph
@@ -58,6 +64,7 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
         prob.solve(exact=False)
         assert prob.best_value == 85
+        assert set(prob.best_routes_duration.values()) == {41, 62}
 
     def test_cspy_stops_time_windows(self):
         """Tests column generation procedure on toy graph
@@ -66,6 +73,9 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
         prob.solve()
         assert prob.best_value == 80
+        assert prob.departure_time[1]["Source"] == 0
+        assert prob.arrival_time[1]["Sink"] in [41, 62]
+        assert prob.node_load[1]["Sink"] in [5, 10]
 
     def test_parameters_consistency(self):
         prob = VehicleRoutingProblem(self.G, pickup_delivery=True)
