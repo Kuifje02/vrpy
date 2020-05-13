@@ -160,3 +160,16 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, num_stops=4)
         prob.solve(preassignments=routes)
         assert prob.best_value == 70
+
+    def test_pick_up_delivery(self):
+        self.G.nodes[2]["request"] = 5
+        self.G.nodes[2]["demand"] = 10
+        self.G.nodes[3]["demand"] = 10
+        self.G.nodes[3]["request"] = 4
+        self.G.nodes[4]["demand"] = -10
+        self.G.nodes[5]["demand"] = -10
+        self.G.add_edge(2, 5, cost=10)
+        self.G.remove_node(1)
+        prob = VehicleRoutingProblem(self.G, load_capacity=15, pickup_delivery=True,)
+        prob.solve(pricing_strategy="Exact", cspy=False)
+        assert prob.best_value == 65

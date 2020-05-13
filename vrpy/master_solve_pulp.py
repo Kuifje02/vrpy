@@ -27,6 +27,8 @@ class MasterSolvePulp(MasterProblemBase):
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
 
+        if pulp.LpStatus[self.prob.status] != "Optimal":
+            raise Exception("problem " + str(pulp.LpStatus[self.prob.status]))
         if self.relax:
             for r in self.routes:
                 if pulp.value(self.y[r.graph["name"]]) > 0.5:

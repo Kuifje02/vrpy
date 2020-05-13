@@ -225,10 +225,12 @@ class SubProblemLP(SubProblemBase):
         Adds precedence and consistency constraints
         for pickup and delivery options.
         """
+        if not self.elementarity:
+            # rank variables are needed
+            self.add_elementarity()
         for v in self.sub_G.nodes():
             if "request" in self.sub_G.nodes[v]:
                 delivery_node = self.sub_G.nodes[v]["request"]
-
                 # same vehicle for pickup and delivery node
                 self.prob += (
                     pulp.lpSum([self.x[(v, u)] for u in self.sub_G.successors(v)])
@@ -242,8 +244,6 @@ class SubProblemLP(SubProblemBase):
                 )
 
                 # pickup before delivery
-                if not self.add_elementarity:
-                    self.add_elementarity()
                 self.prob += (
                     self.y[v] <= self.y[delivery_node],
                     "node_%s_before_%s" % (v, delivery_node),
