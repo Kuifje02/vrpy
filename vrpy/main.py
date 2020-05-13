@@ -9,6 +9,7 @@ from vrpy.subproblem_cspy import SubProblemCSPY
 from vrpy.clarke_wright import ClarkeWright, RoundTrip
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class VehicleRoutingProblem:
