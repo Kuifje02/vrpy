@@ -5,27 +5,29 @@
 [![Documentation Status](https://readthedocs.org/projects/vrpy/badge/?version=latest)](https://vrpy.readthedocs.io/en/latest/?badge=master)
 
 # VRPy
-A python framework for solving the VRP and its variants with column generation.
+A python framework for solving the Vehicle Routing Problems.
 
 ## Requirements
 
 [cspy](https://pypi.org/project/cspy/)
 
-[networkx](https://pypi.org/project/networkx/)
+[NetworkX](https://pypi.org/project/networkx/)
 
-[numpy](https://pypi.org/project/numpy/)
+[pandas](https://pypi.org/project/pandas/)
 
-[pulp](https://pypi.org/project/PuLP/)
+[PuLP](https://pypi.org/project/PuLP/)
 
 <!--[ortools](https://developers.google.com/optimization/install/python)-->
 
-## Documentation (work in progress)
+## Documentation
+
+Documentation is found [here](https://vrpy.readthedocs.io/en/latest/).
 
 ## Usage
 
 ```python
 from networkx import DiGraph
-from vrpy.main import VehicleRoutingProblem
+from vrpy import VehicleRoutingProblem
 
 # Define the network
 G = DiGraph()
@@ -60,3 +62,7 @@ pytest unittests/
 cd tests
 pytest benchmarks/
 ```
+
+## Bugs
+
+Please report any bugs that you find [here](https://github.com/Kuifje02/vrpy/issues). Or, even better, fork the repository on [GitHub](https://github.com/Kuifje02/vrpy) and create a pull request. Any contributions are welcome.
