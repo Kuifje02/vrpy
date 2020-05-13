@@ -14,23 +14,7 @@ VRPy is a python framework for solving Vehicle Routing Problems (VRP) including:
 
 Check out the [docs](https://vrpy.readthedocs.io/en/latest/) to find more variants and options.
 
-## Requirements
-
-[cspy](https://pypi.org/project/cspy/)
-
-[NetworkX](https://pypi.org/project/networkx/)
-
-[pandas](https://pypi.org/project/pandas/)
-
-[PuLP](https://pypi.org/project/PuLP/)
-
-<!--[ortools](https://developers.google.com/optimization/install/python)-->
-
-## Documentation
-
-Documentation is found [here](https://vrpy.readthedocs.io/en/latest/).
-
-## Usage
+## Simple example
 
 ```python
 from networkx import DiGraph
@@ -53,6 +37,26 @@ prob = VehicleRoutingProblem(G, num_stops=4, load_capacity=10, duration=4)
 prob.solve()
 prob.best_value
 ```
+
+## Install
+
+Coming soon.
+
+## Requirements
+
+[cspy](https://pypi.org/project/cspy/)
+
+[NetworkX](https://pypi.org/project/networkx/)
+
+[pandas](https://pypi.org/project/pandas/)
+
+[PuLP](https://pypi.org/project/PuLP/)
+
+<!--[ortools](https://developers.google.com/optimization/install/python)-->
+
+## Documentation
+
+Documentation is found [here](https://vrpy.readthedocs.io/en/latest/).
 
 ## Running the tests
 
