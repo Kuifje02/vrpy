@@ -27,15 +27,19 @@ G.add_edge("Source",2,cost=2,time=1)
 G.add_edge(1,"Sink",cost=0,time=2)
 G.add_edge(2,"Sink",cost=2,time=3)
 G.add_edge(1,2,cost=1,time=1)
+G.add_edge(2,1,cost=1,time=1)
 G.nodes[1]["demand"] = 5
 G.nodes[2]["demand"] = 4
 
 # Define the Vehicle Routing Problem
-prob = VehicleRoutingProblem(G, num_stops=4, load_capacity=10, duration=4)
+prob = VehicleRoutingProblem(G, load_capacity=10, duration=5)
 
 # Solve and display solution value
 prob.solve()
 prob.best_value
+3
+prob.best_routes
+[["Source",2,1,"Sink"]]
 ```
 
 ## Install
