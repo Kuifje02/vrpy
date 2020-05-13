@@ -62,6 +62,7 @@ class VehicleRoutingProblem:
         self.drop_penalty = drop_penalty
         self._preassignment_cost = 0
         self._initial_routes = []
+        self._preassignments = []
 
         # Keep track of paths containing nodes
         self._routes = []
@@ -73,7 +74,7 @@ class VehicleRoutingProblem:
     def solve(
         self,
         initial_routes=None,
-        preassignments=[],
+        preassignments=None,
         pricing_strategy="Exact",
         cspy=True,
         exact=True,
@@ -84,13 +85,13 @@ class VehicleRoutingProblem:
 
         Args:
             initial_routes (list, optional):
-                List of paths (list of nodes).
+                List of routes (ordered list of nodes).
                 Feasible solution for first iteration.
                 Defaults to None.
             preassignments (list, optional):
-                List of preassigned routes, where a route is a list of nodes.
+                List of preassigned routes (ordered list of nodes).
                 If the route contains Source and Sink nodes, it is locked, otherwise it may be extended.
-                Defaults to an emtpy list.
+                Defaults to None.
             pricing_strategy (str, optional):
                 Strategy used for solving the sub problem.
                 Five options available :
@@ -126,6 +127,7 @@ class VehicleRoutingProblem:
         more_routes = True
         k = 0
         no_improvement = 0
+        self._lower_bound = []
         start = time()
 
         # Generate interesting columns
@@ -197,32 +199,32 @@ class VehicleRoutingProblem:
         self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
             solver, time_limit
         )
-        self._best_routes_as_node_lists(preassignments)
+        self._best_routes_as_node_lists()
 
     def _pre_solve(self, cspy, preassignments):
         """Some pre-processing."""
+        # Setup default attributes if missing
+        self._update_dummy_attributes()
+        if cspy:
+            self._check_options_consistency()
         # Lock preassigned routes
         if preassignments:
             self._lock(preassignments)
-        # Set default attributes
-        self._add_default_service_time()
         # Remove infeasible arcs
         self._prune_graph()
         # Compute upper bound on number of stops as knapsack problem
         if self.load_capacity and not self.pickup_delivery:
             self._get_num_stops_upper_bound()
-        # Setup attributes if cspy
-        if cspy:
-            self._update_attributes_for_cspy()
-            self._check_options_consistency()
 
     def _initialize(self, initial_routes):
-        """Initialization with initial solution."""
-        self._lower_bound = []
+        """Initialization with feasible solution."""
         if initial_routes:
+            # Initial solution is given as input
             self._initial_routes = initial_routes
         else:
+            # Initial solution is computed with Clarke & Wright (or round trips)
             self._get_initial_solution()
+        # Initial routes are converted to digraphs
         self._convert_initial_routes_to_digraphs()
 
     def _def_subproblem(
@@ -367,43 +369,24 @@ class VehicleRoutingProblem:
             for v in r:
                 self._routes_with_node[v] = [G]
 
-    def _update_attributes_for_cspy(self):
+    def _update_dummy_attributes(self):
         """Adds dummy attributes on nodes and edges if missing."""
-
-        if not self.load_capacity:
-            for v in self.G.nodes():
-                if "demand" not in self.G.nodes[v]:
-                    self.G.nodes[v]["demand"] = 0
-        if not self.time_windows:
-            for v in self.G.nodes():
-                if "lower" not in self.G.nodes[v]:
-                    self.G.nodes[v]["lower"] = 0
-                if "upper" not in self.G.nodes[v]:
-                    self.G.nodes[v]["upper"] = 0
-                if "service_time" not in self.G.nodes[v]:
-                    self.G.nodes[v]["service_time"] = 0
-            for (i, j) in self.G.edges():
-                if "time" not in self.G.edges[i, j]:
-                    self.G.edges[i, j]["time"] = 0
-        if not self.distribution_collection:
-            for v in self.G.nodes():
-                if "collect" not in self.G.nodes[v]:
-                    self.G.nodes[v]["collect"] = 0
+        for v in self.G.nodes():
+            for attribute in ["demand", "collect", "service_time", "lower", "upper"]:
+                if attribute not in self.G.nodes[v]:
+                    self.G.nodes[v][attribute] = 0
+        for (i, j) in self.G.edges():
+            for attribute in ["time"]:
+                if attribute not in self.G.edges[i, j]:
+                    self.G.edges[i, j][attribute] = 0
 
     def _check_options_consistency(self):
         """
-        The following options need are not implemented yet with cspy:
-            -pickup and delivery
+        The following options are not implemented yet with cspy:
+            - pickup and delivery
         """
         if self.pickup_delivery:
             raise NotImplementedError
-
-    def _add_default_service_time(self):
-        """Adds dummy service time."""
-        if self.duration or self.time_windows:
-            for v in self.G.nodes():
-                if "service_time" not in self.G.nodes[v]:
-                    self.G.nodes[v]["service_time"] = 0
 
     def _get_num_stops_upper_bound(self):
         """
@@ -478,8 +461,9 @@ class VehicleRoutingProblem:
                     if i != "Source" and j != "Sink":
                         self._preassignment_cost += self.G.edges[i, j]["cost"]
                         self.G.edges[i, j]["cost"] = 0
+        self._preassignments = preassignments
 
-    def _best_routes_as_node_lists(self, preassignments):
+    def _best_routes_as_node_lists(self):
         """Converts route as DiGraph to route as node list."""
         self._best_routes = {}
         route_id = 1
@@ -488,7 +472,7 @@ class VehicleRoutingProblem:
             self._best_routes[route_id] = node_list
             route_id += 1
         # Merge with preassigned complete routes
-        for route in preassignments:
+        for route in self._preassignments:
             if route[0] == "Source" and route[-1] == "Sink":
                 self._best_routes[route_id] = route
                 route_id += 1
@@ -518,6 +502,8 @@ class VehicleRoutingProblem:
     def best_routes_load(self):
         """Returns dict with route ids as keys and route loads as values."""
         load = {}
+        if not self.load_capacity:
+            return load
         for route in self.best_routes:
             load[route] = sum(
                 [self.G.nodes[v]["demand"] for v in self.best_routes[route]]
@@ -533,11 +519,19 @@ class VehicleRoutingProblem:
         If truck is distributing, load refers to accumulated amount that has been unloaded.
         """
         load = {}
+        if (
+            not self.load_capacity
+            and not self.pickup_delivery
+            and not self.distribution_collection
+        ):
+            return load
         for i in self.best_routes:
             load[i] = {}
             amount = 0
             for v in self.best_routes[i]:
                 amount += self.G.nodes[v]["demand"]
+                if self.distribution_collection:
+                    amount -= self.G.nodes[v]["collect"]
                 load[i][v] = amount
             del load[i]["Source"]
         return load
@@ -546,6 +540,8 @@ class VehicleRoutingProblem:
     def best_routes_duration(self):
         """Returns dict with route ids as keys and route durations as values."""
         duration = {}
+        if not self.duration and not self.time_windows:
+            return duration
         for route in self.best_routes:
             edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
             # Travel times
@@ -563,6 +559,8 @@ class VehicleRoutingProblem:
         First key : route id ; Seconds key : node ; Values : arrival time.
         """
         arrival = {}
+        if not self.duration and not self.time_windows:
+            return arrival
         for i in self.best_routes:
             arrival[i] = {}
             arrival[i]["Source"] = self.G.nodes["Source"]["lower"]
@@ -586,6 +584,8 @@ class VehicleRoutingProblem:
         First key : route id ; Seconds key : node ; Value : departure time.
         """
         departure = {}
+        if not self.duration and not self.time_windows:
+            return departure
         for i in self.best_routes:
             departure[i] = {}
             departure[i]["Source"] = self.G.nodes["Source"]["lower"]
