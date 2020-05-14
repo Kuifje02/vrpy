@@ -30,6 +30,7 @@ Authors
 =======
 
 Romain Montagné (r.montagne@hotmail.fr)
+
 David Torres Sanchez (d.torressanchez@lancs.ac.uk)
 
 Indices and tables
