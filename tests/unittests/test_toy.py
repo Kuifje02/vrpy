@@ -77,11 +77,6 @@ class TestsToy:
         assert prob.departure_time[1]["Source"] == 0
         assert prob.arrival_time[1]["Sink"] in [41, 62]
 
-    def test_parameters_consistency(self):
-        prob = VehicleRoutingProblem(self.G, pickup_delivery=True)
-        with pytest.raises(NotImplementedError):
-            prob.solve()
-
     ###############
     # subsolve lp #
     ###############
@@ -205,3 +200,15 @@ class TestsToy:
         cspy_sol = prob.best_value
         assert lp_sol == cspy_sol
         assert lp_sol == 80
+
+    def test_consistency_parameters(self):
+        prob = VehicleRoutingProblem(self.G, pickup_delivery=True)
+        # pickup delivery requires cspy=False
+        with pytest.raises(NotImplementedError):
+            prob.solve()
+        # pickup delivery requires pricing_strategy="Exact"
+        with pytest.raises(ValueError):
+            prob.solve(cspy=False, pricing_strategy="Stops")
+        # pickup delivery expects at least one request
+        with pytest.raises(ValueError):
+            prob.solve(cspy=False, pricing_strategy="Exact")

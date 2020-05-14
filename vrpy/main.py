@@ -120,7 +120,7 @@ class VehicleRoutingProblem:
             float: Optimal solution of MIP based on generated columns
         """
         # Pre-processing
-        self._pre_solve(cspy, preassignments)
+        self._pre_solve(cspy, preassignments, pricing_strategy)
 
         # Initialization
         self._initialize(initial_routes)
@@ -201,12 +201,12 @@ class VehicleRoutingProblem:
         )
         self._best_routes_as_node_lists()
 
-    def _pre_solve(self, cspy, preassignments):
+    def _pre_solve(self, cspy, preassignments, pricing_strategy):
         """Some pre-processing."""
         # Setup default attributes if missing
         self._update_dummy_attributes()
-        if cspy:
-            self._check_options_consistency()
+        # Check options consistency
+        self._check_consistency(cspy, pricing_strategy)
         # Lock preassigned routes
         if preassignments:
             self._lock(preassignments)
@@ -380,13 +380,25 @@ class VehicleRoutingProblem:
                 if attribute not in self.G.edges[i, j]:
                     self.G.edges[i, j][attribute] = 0
 
-    def _check_options_consistency(self):
-        """
-        The following options are not implemented yet with cspy:
-            - pickup and delivery
-        """
+    def _check_consistency(self, cspy, pricing_strategy):
+        """Raises errors if options are inconsistent with parameters."""
+        # pickup delivery requires cspy=False
+        if cspy and self.pickup_delivery:
+            raise NotImplementedError("pickup_delivery option requires cspy=False.")
+        # pickup delivery requires pricing_stragy="Exact"
+        if self.pickup_delivery and pricing_strategy != "Exact":
+            raise ValueError(
+                "pickup_delivery option requires 'Exact' pricing_strategy."
+            )
+        # pickup delivery expects at least one request
         if self.pickup_delivery:
-            raise NotImplementedError
+            request = False
+            for v in self.G.nodes():
+                if "request" in self.G.nodes[v]:
+                    request = True
+                    break
+            if not request:
+                raise ValueError("pickup_delivery option expects at least one request.")
 
     def _get_num_stops_upper_bound(self):
         """
