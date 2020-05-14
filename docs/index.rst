@@ -10,7 +10,7 @@
 
 Check out section :ref:`vrp` to find more variants and options.
 
-`VRPy` relies on the well known NetworkX_ package (graph manipulation), as well as on cspy_, a library of resource constrained shortest path algorithms.
+`VRPy` relies on the well known NetworkX_ package (graph manipulation), as well as on cspy_, a library for solving the resource constrained shortest path problem.
 
 .. _NetworkX: Graph manipulation and creation.
 .. _cspy: https://pypi.org/project/cspy/

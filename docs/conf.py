@@ -19,12 +19,12 @@ sys.path.insert(0, os.path.abspath("../vrpy"))
 
 # -- Project information -----------------------------------------------------
 
-project = "vrpy"
+project = "VRPy"
 copyright = "2020, Romain Montagné, David Torres Sanchez"
 author = "Romain Montagné, David Torres Sanchez"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = "0.1.0"
 
 
 # -- General configuration ---------------------------------------------------

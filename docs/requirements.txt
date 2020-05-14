@@ -1,7 +1,6 @@
 ###### Requirements without Version Specifiers ######
 cspy
 networkx
-pandas
 pulp
 ###### Requirements with Version Specifiers ######
 

@@ -11,8 +11,7 @@ Network definition
 
 In this first example, we will be working with the following network:
 
-.. image:: ../docs/images/network.png
-
+.. figure:: images/network.png
 
 The first step is to define the network as a ``nx.Digraph`` object. Note that for convenience, the depot (node `0` in the picture) is split into two vertices
 : the ``Source`` and the ``Sink``.
@@ -75,7 +74,7 @@ And the cost of this solution is queried in a similar fashion :
 
 The optimal routes are displayed below:
 
-.. image:: images/stops.png
+.. figure:: images/stops.png
 
 Capacity constraints
 ********************
@@ -116,7 +115,7 @@ cost increases. As a sanity check, we can query the loads on each route to make 
 	
 The new optimal routes are displayed below:
 
-.. image:: images/capacity.png
+.. figure:: images/capacity.png
 
 Time constraints
 ****************
@@ -145,7 +144,7 @@ As the problem is more and more constrained, the total cost continues to increas
 
 The new optimal routes are displayed below:
 
-.. image:: images/time.png
+.. figure:: images/time.png
 
 Time windows constraints
 ************************
@@ -185,7 +184,7 @@ The total cost increases again. Lets check the arrival times:
 	
 The new optimal routes are displayed below:
 
-.. image:: images/time_windows.png
+.. figure:: images/time_windows.png
 
 Example 2
 ~~~~~~~~~
