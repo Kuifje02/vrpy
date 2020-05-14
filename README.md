@@ -29,6 +29,8 @@ G.add_edge(1,"Sink",cost=0,time=2)
 G.add_edge(2,"Sink",cost=2,time=3)
 G.add_edge(1,2,cost=1,time=1)
 G.add_edge(2,1,cost=1,time=1)
+
+# Define the customers demands
 G.nodes[1]["demand"] = 5
 G.nodes[2]["demand"] = 4
 
@@ -53,7 +55,7 @@ Coming soon.
 
 [NetworkX](https://pypi.org/project/networkx/)
 
-[pandas](https://pypi.org/project/pandas/)
+[numpy](https://pypi.org/project/numpy/)
 
 [PuLP](https://pypi.org/project/PuLP/)
 

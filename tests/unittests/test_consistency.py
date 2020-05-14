@@ -27,6 +27,8 @@ def test_consistency_vrp():
     G.add_edge("Sink", 2, cost=3)
     with pytest.raises(NetworkXError):
         VehicleRoutingProblem(G)
+    with pytest.raises(NetworkXError):
+        VehicleRoutingProblem(G)
     G.remove_edge("Sink", 2)
     with pytest.raises(TypeError):
         VehicleRoutingProblem(G, num_stops=3.5)
@@ -34,6 +36,7 @@ def test_consistency_vrp():
         VehicleRoutingProblem(G, load_capacity=-10)
     with pytest.raises(TypeError):
         VehicleRoutingProblem(G, duration=0)
+    G.remove_edge("Source", 1)
 
 
 def test_consistency_parameters():
