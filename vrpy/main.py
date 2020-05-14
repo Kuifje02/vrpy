@@ -514,6 +514,9 @@ class VehicleRoutingProblem:
         demands = [int(self.G.nodes[v]["demand"]) for v in self.G.nodes()]
         # Solve the knapsack problem
         max_num_stops = knapsack(demands, self.load_capacity)
+        if self.distribution_collection:
+            collect = [int(self.G.nodes[v]["collect"]) for v in self.G.nodes()]
+            max_num_stops = min(max_num_stops, knapsack(collect, self.load_capacity))
         # Update num_stops attribute
         if self.num_stops:
             self.num_stops = min(max_num_stops, self.num_stops)
