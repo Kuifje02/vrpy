@@ -11,7 +11,7 @@ Network definition
 
 In this first example, we will be working with the following network:
 
-.. image:: images/network.png
+.. image:: ../docs/images/network.png
 
 
 The first step is to define the network as a ``nx.Digraph`` object. Note that for convenience, the depot (node `0` in the picture) is split into two vertices
@@ -158,10 +158,10 @@ each node, as well as service times.
 
     >>> time_windows = {1:(5,100), 2:(5,20), 3:(5,100), 4:(5,100),5:(5,100)}
     >>> for v in G.nodes():
-    >>>     G.nodes[v]["lower"] = time_windows[v][0]
-    >>>     G.nodes[v]["upper"] = time_windows[v][1]
-    >>>     if v not in ["Source","Sink"]:
-    >>>         G.nodes[v]["service_time"] = 1
+            G.nodes[v]["lower"] = time_windows[v][0]
+            G.nodes[v]["upper"] = time_windows[v][1]
+            if v not in ["Source","Sink"]:
+                G.nodes[v]["service_time"] = 1
 
 A boolean parameter ``time_windows`` is given as input to enforce
 such constraints:

@@ -26,6 +26,11 @@ Check out section :ref:`vrp` to find more variants and options.
    examples
    api
 
+Authors
+=======
+
+Romain Montagné (r.montagne@hotmail.fr)
+David Torres Sanchez (d.torressanchez@lancs.ac.uk)
 
 Indices and tables
 ==================
