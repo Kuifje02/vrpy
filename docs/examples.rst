@@ -38,13 +38,11 @@ The first step is to define the network as a ``nx.Digraph`` object. Note that fo
 VRP definition
 **************
 
-.. code:: python
-
 The second step is to define the VRP, with the above defined graph as input: 
 
 .. code:: python
             
-    prob = VehicleRoutingProblem(G)
+    >>> prob = VehicleRoutingProblem(G)
 
 Maximum number of stops per route
 *********************************
@@ -53,24 +51,24 @@ In this first variant, it is required that a vehicle cannot perform more than 3 
 
 .. code:: python
 
-    prob.num_stops=3
-    prob.solve()
+    >>> prob.num_stops=3
+    >>> prob.solve()
 
 The best routes found can be queried as follows:
 
 .. code:: python
 
     >>> prob.best_routes
-	{1: ['Source', 4, 5, 'Sink'], 2: ['Source', 1, 2, 3, 'Sink']}
+   {1: ['Source', 4, 5, 'Sink'], 2: ['Source', 1, 2, 3, 'Sink']}
 
 And the cost of this solution is queried in a similar fashion :
 
 .. code:: python
 
     >>> prob.best_value
-	70.0
-	>>> prob.best_routes_cost
-	{1: 30, 2: 40}
+   70.0
+    >>> prob.best_routes_cost
+   {1: 30, 2: 40}
 
 The optimal routes are displayed below:
 
@@ -86,22 +84,17 @@ In this second variant, we define a demand :math:`d_v` for each customer
 
    \sum_{v\in R} d_v \le 10.
    
-Demands are set directly as node attributes on the graph:
+Demands are set directly as node attributes on the graph, and the capacity constraint is set with the ``load_capacity`` attribute:
 
 .. code:: python
 
     >>> for v in G.nodes():
-           if v not in ["Source","Sink"]:
-              G.nodes[v]["demand"] = 5
-
-And the capacity constraint is set with the ``load_capacity`` attribute.
-
-.. code:: python
-
+	       if v not in ["Source","Sink"]:
+		      G.nodes[v]["demand"] = 5
     >>> prob.load_capacity = 10
     >>> prob.solve()
     >>> prob.best_value
-	80.0
+   80.0
 
 As the problem is more constrained, it is not surprising that the total
 cost increases. As a sanity check, we can query the loads on each route to make sure capacity constraints are met:
@@ -109,9 +102,9 @@ cost increases. As a sanity check, we can query the loads on each route to make 
 .. code:: python
 
     >>> prob.best_routes
-	{1: ["Source",1,"Sink"], 2: ["Source",2,3,"Sink"], 3: ["Source",4,5,"Sink"]}
+   {1: ["Source",1,"Sink"], 2: ["Source",2,3,"Sink"], 3: ["Source",4,5,"Sink"]}
     >>> prob.best_routes_load
-    {1: 5, 2: 10, 3: 10}
+   {1: 5, 2: 10, 3: 10}
 	
 The new optimal routes are displayed below:
 
@@ -131,16 +124,16 @@ attribute is set on each edge of the graph, and a maximum duration is set with `
     >>> prob.duration = 60
     >>> prob.solve()
     >>> prob.best_value
-	85.0
+   85.0
 
 As the problem is more and more constrained, the total cost continues to increase. Lets check the durations of each route:
 
 .. code:: python
 
     >>> prob.best_routes
-	{1: ["Source",1,2,"Sink"], 2: ["Source",3,4,"Sink"], 3: ["Source",5,"Sink"]}
+   {1: ["Source",1,2,"Sink"], 2: ["Source",3,4,"Sink"], 3: ["Source",5,"Sink"]}
     >>> prob.best_routes_duration
-	{1: 60, 2: 60, 3: 40}
+   {1: 60, 2: 60, 3: 40}
 
 The new optimal routes are displayed below:
 
@@ -171,16 +164,16 @@ such constraints:
     >>> prob.duration = 64
     >>> prob.solve()
     >>> prob.best_value
-    90.0
+   90.0
 
 The total cost increases again. Lets check the arrival times:
 
 .. code:: python
 
     >>> prob.best_routes
-	{1: ["Source",1,"Sink"], 4: ["Source",2,3,"Sink"], 2: ["Source",4,"Sink"],  3: ["Source",5,"Sink"]}
+   {1: ["Source",1,"Sink"], 4: ["Source",2,3,"Sink"], 2: ["Source",4,"Sink"],  3: ["Source",5,"Sink"]}
 	>>> prob.arrival_time
-	{1: {1: 20, 'Sink': 41}, 2: {4: 20, 'Sink': 41}, 3: {5: 20, 'Sink': 41}, 4: {2: 20, 3: 41, 'Sink': 62}}
+   {1: {1: 20, 'Sink': 41}, 2: {4: 20, 'Sink': 41}, 3: {5: 20, 'Sink': 41}, 4: {2: 20, 3: 41, 'Sink': 62}}
 	
 The new optimal routes are displayed below:
 
