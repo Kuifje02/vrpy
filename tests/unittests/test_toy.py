@@ -1,9 +1,8 @@
 from networkx import DiGraph
-import pytest
 import sys
 
 sys.path.append("../../vrpy/")
-from vrpy.main import VehicleRoutingProblem
+from vrpy import VehicleRoutingProblem
 
 
 class TestsToy:
@@ -200,15 +199,3 @@ class TestsToy:
         cspy_sol = prob.best_value
         assert lp_sol == cspy_sol
         assert lp_sol == 80
-
-    def test_consistency_parameters(self):
-        prob = VehicleRoutingProblem(self.G, pickup_delivery=True)
-        # pickup delivery requires cspy=False
-        with pytest.raises(NotImplementedError):
-            prob.solve()
-        # pickup delivery requires pricing_strategy="Exact"
-        with pytest.raises(ValueError):
-            prob.solve(cspy=False, pricing_strategy="Stops")
-        # pickup delivery expects at least one request
-        with pytest.raises(ValueError):
-            prob.solve(cspy=False, pricing_strategy="Exact")
