@@ -16,7 +16,7 @@ In this first example, we will be working with the following network:
 The first step is to define the network as a ``nx.Digraph`` object. Note that for convenience, the depot (node `0` in the picture) is split into two vertices
 : the ``Source`` and the ``Sink``.
 
-.. code:: ipython3
+.. code:: python
 
     # We will be using the following imported objects
     >>> from networkx import DiGraph
@@ -38,11 +38,11 @@ The first step is to define the network as a ``nx.Digraph`` object. Note that fo
 VRP definition
 **************
 
-.. code:: ipython3
+.. code:: python
 
 The second step is to define the VRP, with the above defined graph as input: 
 
-.. code:: ipython3
+.. code:: python
             
     prob = VehicleRoutingProblem(G)
 
@@ -51,21 +51,21 @@ Maximum number of stops per route
 
 In this first variant, it is required that a vehicle cannot perform more than 3 stops:
 
-.. code:: ipython3
+.. code:: python
 
     prob.num_stops=3
     prob.solve()
 
 The best routes found can be queried as follows:
 
-.. code:: ipython3
+.. code:: python
 
     >>> prob.best_routes
 	{1: ['Source', 4, 5, 'Sink'], 2: ['Source', 1, 2, 3, 'Sink']}
 
 And the cost of this solution is queried in a similar fashion :
 
-.. code:: ipython3
+.. code:: python
 
     >>> prob.best_value
 	70.0
@@ -88,7 +88,7 @@ In this second variant, we define a demand :math:`d_v` for each customer
    
 Demands are set directly as node attributes on the graph:
 
-.. code:: ipython3
+.. code:: python
 
     >>> for v in G.nodes():
            if v not in ["Source","Sink"]:
@@ -96,7 +96,7 @@ Demands are set directly as node attributes on the graph:
 
 And the capacity constraint is set with the ``load_capacity`` attribute.
 
-.. code:: ipython3
+.. code:: python
 
     >>> prob.load_capacity = 10
     >>> prob.solve()
@@ -106,7 +106,7 @@ And the capacity constraint is set with the ``load_capacity`` attribute.
 As the problem is more constrained, it is not surprising that the total
 cost increases. As a sanity check, we can query the loads on each route to make sure capacity constraints are met:
 
-.. code:: ipython3
+.. code:: python
 
     >>> prob.best_routes
 	{1: ["Source",1,"Sink"], 2: ["Source",2,3,"Sink"], 3: ["Source",4,5,"Sink"]}
@@ -123,7 +123,7 @@ Time constraints
 One may want to restrict the total duration of a route. In this case, a `time`
 attribute is set on each edge of the graph, and a maximum duration is set with `prob.duration`.
 
-.. code:: ipython3
+.. code:: python
 
     >>> for (u,v) in G.edges():
            G.edges[u,v]["time"] = 20
@@ -135,7 +135,7 @@ attribute is set on each edge of the graph, and a maximum duration is set with `
 
 As the problem is more and more constrained, the total cost continues to increase. Lets check the durations of each route:
 
-.. code:: ipython3
+.. code:: python
 
     >>> prob.best_routes
 	{1: ["Source",1,2,"Sink"], 2: ["Source",3,4,"Sink"], 3: ["Source",5,"Sink"]}
@@ -153,7 +153,7 @@ When designing routes, it may be required that a customer is serviced in
 a given time window :math:`[\ell,u]`. Such time windows are defined for
 each node, as well as service times.
 
-.. code:: ipython3
+.. code:: python
 
     >>> time_windows = {1:(5,100), 2:(5,20), 3:(5,100), 4:(5,100),5:(5,100)}
     >>> for v in G.nodes():
@@ -165,7 +165,7 @@ each node, as well as service times.
 A boolean parameter ``time_windows`` is given as input to enforce
 such constraints:
 
-.. code:: ipython3
+.. code:: python
 
     >>> prob.time_windows = True 
     >>> prob.duration = 64
@@ -175,7 +175,7 @@ such constraints:
 
 The total cost increases again. Lets check the arrival times:
 
-.. code:: ipython3
+.. code:: python
 
     >>> prob.best_routes
 	{1: ["Source",1,"Sink"], 4: ["Source",2,3,"Sink"], 2: ["Source",4,"Sink"],  3: ["Source",5,"Sink"]}
