@@ -1,4 +1,4 @@
-from networkx import DiGraph, shortest_path, NetworkXError
+from networkx import DiGraph, shortest_path, NetworkXError, has_path
 import logging
 from time import time
 
@@ -401,6 +401,9 @@ class VehicleRoutingProblem:
             # If Sink has outgoing edges
             if len(list(self.G.successors("Sink"))) > 0:
                 raise NetworkXError("Sink must have no outgoing edges.")
+        # If graph is disconnected
+        if not has_path(self.G, "Source", "Sink"):
+            raise NetworkXError("Source and Sink are not connected.")
         # If cost is missing
         for (i, j) in self.G.edges():
             if "cost" not in self.G.edges[i, j]:
