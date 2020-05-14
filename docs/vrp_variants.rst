@@ -3,15 +3,16 @@
 Vehicle Routing Problems
 ========================
 
-The `vrpy` package can solve the following VRP variants.
+The `VRPy` package can solve the following VRP variants.
 
 
 Capacitated Vehicle Routing Problem (CVRP)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the capacitated vehicle routing problem (CVRP), a fleet of delivery vehicles with uniform capacity must serve customers with known demand for a single commodity.
+In the capacitated vehicle routing problem (CVRP), a fleet of vehicles with uniform capacity must serve customers with known demand for a single commodity.
 The vehicles start and end their routes at a common depot and each customer must be served by exactly one vehicle.
-The objective is to assign a sequence of customers to each truck of the fleet, minimizing the total distance traveled, such that all customers are served and the total demand served by each truck does not exceed its capacity. 
+The objective is to assign a sequence of customers (a route) to each truck of the fleet, minimizing the total distance traveled, 
+such that all customers are served and the total demand served by each truck does not exceed its capacity. 
 
 .. code-block:: python
 
@@ -28,7 +29,7 @@ The objective is to assign a sequence of customers to each truck of the fleet, m
 	>>> prob = VehicleRoutingProblem(G,load_capacity=10)
 	>>> prob.solve()
 	
-Note that whether the problem is a distribution or a collection problem does not matter. Both are modelled identically.
+Note that whether the problem is a distribution or a collection problem does not matter. Both are modeled identically.
 
 	
 CVRP with resource constraints
@@ -89,8 +90,7 @@ CVRP with Simultaneous Distribution and Collection (CVRPSDC)
 In this variant, when a customer is visited, two operations are done simultaneously. Some good is delivered, and some waste material is picked-up. 
 The total load must not exceed the vehicle's capacity.
 
-The amount that is picked-up is set with the ``collect`` attribute, on each node, and the ``distribution_collection`` attribute is set to ``True.``
-
+The amount that is picked-up is set with the ``collect`` attribute on each node, and the ``distribution_collection`` attribute is set to ``True.``
 
 Following the above example:
 
@@ -110,9 +110,9 @@ Each pickup/delivery pair (or request) must be assigned to the same tour, and wi
 visited prior to the delivery node (as an item that is yet to be picked up cannot be delivered). 
 The total load must not exceed the vehicle's capacity.
 
-For every delivery node, the ``request`` attribute is set to the name of the pickup node. Also, the ``pickup_delivery`` attribute
+For every delivery node, the ``request`` attribute points to the name of the pickup node. Also, the ``pickup_delivery`` attribute
 is set to ``True``. The amount of goods to be shipped is counted positively for the pickup node, and negatively for the delivery node.
-For example, if `2` units must be shipped from node 1 to node 2, the ``demand`` attribute is set to 2 for node 1, and -2 for node 2.
+For example, if `2` units must be shipped from node `1` to node `2`, the ``demand`` attribute is set to `2` for node `1`, and `-2` for node `2`.
 
 .. code-block:: python
 
@@ -134,8 +134,7 @@ For example, if you are solving a CVRP for which the optimal solution yields a n
 greater than your fleet, it may be interesting to decide which visits to drop in order to meet capacity constraints
 with your given fleet. This may happen if for example, the total demand at all locations exceeds the total capacity of the fleet.
 
-To do so, we set the ``drop_penalty`` attribute to an integer value that the solver will add to the total distance traveled
-each time a node is dropped.
+To do so, we set the ``drop_penalty`` attribute to an integer value that the solver will add to the total travel cost each time a node is dropped.
 
 .. code-block:: python
 

@@ -2,11 +2,21 @@ Getting started
 ===============
 
 Installation
-------------
+************
+
+[VRPy not released yet...]
+
+You can install the latest release of `VRPy` from PyPi_ by:
+
+.. code-block:: none
+
+    pip install vrpy
+
+.. _PyPi: https://pypi.python.org/pypi/vrpy
 
 Requirements
 ************
-The requirements for running `vrpy` are:
+The requirements for running `VRPy` are:
 
  - cspy_: Constrained shortest path problem algorithms.
  - NetworkX_: Graph manipulation and creation.

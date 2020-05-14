@@ -1,3 +1,5 @@
+.. _api:
+
 API
 ===
 
@@ -12,6 +14,6 @@ vrpy.VehicleRoutingProblem
 Notes
 -----
 
-The input graph must have a single `Source` and `Sink` nodes with no incoming or outgoing edges respectively. 
-These dummy nodes represent the depot which is split for modelling convenience.
+The input graph must have single `Source` and `Sink` nodes with no incoming or outgoing edges respectively. 
+These dummy nodes represent the depot which is split for modeling convenience.
 

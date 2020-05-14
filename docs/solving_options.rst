@@ -5,7 +5,7 @@ Setting initial routes for a search
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, an initial solution is computed with the well known Clarke and Wright algorithm. If one already has a feasible solution at hand,
-it is possible to use it as an initial solution. The solution is passed to the solver as a list of routes, where a route is a list
+it is possible to use it as an initial solution for the search of a potential better configuration. The solution is passed to the solver as a list of routes, where a route is a list
 of nodes starting from the Source and ending at the Sink. 
 
 .. code-block:: python
@@ -21,7 +21,7 @@ and it should not be optimized, either only a partial route is known, and it may
 with the ``preassignments`` argument. A route with `Source` and `Sink` nodes is considered complete and is locked. Otherwise, the solver will extend it if it yields savings.
 
 In the following example, one route must start with customer `1`, one route must contain edge `(4,5)`, and one complete route,
-`Source-2-3-Sink`, must be locked.
+`Source-2-3-Sink`, is locked.
 
 .. code-block:: python
 
@@ -32,9 +32,9 @@ Setting a time limit
 ~~~~~~~~~~~~~~~~~~~~
 
 The ``time_limit`` argument can be used to set a time limit, in seconds. 
-The solver will return the best solution found after the time limit has been exceeded.
+The solver will return the best solution found after the time limit has elapsed.
 
-For example, for a 1 minute time limit:
+For example, for a one minute time limit:
 
 .. code-block:: python
 
@@ -44,12 +44,13 @@ For example, for a 1 minute time limit:
 Linear programming or dynamic programming
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`vrpy`'s ``solve`` method relies on a column generation procedure. At every iteration, a master problem and a sub problem are solved.
-The sub problem consists in finding variables which are likely to improve the master problem's objective function. The sub problem - or 
-pricing problem - can be solved either with linear programming, or with dynamic programming. 
+`VRPy`'s ``solve`` method relies on a column generation procedure. At every iteration, a master problem and a sub problem are solved.
+The sub problem consists in finding variables which are likely to improve the master problem's objective function. 
+See section :ref:`colgen` for more details.
 
-Switching to linear programming can be done by deactivating the ``cspy`` argument when calling the ``solve`` method. 
-In this case the CBC_ solver of COIN-OR is used. 
+The sub problem - or pricing problem - can be solved either with linear programming, or with dynamic programming. Switching to linear 
+programming can be done by deactivating the ``cspy`` argument when calling the ``solve`` method. 
+In this case the CBC_ solver of COIN-OR is used by default. 
 
 .. code-block:: python
 
@@ -92,7 +93,7 @@ The idea behind the `Stops` pricing strategy is to look for routes with a bounde
 if no route with negative reduced cost is found. 
 
 The two other strategies, `PrunePaths` and `PruneEdges`, look for routes in a subgraph of the original graph. That is, a subset of nodes and
-edges are removed to limit the search space. Both differ in the way the subgraph is created. `PruneEdges`, described for example by `Dell'Amico et al 2006`_
+edges are removed to limit the search space. Both differ in the way the subgraph is created. `PruneEdges`, described for example by `Dell'Amico et al 2006`_,
 removes all edges :math:`(i,j)` which verify :math:`c_{ij} > \alpha \; \pi_{max},` where :math:`c_{ij}` is the edge's cost, :math:`\alpha \in ]0,1[` is parameter,
 and :math:`\pi_{max}` is the largest dual value returned by the current restricted relaxed master problem. The parameter :math:`\alpha` is increased iteratively until
 a route is found. As for `PrunePaths`, the idea is to look for routes in the subgraph induced by the :math:`k` shortest paths from the `Source` to the `Sink` (without any resource constraints), 
@@ -100,7 +101,7 @@ where :math:`k` is a parameter that increases iteratively.
 
 For each of these heuristic pricing strategies, if a route with negative reduced cost is found, it is fed to the master problem. Otherwise,
 the sub problem is solved exactly. Also, note that these strategies can be combined: for example, it is possible to solve the subproblem heuristically with 
-`cspy` (option 1), with a bounded number of stops (option 2). 
+`cspy` (option `1`), with a bounded number of stops (option `2`). 
 
  .. _Dell'Amico et al 2006: https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
  
