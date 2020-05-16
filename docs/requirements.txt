@@ -3,5 +3,6 @@ cspy
 networkx
 pulp
 sphinxcontrib.bibtex
+sphinx_copybutton
 ###### Requirements with Version Specifiers ######
 

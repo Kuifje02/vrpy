@@ -39,6 +39,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
     "sphinxcontrib.bibtex",
+    "sphinx_copybutton",
     # "sphinx.ext.todo",
     # "sphinx.ext.coverage",
     # "sphinx.ext.ifconfig",

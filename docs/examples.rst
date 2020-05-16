@@ -3,8 +3,8 @@
 Examples
 ========
 
-Example 1
-~~~~~~~~~
+A simple example
+~~~~~~~~~~~~~~~~
 	
 Network definition
 ******************
@@ -18,14 +18,9 @@ The first step is to define the network as a ``nx.Digraph`` object. Note that fo
 
 .. code:: python
 
-    # We will be using the following imported objects
-    >>> from networkx import DiGraph
-    >>> from vrpy import VehicleRoutingProblem
-    
     # Create graph
-    >>> G = DiGraph()
-            
-    # Add edges
+    >>> from networkx import DiGraph
+    >>> G = DiGraph()           
     >>> for v in [1,2,3,4,5]:
            G.add_edge("Source",v, cost=10)
            G.add_edge(v, "Sink", cost=10)
@@ -41,7 +36,8 @@ VRP definition
 The second step is to define the VRP, with the above defined graph as input: 
 
 .. code:: python
-            
+
+    >>> from vrpy import VehicleRoutingProblem
     >>> prob = VehicleRoutingProblem(G)
 
 Maximum number of stops per route
@@ -84,8 +80,8 @@ Demands are set directly as node attributes on the graph, and the capacity const
 .. code:: python
 
     >>> for v in G.nodes():
-	       if v not in ["Source","Sink"]:
-		      G.nodes[v]["demand"] = 5
+           if v not in ["Source","Sink"]:
+              G.nodes[v]["demand"] = 5
     >>> prob.load_capacity = 10
     >>> prob.solve()
     >>> prob.best_value
@@ -134,8 +130,8 @@ The new optimal routes are displayed below:
 
 .. figure:: images/time.png
 
-Time windows constraints
-************************
+Time window constraints
+***********************
 
 When designing routes, it may be required that a customer is serviced in
 a given time window :math:`[\ell,u]`. Such time windows are defined for
@@ -145,12 +141,12 @@ each node, as well as service times.
 
     >>> time_windows = {1:(5,100), 2:(5,20), 3:(5,100), 4:(5,100),5:(5,100)}
     >>> for v in G.nodes():
-            G.nodes[v]["lower"] = time_windows[v][0]
-            G.nodes[v]["upper"] = time_windows[v][1]
-            if v not in ["Source","Sink"]:
-                G.nodes[v]["service_time"] = 1
+           G.nodes[v]["lower"] = time_windows[v][0]
+           G.nodes[v]["upper"] = time_windows[v][1]
+           if v not in ["Source","Sink"]:
+		      G.nodes[v]["service_time"] = 1
 
-A boolean parameter ``time_windows`` is given as input to enforce
+A boolean parameter ``time_windows`` is activated to enforce
 such constraints:
 
 .. code:: python
@@ -167,12 +163,134 @@ The total cost increases again. Lets check the arrival times:
 
     >>> prob.best_routes
    {1: ["Source",1,"Sink"], 4: ["Source",2,3,"Sink"], 2: ["Source",4,"Sink"],  3: ["Source",5,"Sink"]}
-	>>> prob.arrival_time
+    >>> prob.arrival_time
    {1: {1: 20, 'Sink': 41}, 2: {4: 20, 'Sink': 41}, 3: {5: 20, 'Sink': 41}, 4: {2: 20, 3: 41, 'Sink': 62}}
 	
 The new optimal routes are displayed below:
 
 .. figure:: images/time_windows.png
 
-Example 2
-~~~~~~~~~
+Complete program
+****************
+
+.. code:: python
+
+    import networkx as nx
+    from vrpy import VehicleRoutingProblem
+	
+    # Create graph
+    G = nx.DiGraph()
+    for v in [1, 2, 3, 4, 5]:
+	   G.add_edge("Source", v, cost=10, time=20)
+       G.add_edge(v, "Sink", cost=10, time=20)
+       G.nodes[v]["demand"] = 5
+       G.nodes[v]["upper"] = 100
+       G.nodes[v]["lower"] = 5
+       G.nodes[v]["service_time"] = 1
+    G.nodes[2]["upper"] = 20
+    G.nodes["Sink"]["upper"] = 110
+    G.nodes["Source"]["upper"] = 100
+    G.add_edge(1, 2, cost=10, time=20)
+    G.add_edge(2, 3, cost=10, time=20)
+    G.add_edge(3, 4, cost=15, time=20)
+    G.add_edge(4, 5, cost=10, time=25)
+	
+    # Create vrp
+    prob = VehicleRoutingProblem(G, num_stops=3, load_capacity=10, duration=64, time_windows=True)
+	
+    # Solve and display solution
+    prob.solve()
+    print(prob.best_routes)
+    print(prob.best_value)
+	
+
+An example borrowed from *ortools*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We borrow this second example from the well known ortools :cite:`ortools` routing library. We will use the data from the tutorial_.  
+
+
+Network definition
+******************
+
+The graph is considered complete, that is, there are edges between each pair of nodes, in both directions,
+and the cost on each edge is defined as the manhattan distance between both endpoints. 
+The network is displayed below, with the depot in red (for readability, edges are not shown):
+
+.. figure:: images/nodes.png
+
+The network can be entirely defined by its distance matrix.
+We will make use of the *NetworkX* module to create this graph and store its attributes:
+
+.. code:: python
+
+ from networkx import DiGraph, from_numpy_matrix, relabel_nodes
+ from numpy import matrix
+ 
+ # Distance matrix
+ distances = [
+ [0,548,776,696,582,274,502,194,308,194,536,502,388,354,468,776,662,0], # Source
+ [0,0,684,308,194,502,730,354,696,742,1084,594,480,674,1016,868,1210,548],
+ [0,684,0,992,878,502,274,810,468,742,400,1278,1164,1130,788,1552,754,776],
+ [0,308,992,0,114,650,878,502,844,890,1232,514,628,822,1164,560,1358,696],
+ [0,194,878,114,0,536,764,388,730,776,1118,400,514,708,1050,674,1244,582],
+ [0,502,502,650,536,0,228,308,194,240,582,776,662,628,514,1050,708,274],
+ [0,730,274,878,764,228,0,536,194,468,354,1004,890,856,514,1278,480,502],
+ [0,354,810,502,388,308,536,0,342,388,730,468,354,320,662,742,856,194],
+ [0,696,468,844,730,194,194,342,0,274,388,810,696,662,320,1084,514,308],
+ [0,742,742,890,776,240,468,388,274,0,342,536,422,388,274,810,468,194],
+ [0,1084,400,1232,1118,582,354,730,388,342,0,878,764,730,388,1152,354,536],
+ [0,594,1278,514,400,776,1004,468,810,536,878,0,114,308,650,274,844,502],
+ [0,480,1164,628,514,662,890,354,696,422,764,114,0,194,536,388,730,388],
+ [0,674,1130,822,708,628,856,320,662,388,730,308,194,0,342,422,536,354],
+ [0,1016,788,1164,1050,514,514,662,320,274,388,650,536,342,0,764,194,468],
+ [0,868,1552,560,674,1050,1278,742,1084,810,1152,274,388,422,764,0,798,776],
+ [0,1210,754,1358,1244,708,480,856,514,468,354,844,730,536,194,798,0,662],
+ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # Sink
+ ]
+ 
+ # The matrix is transformed into a DiGraph
+ A = matrix(distances, dtype=[("cost", int)])
+ G = from_numpy_matrix(A, create_using=nx.DiGraph())
+
+ # The demands are stored as node attributes
+ demand = dict(zip(G.nodes(), [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8, 0]))
+ nx.set_node_attributes(G, values=demand, name="demand")
+ 
+ # The depot is relabeled as Source and Sink 
+ G = relabel_nodes(G, {0: "Source", 17: "Sink"})			
+			
+CVRP
+****
+
+Once the graph is properly defined, creating a CVRP and solving it is straightforward. 
+With a maximum load of :math:`15` units per vehicle:   
+
+.. code:: python
+    
+   >>> from vrpy import VehicleRoutingProblem
+   >>> prob = VehicleRoutingProblem(G, load_capacity=15)
+   >>> prob.solve()
+   >>> prob.best_value
+  6208.0
+   >>> prob.best_routes
+  {1: ['Source', 12, 11, 15, 13, 'Sink'], 2: ['Source', 1, 3, 4, 7, 'Sink'], 3: ['Source', 5, 2, 6, 8, 'Sink'], 4: ['Source', 14, 16, 10, 9, 'Sink']}
+   >>> prob.best_routes_load
+  {1: 15, 2: 15, 3: 15, 4: 15}
+	
+The four routes are displayed below:
+
+.. figure:: images/nodes_capacity.png					
+
+
+Pickups and deliveries
+**********************
+
+
+CVRP with simultaneous distribution and collection
+**************************************************
+
+Penalties and dropping visits
+*****************************
+
+.. _tutorial: https://developers.google.com/optimization/routing/vrp
