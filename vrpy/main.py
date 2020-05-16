@@ -136,57 +136,16 @@ class VehicleRoutingProblem:
         # Generate interesting columns
         while more_routes and k < 1000 and no_improvement < 1000:
 
-            # Solve restricted relaxed master problem
-            masterproblem = MasterSolvePulp(
-                self.G,
-                self._routes_with_node,
-                self._routes,
-                self.drop_penalty,
-                relax=True,
+            more_routes, k, no_improvement = self._find_columns(
+                k,
+                more_routes,
+                no_improvement,
+                time_limit,
+                pricing_strategy,
+                cspy,
+                exact,
+                solver,
             )
-            duals, relaxed_cost = masterproblem.solve(solver, time_limit)
-            logger.info("iteration %s, %s" % (k, relaxed_cost))
-
-            # The pricing problem is solved with a heuristic strategy
-            if pricing_strategy == "Stops":
-                for stop in range(2, self.num_stops):
-                    subproblem = self._def_subproblem(
-                        duals, cspy, exact, solver, pricing_strategy, stop,
-                    )
-                    self.routes, more_routes = subproblem.solve(time_limit)
-                    if more_routes:
-                        break
-
-            if pricing_strategy == "PrunePaths":
-                for k_shortest_paths in [3, 5, 7, 9]:
-                    subproblem = self._def_subproblem(
-                        duals, cspy, exact, solver, pricing_strategy, k_shortest_paths,
-                    )
-                    self.routes, more_routes = subproblem.solve(time_limit)
-                    if more_routes:
-                        break
-
-            if pricing_strategy == "PruneEdges":
-                for alpha in [0.3, 0.5, 0.7, 0.9]:
-                    subproblem = self._def_subproblem(
-                        duals, cspy, exact, solver, pricing_strategy, alpha,
-                    )
-                    self.routes, more_routes = subproblem.solve(time_limit)
-                    if more_routes:
-                        break
-
-            # If no column was found heuristically, solve subproblem exactly
-            if not more_routes or pricing_strategy == "Exact":
-                subproblem = self._def_subproblem(duals, cspy, exact, solver,)
-                self.routes, more_routes = subproblem.solve(time_limit)
-
-            # Keep track of convergence rate
-            k += 1
-            if k > 1 and relaxed_cost == self._lower_bound[-1]:
-                no_improvement += 1
-            else:
-                no_improvement = 0
-            self._lower_bound.append(relaxed_cost)
 
             # Stop if time limit is passed
             if time_limit:
@@ -202,6 +161,7 @@ class VehicleRoutingProblem:
         self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
             solver, time_limit
         )
+        # Convert best routes into lists of nodes
         self._best_routes_as_node_lists()
 
     def _pre_solve(self, cspy, preassignments, pricing_strategy):
@@ -230,6 +190,69 @@ class VehicleRoutingProblem:
             self._get_initial_solution()
         # Initial routes are converted to digraphs
         self._convert_initial_routes_to_digraphs()
+
+    def _find_columns(
+        self,
+        k,
+        more_routes,
+        no_improvement,
+        time_limit,
+        pricing_strategy,
+        cspy,
+        exact,
+        solver,
+    ):
+        "Solves masterproblem and pricing problem."
+
+        # Solve restricted relaxed master problem
+        masterproblem = MasterSolvePulp(
+            self.G, self._routes_with_node, self._routes, self.drop_penalty, relax=True,
+        )
+        duals, relaxed_cost = masterproblem.solve(solver, time_limit)
+        logger.info("iteration %s, %s" % (k, relaxed_cost))
+
+        # The pricing problem is solved with a heuristic strategy
+        if pricing_strategy == "Stops":
+            for stop in range(2, self.num_stops):
+                subproblem = self._def_subproblem(
+                    duals, cspy, exact, solver, pricing_strategy, stop,
+                )
+                self.routes, more_routes = subproblem.solve(time_limit)
+                if more_routes:
+                    break
+
+        if pricing_strategy == "PrunePaths":
+            for k_shortest_paths in [3, 5, 7, 9]:
+                subproblem = self._def_subproblem(
+                    duals, cspy, exact, solver, pricing_strategy, k_shortest_paths,
+                )
+                self.routes, more_routes = subproblem.solve(time_limit)
+                if more_routes:
+                    break
+
+        if pricing_strategy == "PruneEdges":
+            for alpha in [0.3, 0.5, 0.7, 0.9]:
+                subproblem = self._def_subproblem(
+                    duals, cspy, exact, solver, pricing_strategy, alpha,
+                )
+                self.routes, more_routes = subproblem.solve(time_limit)
+                if more_routes:
+                    break
+
+        # If no column was found heuristically, solve subproblem exactly
+        if not more_routes or pricing_strategy == "Exact":
+            subproblem = self._def_subproblem(duals, cspy, exact, solver,)
+            self.routes, more_routes = subproblem.solve(time_limit)
+
+        # Keep track of convergence rate
+        k += 1
+        if k > 1 and relaxed_cost == self._lower_bound[-1]:
+            no_improvement += 1
+        else:
+            no_improvement = 0
+        self._lower_bound.append(relaxed_cost)
+
+        return more_routes, k, no_improvement
 
     def _def_subproblem(
         self,
@@ -579,7 +602,7 @@ class VehicleRoutingProblem:
     def best_routes(self):
         """
         Returns dict of best routes found.
-        Keys : route_id; Values : list of ordered nodes."""
+        Keys : route_id; values : list of ordered nodes from Source to Sink."""
         return self._best_routes
 
     @property
@@ -607,7 +630,7 @@ class VehicleRoutingProblem:
     def node_load(self):
         """
         Returns nested dict.
-        First key : route id ; Seconds key : node ; Value : load.
+        First key : route id ; second key : node ; value : load.
         If truck is collecting, load refers to accumulated load on truck.
         If truck is distributing, load refers to accumulated amount that has been unloaded.
         """
@@ -649,7 +672,7 @@ class VehicleRoutingProblem:
     def arrival_time(self):
         """
         Returns nested dict.
-        First key : route id ; Seconds key : node ; Values : arrival time.
+        First key : route id ; second key : node ; value : arrival time.
         """
         arrival = {}
         if not self.duration and not self.time_windows:
@@ -674,7 +697,7 @@ class VehicleRoutingProblem:
     def departure_time(self):
         """
         Returns nested dict.
-        First key : route id ; Seconds key : node ; Value : departure time.
+        First key : route id ; second key : node ; value : departure time.
         """
         departure = {}
         if not self.duration and not self.time_windows:
