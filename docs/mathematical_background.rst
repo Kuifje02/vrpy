@@ -25,22 +25,22 @@ The master problem reads as follows:
 
 subject to set covering constraints:
 
-.. math:: \sum_{v\in V \mid v \in r} \lambda_r = 1 \quad \forall v \in V
-   :label: covering
+.. math:: 
 
-.. math::  \lambda_r \in \{ 0,1\} \quad \forall r \in \Omega
-   :label: integrity
+	\sum_{v\in V \mid v \in r} \lambda_r &= 1 \quad &\forall v \in V\quad &(1)
+
+	\lambda_r &\in \{ 0,1\} \quad &\forall r \in \Omega \quad &(2)
+
    
 
-
-When using a column generation procedure, integrity constraints :eq:`integrity` are relaxed (such that :math:`0 \le \lambda_r \le 1`), and only a subset of :math:`\Omega` is used. 
+When using a column generation procedure, integrity constraints :math:`(2)` are relaxed (such that :math:`0 \le \lambda_r \le 1`), and only a subset of :math:`\Omega` is used. 
 This subset is generated dynamically with the following sub problem.
 
 
 Pricing problem
 ***************
 
-Let :math:`\pi_v` denote the dual variable associated with constraints :eq:`covering`. The marginal cost of a variable (or column) :math:`\lambda_r` is given by:
+Let :math:`\pi_v` denote the dual variable associated with constraints :math:`(1)`. The marginal cost of a variable (or column) :math:`\lambda_r` is given by:
 
 .. math:: 
 
