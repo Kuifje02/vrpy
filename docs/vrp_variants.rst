@@ -112,7 +112,7 @@ The total load must not exceed the vehicle's capacity.
 
 For every delivery node, the ``request`` attribute points to the name of the pickup node. Also, the ``pickup_delivery`` attribute
 is set to ``True``. The amount of goods to be shipped is counted positively for the pickup node, and negatively for the delivery node.
-For example, if `2` units must be shipped from node `1` to node `2`, the ``demand`` attribute is set to `2` for node `1`, and `-2` for node `2`.
+For example, if :math:`2` units must be shipped from node :math:`1` to node :math:`2`, the ``demand`` attribute is set to :math:`2` for node :math:`1`, and :math:`-2` for node :math:`2`.
 
 .. code-block:: python
 
@@ -148,7 +148,7 @@ Open VRP
 The `open` VRP refers to the case where vehicles can start and/or end their trip anywhere, instead of having to leave from
 the depot, and to return there after service. 
 
-This is straightforward to model : setting distances (or costs) to `0` on every edge outgoing from the Source 
+This is straightforward to model : setting distances (or costs) to :math:`0` on every edge outgoing from the Source 
 and incoming to the Sink achieves this.
 	
 	

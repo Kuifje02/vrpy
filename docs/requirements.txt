@@ -2,5 +2,6 @@
 cspy
 networkx
 pulp
+sphinxcontrib.bibtex
 ###### Requirements with Version Specifiers ######
 

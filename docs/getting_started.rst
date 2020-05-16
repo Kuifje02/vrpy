@@ -18,9 +18,9 @@ Requirements
 ************
 The requirements for running `VRPy` are:
 
- - cspy_: Constrained shortest path problem algorithms.
- - NetworkX_: Graph manipulation and creation.
- - numpy_: Array manipulation.
+ - cspy_: Constrained shortest path problem algorithms :cite:`cspy`.
+ - NetworkX_: Graph manipulation and creation :cite:`hagberg2008exploring`.
+ - numpy_: Array manipulation :cite:`numpy`.
  - PuLP_: Linear programming modeler.
 
 .. _cspy: https://pypi.org/project/cspy/

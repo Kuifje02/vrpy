@@ -13,7 +13,7 @@ In this first example, we will be working with the following network:
 
 .. figure:: images/network.png
 
-The first step is to define the network as a ``nx.Digraph`` object. Note that for convenience, the depot (node `0` in the picture) is split into two vertices
+The first step is to define the network as a ``nx.Digraph`` object. Note that for convenience, the depot (node :math:`0` in the picture) is split into two vertices
 : the ``Source`` and the ``Sink``.
 
 .. code:: python
@@ -47,7 +47,7 @@ The second step is to define the VRP, with the above defined graph as input:
 Maximum number of stops per route
 *********************************
 
-In this first variant, it is required that a vehicle cannot perform more than 3 stops:
+In this first variant, it is required that a vehicle cannot perform more than :math:`3` stops:
 
 .. code:: python
 
@@ -77,13 +77,8 @@ The optimal routes are displayed below:
 Capacity constraints
 ********************
 
-In this second variant, we define a demand :math:`d_v` for each customer
-:math:`v\in V`, and limit the vehicle capacity to 10 units, that is, for each route `R`, the following constraint must hold:
+In this second variant, we define a demand for each customer and limit the vehicle capacity to :math:`10` units.
 
-.. math::
-
-   \sum_{v\in R} d_v \le 10.
-   
 Demands are set directly as node attributes on the graph, and the capacity constraint is set with the ``load_capacity`` attribute:
 
 .. code:: python

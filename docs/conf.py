@@ -34,13 +34,21 @@ release = "0.1.0"
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.mathjax",
-    "sphinx.ext.imgmath",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
+    "sphinxcontrib.bibtex",
+    # "sphinx.ext.todo",
+    # "sphinx.ext.coverage",
+    # "sphinx.ext.ifconfig",
+    # "sphinx.ext.autosummary",
+    "sphinx.ext.mathjax",
 ]
+
 master_doc = "index"
 # autosectionlabel_prefix_document = True
+pngmath_use_preview = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

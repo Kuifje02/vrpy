@@ -25,6 +25,7 @@ Check out section :ref:`vrp` to find more variants and options.
    solving_options
    examples
    api
+   mathematical_background
 
 Authors
 =======
