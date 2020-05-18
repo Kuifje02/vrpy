@@ -423,16 +423,25 @@ class VehicleRoutingProblem:
 
     def _update_dummy_attributes(self):
         """Adds dummy attributes on nodes and edges if missing."""
+        # Set attr = 0 if missing
         for v in self.G.nodes():
             for attribute in ["demand", "collect", "service_time", "lower", "upper"]:
                 if attribute not in self.G.nodes[v]:
                     self.G.nodes[v][attribute] = 0
+        # Add Source-Sink so that subproblem is always feasible
         if ("Source", "Sink") not in self.G.edges():
             self.G.add_edge("Source", "Sink", cost=0)
+        # Set time = 0 if missing
         for (i, j) in self.G.edges():
             for attribute in ["time"]:
                 if attribute not in self.G.edges[i, j]:
                     self.G.edges[i, j][attribute] = 0
+        # Readjust Sink time windows
+        if self.G.nodes["Sink"]["upper"] == 0:
+            self.G.nodes["Sink"]["upper"] = max(
+                self.G.nodes[u]["upper"] + self.G.edges[u, "Sink"]["time"]
+                for u in self.G.predecessors("Sink")
+            )
         # Keep a copy of the graph
         self._H = self.G.copy()
 
