@@ -81,6 +81,7 @@ This may result in a slow convergence. To speed up the resolution, there are two
 	
  
 2. By modifying the ``pricing_strategy`` argument of the ``solve`` method to one of the following:
+
 	- `Stops`;
 	- `PrunePaths`;
 	- `PruneEdges`.
@@ -92,7 +93,7 @@ This may result in a slow convergence. To speed up the resolution, there are two
 The idea behind the `Stops` pricing strategy is to look for routes with a bounded number of stops. This bound is increased iteratively
 if no route with negative reduced cost is found. 
 
-The two other strategies, `PrunePaths` and `PruneEdges`, look for routes in a subgraph of the original graph. That is, a subset of nodes and
+The two other strategies, `PruneEdges` and `PrunePaths`, look for routes in a subgraph of the original graph. That is, a subset of nodes and
 edges are removed to limit the search space. Both differ in the way the subgraph is created. `PruneEdges`, described for example in :cite:`dell2006branch`,
 removes all edges :math:`(i,j)` which verify :math:`c_{ij} > \alpha \; \pi_{max},` where :math:`c_{ij}` is the edge's cost, :math:`\alpha \in ]0,1[` is parameter,
 and :math:`\pi_{max}` is the largest dual value returned by the current restricted relaxed master problem. The parameter :math:`\alpha` is increased iteratively until
