@@ -135,7 +135,6 @@ class VehicleRoutingProblem:
 
         # Generate interesting columns
         while more_routes and k < 1000 and no_improvement < 1000:
-
             more_routes, k, no_improvement = self._find_columns(
                 k,
                 more_routes,
@@ -328,7 +327,6 @@ class VehicleRoutingProblem:
                     > head_sup_time_window
                 ):
                     infeasible_arcs.append((i, j))
-
             # Strengthen time windows
             for v in self.G.nodes():
                 if v not in ["Source", "Sink"]:
@@ -402,6 +400,8 @@ class VehicleRoutingProblem:
             for attribute in ["demand", "collect", "service_time", "lower", "upper"]:
                 if attribute not in self.G.nodes[v]:
                     self.G.nodes[v][attribute] = 0
+        if ("Source", "Sink") not in self.G.edges():
+            self.G.add_edge("Source", "Sink", cost=0)
         for (i, j) in self.G.edges():
             for attribute in ["time"]:
                 if attribute not in self.G.edges[i, j]:
