@@ -39,10 +39,10 @@ prob = VehicleRoutingProblem(G, load_capacity=10, duration=5)
 
 # Solve and display solution value
 prob.solve()
-prob.best_value
+print(prob.best_value)
 3
-prob.best_routes
-[["Source",2,1,"Sink"]]
+print(prob.best_routes)
+{1: ["Source",2,1,"Sink"]}
 ```
 
 ## Install
