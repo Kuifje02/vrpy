@@ -19,14 +19,8 @@ class TestsToy:
             self.G.nodes[v]["lower"] = 5
             self.G.nodes[v]["service_time"] = 1
         self.G.nodes[2]["upper"] = 20
-        self.G.nodes["Sink"]["demand"] = 0
-        self.G.nodes["Sink"]["lower"] = 0
         self.G.nodes["Sink"]["upper"] = 100
-        self.G.nodes["Sink"]["service_time"] = 0
-        self.G.nodes["Source"]["demand"] = 0
-        self.G.nodes["Source"]["lower"] = 0
         self.G.nodes["Source"]["upper"] = 100
-        self.G.nodes["Source"]["service_time"] = 0
         self.G.add_edge(1, 2, cost=10, time=20)
         self.G.add_edge(2, 3, cost=10, time=20)
         self.G.add_edge(3, 4, cost=15, time=20)
@@ -139,6 +133,8 @@ class TestsToy:
         assert prob.best_value == 70
 
     def test_knapsack(self):
+        self.G.nodes["Source"]["demand"] = 0
+        self.G.nodes["Sink"]["demand"] = 0
         prob = VehicleRoutingProblem(self.G, load_capacity=10)
         prob._get_num_stops_upper_bound()
         assert prob.num_stops == 4
@@ -199,3 +195,9 @@ class TestsToy:
         cspy_sol = prob.best_value
         assert lp_sol == cspy_sol
         assert lp_sol == 80
+
+    def test_fixed_cost(self):
+        prob = VehicleRoutingProblem(self.G, num_stops=3, fixed_cost=100)
+        prob.solve()
+        assert prob.best_value == 70 + 200
+        assert set(prob.best_routes_cost.values()) == {30 + 100, 40 + 100}

@@ -38,6 +38,9 @@ class VehicleRoutingProblem:
         drop_penalty (int, optional):
             Value of penalty if node is dropped.
             Defaults to None.
+        fixed_cost (int: optional):
+            Fixed cost per vehicle.
+            Defaults to 0.
     """
 
     def __init__(
@@ -50,6 +53,7 @@ class VehicleRoutingProblem:
         pickup_delivery=False,
         distribution_collection=False,
         drop_penalty=None,
+        fixed_cost=0,
     ):
         self.G = G
         # VRP options/constraints
@@ -60,6 +64,7 @@ class VehicleRoutingProblem:
         self.pickup_delivery = pickup_delivery
         self.distribution_collection = distribution_collection
         self.drop_penalty = drop_penalty
+        self.fixed_cost = fixed_cost
         self._preassignment_cost = 0
         self._initial_routes = []
         self._preassignments = []
@@ -177,6 +182,9 @@ class VehicleRoutingProblem:
         # Compute upper bound on number of stops as knapsack problem
         if self.load_capacity and not self.pickup_delivery:
             self._get_num_stops_upper_bound()
+        # Setup fixed costs
+        if self.fixed_cost:
+            self._add_fixed_costs()
 
     def _initialize(self, initial_routes):
         """Initialization with feasible solution."""
@@ -299,6 +307,11 @@ class VehicleRoutingProblem:
             )
         return subproblem
 
+    def _add_fixed_costs(self):
+        """Adds fixed cost on each outgoing edge from Source."""
+        for v in self.G.successors("Source"):
+            self.G.edges["Source", v]["cost"] += self.fixed_cost
+
     def _prune_graph(self):
         """
         Preprocessing:
@@ -354,7 +367,6 @@ class VehicleRoutingProblem:
             not self.time_windows
             and not self.pickup_delivery
             and not self.distribution_collection
-            and not self.drop_penalty
         ):
             alg = ClarkeWright(
                 self.G, self.load_capacity, self.duration, self.num_stops
