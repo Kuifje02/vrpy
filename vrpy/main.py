@@ -719,16 +719,16 @@ class VehicleRoutingProblem:
             return arrival
         for i in self.best_routes:
             arrival[i] = {}
-            arrival[i]["Source"] = self.G.nodes["Source"]["lower"]
+            arrival[i]["Source"] = self._H.nodes["Source"]["lower"]
             route = self.best_routes[i]
             for j in range(1, len(route)):
                 tail = route[j - 1]
                 head = route[j]
                 arrival[i][head] = max(
                     arrival[i][tail]
-                    + self.G.nodes[tail]["service_time"]
-                    + self.G.edges[tail, head]["time"],
-                    self.G.nodes[head]["lower"],
+                    + self._H.nodes[tail]["service_time"]
+                    + self._H.edges[tail, head]["time"],
+                    self._H.nodes[head]["lower"],
                 )
             del arrival[i]["Source"]
         return arrival
@@ -744,7 +744,7 @@ class VehicleRoutingProblem:
             return departure
         for i in self.best_routes:
             departure[i] = {}
-            departure[i]["Source"] = self.G.nodes["Source"]["lower"]
+            departure[i]["Source"] = self._H.nodes["Source"]["lower"]
             route = self.best_routes[i]
             for j in range(1, len(route) - 1):
                 tail = route[j - 1]
@@ -752,10 +752,10 @@ class VehicleRoutingProblem:
                 departure[i][head] = (
                     max(
                         departure[i][tail]
-                        + self.G.nodes[tail]["service_time"]
-                        + self.G.edges[tail, head]["time"],
-                        self.G.nodes[head]["lower"],
+                        + self._H.nodes[tail]["service_time"]
+                        + self._H.edges[tail, head]["time"],
+                        self._H.nodes[head]["lower"],
                     )
-                    + self.G.nodes[head]["service_time"]
+                    + self._H.nodes[head]["service_time"]
                 )
         return departure
