@@ -201,3 +201,12 @@ class TestsToy:
         prob.solve()
         assert prob.best_value == 70 + 200
         assert set(prob.best_routes_cost.values()) == {30 + 100, 40 + 100}
+
+    def test_drop_nodes(self):
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, num_vehicles=1, drop_penalty=100
+        )
+        prob.solve()
+        assert prob.best_value == 240
+        assert prob.best_routes == {1: ["Source", 1, 2, 3, "Sink"]}
+

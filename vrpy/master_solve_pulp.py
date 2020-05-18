@@ -56,7 +56,6 @@ class MasterSolvePulp(MasterProblemBase):
             total_cost = pulp.value(self.prob.objective)
             if not self.relax and self.drop_penalty and len(dropped_nodes) > 0:
                 logger.info("dropped nodes : %s" % dropped_nodes)
-                total_cost -= len(dropped_nodes) * 1000
             logger.info("total cost = %s" % total_cost)
             if not total_cost:
                 total_cost = 0
@@ -94,6 +93,10 @@ class MasterSolvePulp(MasterProblemBase):
         # visit each node once
         self.add_set_covering_constraints()
 
+        # bound number of vehicles
+        if self.num_vehicles:
+            self.add_bound_vehicles()
+
     def add_cost_function(self):
         """
         Sum of transport costs.
@@ -128,7 +131,7 @@ class MasterSolvePulp(MasterProblemBase):
                     right_hand_term -= self.drop[v]
 
                 visit_node = pulp.lpSum(
-                    [self.y[r.graph["name"]] for r in self.routes if v in r.nodes()]
+                    [self.y[r.graph["name"]] for r in self.routes_with_node[v]]
                 )
                 if self.relax:
                     # set covering constraints
@@ -167,4 +170,17 @@ class MasterSolvePulp(MasterProblemBase):
             ):
                 constr_name = "visit_node_%s" % v
                 duals[v] = self.prob.constraints[constr_name].pi
+        # num vehicles dual
+        if self.num_vehicles:
+            duals["upper_bound_vehicles"] = self.prob.constraints[
+                "upper_bound_vehicles"
+            ].pi
         return duals
+
+    def add_bound_vehicles(self):
+        """Adds constraint such that number of active variables <= num_vehicles."""
+        self.prob += (
+            pulp.lpSum([self.y[r.graph["name"]] for r in self.routes])
+            <= self.num_vehicles,
+            "upper_bound_vehicles",
+        )

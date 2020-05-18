@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class SubProblemBase:
-    """Base class for the subproblems.
+    """
+    Base class for the subproblems.
 
     Args:
         G (DiGraph): Underlying network.
@@ -100,7 +101,7 @@ class SubProblemBase:
             # The graph is pruned
             self.prune_edges(pricing_parameter)
 
-        logger.info("Pricing strategy %s, %s" % (pricing_strategy, pricing_parameter))
+        logger.debug("Pricing strategy %s, %s" % (pricing_strategy, pricing_parameter))
 
     def add_reduced_cost_attribute(self):
         """Substracts the dual values to compute reduced cost on each edge."""
@@ -109,6 +110,11 @@ class SubProblemBase:
             for v in self.duals:
                 if edge[0] == v:
                     edge[2]["weight"] -= self.duals[v]
+        if "upper_bound_vehicles" in self.duals:
+            for v in self.G.successors("Source"):
+                self.G.edges["Source", v]["weight"] -= self.duals[
+                    "upper_bound_vehicles"
+                ]
 
     def prune_edges(self, alpha):
         """

@@ -41,6 +41,9 @@ class VehicleRoutingProblem:
         fixed_cost (int: optional):
             Fixed cost per vehicle.
             Defaults to 0.
+        num_vehicles (int: optional):
+            Maximum number of vehicles available.
+            Defaults to None (in this case num_vehicles is unbounded).
     """
 
     def __init__(
@@ -54,6 +57,7 @@ class VehicleRoutingProblem:
         distribution_collection=False,
         drop_penalty=None,
         fixed_cost=0,
+        num_vehicles=None,
     ):
         self.G = G
         # VRP options/constraints
@@ -65,6 +69,7 @@ class VehicleRoutingProblem:
         self.distribution_collection = distribution_collection
         self.drop_penalty = drop_penalty
         self.fixed_cost = fixed_cost
+        self.num_vehicles = num_vehicles
         self._preassignment_cost = 0
         self._initial_routes = []
         self._preassignments = []
@@ -160,7 +165,12 @@ class VehicleRoutingProblem:
         # Solve as MIP
         logger.info("MIP solution")
         masterproblem_mip = MasterSolvePulp(
-            self.G, self._routes_with_node, self._routes, self.drop_penalty, relax=False
+            self.G,
+            self._routes_with_node,
+            self._routes,
+            self.drop_penalty,
+            self.num_vehicles,
+            relax=False,
         )
         self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
             solver, time_limit
@@ -213,7 +223,12 @@ class VehicleRoutingProblem:
 
         # Solve restricted relaxed master problem
         masterproblem = MasterSolvePulp(
-            self.G, self._routes_with_node, self._routes, self.drop_penalty, relax=True,
+            self.G,
+            self._routes_with_node,
+            self._routes,
+            self.drop_penalty,
+            self.num_vehicles,
+            relax=True,
         )
         duals, relaxed_cost = masterproblem.solve(solver, time_limit)
         logger.info("iteration %s, %s" % (k, relaxed_cost))
