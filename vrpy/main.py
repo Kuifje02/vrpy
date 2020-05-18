@@ -640,7 +640,9 @@ class VehicleRoutingProblem:
         cost = {}
         for route in self.best_routes:
             edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
-            cost[route] = sum([self._H.edges[i, j]["cost"] for (i, j) in edges])
+            cost[route] = (
+                sum([self._H.edges[i, j]["cost"] for (i, j) in edges]) + self.fixed_cost
+            )
         return cost
 
     @property
