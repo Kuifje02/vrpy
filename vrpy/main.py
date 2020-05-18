@@ -433,6 +433,8 @@ class VehicleRoutingProblem:
             for attribute in ["time"]:
                 if attribute not in self.G.edges[i, j]:
                     self.G.edges[i, j][attribute] = 0
+        # Keep a copy of the graph
+        self._H = self.G.copy()
 
     def _check_vrp(self):
         """Checks if graph and vrp constraints are consistent."""
@@ -638,7 +640,7 @@ class VehicleRoutingProblem:
         cost = {}
         for route in self.best_routes:
             edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
-            cost[route] = sum([self.G.edges[i, j]["cost"] for (i, j) in edges])
+            cost[route] = sum([self._H.edges[i, j]["cost"] for (i, j) in edges])
         return cost
 
     @property
@@ -649,7 +651,7 @@ class VehicleRoutingProblem:
             return load
         for route in self.best_routes:
             load[route] = sum(
-                [self.G.nodes[v]["demand"] for v in self.best_routes[route]]
+                [self._H.nodes[v]["demand"] for v in self.best_routes[route]]
             )
         return load
 
@@ -672,9 +674,9 @@ class VehicleRoutingProblem:
             load[i] = {}
             amount = 0
             for v in self.best_routes[i]:
-                amount += self.G.nodes[v]["demand"]
+                amount += self._H.nodes[v]["demand"]
                 if self.distribution_collection:
-                    amount -= self.G.nodes[v]["collect"]
+                    amount -= self._H.nodes[v]["collect"]
                 load[i][v] = amount
             del load[i]["Source"]
         return load
@@ -688,10 +690,10 @@ class VehicleRoutingProblem:
         for route in self.best_routes:
             edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
             # Travel times
-            duration[route] = sum([self.G.edges[i, j]["time"] for (i, j) in edges])
+            duration[route] = sum([self._H.edges[i, j]["time"] for (i, j) in edges])
             # Service times
             duration[route] += sum(
-                [self.G.nodes[v]["service_time"] for v in self.best_routes[route]]
+                [self._H.nodes[v]["service_time"] for v in self.best_routes[route]]
             )
         return duration
 
