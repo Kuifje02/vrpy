@@ -1,55 +1,27 @@
+from networkx import from_numpy_matrix, set_node_attributes, relabel_nodes, DiGraph
+from numpy import matrix
+from data import DISTANCES, DEMANDS, COLLECT
 import sys
 
 sys.path.append("../../")
-from examples.ortools.base_ortools import OrToolsBase
+sys.path.append("../../../cspy")
+from vrpy import VehicleRoutingProblem
 
+# Transform distance matrix to DiGraph
+A = matrix(DISTANCES, dtype=[("cost", int)])
+G = from_numpy_matrix(A, create_using=DiGraph())
 
-class CVRPSDC(OrToolsBase):
-    """
-    VRP with simultaneous distribution and collection.
-    https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
-    """
+# Set demand and collect volumes
+set_node_attributes(G, values=DEMANDS, name="demand")
+set_node_attributes(G, values=COLLECT, name="collect")
 
-    def __init__(self):
-        super(CVRPSDC, self).__init__()
-
-        # set distribution volumes
-        demand = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
-        self.demand = dict(zip(self.nodes.keys(), demand))
-
-        # set collect volumes
-        collect = [0, 1, 1, 1, 1, 2, 1, 4, 1, 1, 2, 3, 2, 4, 2, 1, 2]
-        self.collect = dict(zip(self.nodes.keys(), collect))
-
-        # update options
-        self.max_load = 15
-        self.max_duration = 2300
-        self.activate_distribution_collection = True
-
-        # update network
-        self.G.graph["name"] += "cvrpsdc"
-        self.update_demand_collect()
-
-    def update_demand_collect(self):
-        for node_id in self.nodes:
-            if node_id > 0:
-                self.G.nodes[node_id]["demand"] = self.demand[node_id]
-                self.G.nodes[node_id]["collect"] = self.collect[node_id]
-        self.G.nodes["Source"]["collect"] = 0
-        self.G.nodes["Sink"]["collect"] = 0
-
-    def show_vehicle_loads(self):
-        for r in self.best_routes:
-            print("route ", r.graph["name"])
-            print("========")
-            for (i, j) in r.edges():
-                if "load" in r.edges[i, j]:
-                    print(
-                        i, j, "total flow", r.edges[i, j]["load"],
-                    )
-
+# Relabel depot
+G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 
 if __name__ == "__main__":
-    data = CVRPSDC()
-    data.solve(cspy=False, pricing_strategy="Exact")
-    data.show_vehicle_loads()
+
+    prob = VehicleRoutingProblem(G, load_capacity=15, distribution_collection=True,)
+    prob.solve(pricing_strategy="PrunePaths")
+    print(prob.best_value)
+    print(prob.best_routes)
+    print(prob.node_load)

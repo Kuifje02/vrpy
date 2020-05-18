@@ -58,7 +58,9 @@ class MasterSolvePulp(MasterProblemBase):
                 logger.info("dropped nodes : %s" % dropped_nodes)
                 total_cost -= len(dropped_nodes) * 1000
             logger.info("total cost = %s" % total_cost)
-            return pulp.value(self.prob.objective), best_routes
+            if not total_cost:
+                total_cost = 0
+            return total_cost, best_routes
 
     def formulate(self):
         """

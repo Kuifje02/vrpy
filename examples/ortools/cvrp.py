@@ -1,57 +1,25 @@
+from networkx import from_numpy_matrix, set_node_attributes, relabel_nodes, DiGraph
+from numpy import matrix
+from data import DISTANCES, DEMANDS
 import sys
 
 sys.path.append("../../")
-from examples.ortools.base_ortools import OrToolsBase
+sys.path.append("../../../cspy")
+from vrpy import VehicleRoutingProblem
 
+# Transform distance matrix to DiGraph
+A = matrix(DISTANCES, dtype=[("cost", int)])
+G = from_numpy_matrix(A, create_using=DiGraph())
 
-class CVRP(OrToolsBase):
-    """
-    Stores the data from ortools CVRP example ;
-    https://developers.google.com/optimization/routing/cvrp
-    """
+# Set demands
+set_node_attributes(G, values=DEMANDS, name="demand")
 
-    def __init__(self):
-        super(CVRP, self).__init__()
-        # set demands
-        demands = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
-        self.demands = dict(zip(self.nodes.keys(), demands))
-        # update options
-        self.max_load = 15
-        self.max_duration = 2300
-
-        # update network
-        self.G.graph["name"] += "cvrp"
-        self.update_demands()
-
-    def update_demands(self):
-        for node_id in self.nodes:
-            if node_id > 0:
-                self.G.nodes[node_id]["demand"] = self.demands[node_id]
-
-    def show_vehicle_loads(self):
-        for r in self.best_routes:
-            print("route ", r.graph["name"])
-            print("========")
-            for (i, j) in r.edges():
-                if "load" in r.edges[i, j]:
-                    print(i, j, "load", r.edges[i, j]["load"])
-            print(
-                "total load",
-                sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
-                "<=",
-                self.max_load,
-            ),
-
+# Relabel depot
+G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 
 if __name__ == "__main__":
-    data = CVRP()
-    initial_routes = [
-        ["Source", 1, 4, 3, 15, "Sink"],
-        ["Source", 14, 16, 10, 2, "Sink"],
-        ["Source", 7, 13, 12, 11, "Sink"],
-        ["Source", 9, 8, 6, 5, "Sink"],
-    ]
-    # initial_routes = None
-    data.solve(initial_routes=initial_routes)
-    data.show_vehicle_loads()
-    data.plot_solution()
+
+    prob = VehicleRoutingProblem(G, load_capacity=15)
+    prob.solve(pricing_strategy="PrunePaths")
+    print(prob.best_value)
+    print(prob.best_routes)
