@@ -121,6 +121,7 @@ class DataSet:
         exact=False,
         pricing_strategy="PrunePaths",
         time_limit=None,
+        solver="cbc",
     ):
         """Instantiates instance as VRP and solves."""
         if cspy:
@@ -138,5 +139,6 @@ class DataSet:
             exact=exact,
             pricing_strategy=pricing_strategy,
             time_limit=time_limit,
+            solver=solver,
         )
         self.best_value, self.best_routes = prob.best_value, prob.best_routes

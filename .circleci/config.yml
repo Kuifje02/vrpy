@@ -13,7 +13,7 @@ jobs:
     working_directory: ~/vrpy
     steps:
       - checkout
-      - run: 
+      - run:
           name: clone cspy-master
           command: |
             cd ..

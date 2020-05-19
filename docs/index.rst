@@ -37,4 +37,5 @@ David Torres Sanchez (d.torressanchez@lancs.ac.uk)
 Indices and tables
 ==================
 
+* :ref:`genindex`
 * :ref:`search`

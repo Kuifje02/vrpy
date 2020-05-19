@@ -424,7 +424,7 @@ DEMANDS_DROP = {
 }
 
 TIME_WINDOWS_LOWER = {
-    0: 0,
+    # 0: 0,
     1: 7,
     2: 10,
     3: 16,
@@ -441,11 +441,11 @@ TIME_WINDOWS_LOWER = {
     14: 7,
     15: 10,
     16: 11,
-    17: 0,
+    # 17: 0,
 }
 
 TIME_WINDOWS_UPPER = {
-    0: 0,
+    # 0: 0,
     1: 12,
     2: 15,
     3: 18,
@@ -462,7 +462,7 @@ TIME_WINDOWS_UPPER = {
     14: 8,
     15: 15,
     16: 15,
-    17: 25,
+    # 17: 25,
 }
 
 PICKUPS_DELIVERIES = {
