@@ -14,7 +14,7 @@ In this first example, we will be working with the following network:
 .. figure:: images/network.png
    :align: center
 
-.. image:: images/requests.png
+.. image:: images/test.png
 
 The first step is to define the network as a ``nx.Digraph`` object. Note that for convenience, the depot (node :math:`0` in the picture) is split into two vertices
 : the ``Source`` and the ``Sink``.
