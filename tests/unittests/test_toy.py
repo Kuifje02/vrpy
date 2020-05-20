@@ -180,12 +180,7 @@ class TestsToy:
 
     def test_distribution_collection(self):
         self.G.nodes[1]["collect"] = 12
-        self.G.nodes[2]["collect"] = 0
-        self.G.nodes[3]["collect"] = 0
         self.G.nodes[4]["collect"] = 1
-        self.G.nodes[5]["collect"] = 0
-        self.G.nodes["Source"]["collect"] = 0
-        self.G.nodes["Sink"]["collect"] = 0
         prob = VehicleRoutingProblem(
             self.G, load_capacity=15, distribution_collection=True,
         )
@@ -209,4 +204,3 @@ class TestsToy:
         prob.solve()
         assert prob.best_value == 240
         assert prob.best_routes == {1: ["Source", 1, 2, 3, "Sink"]}
-

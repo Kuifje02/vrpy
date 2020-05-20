@@ -658,7 +658,11 @@ class VehicleRoutingProblem:
     def best_routes_load(self):
         """Returns dict with route ids as keys and route loads as values."""
         load = {}
-        if not self.load_capacity:
+        if (
+            not self.load_capacity
+            or self.distribution_collection
+            or self.pickup_delivery
+        ):
             return load
         for route in self.best_routes:
             load[route] = sum(
