@@ -7,6 +7,7 @@ class MasterProblemBase:
         routes (list): Current routes/variables/columns.
         drop_penalty (int, optional) : Value of penalty if node is dropped. Defaults to None.
         num_vehicles (int, optional): Maximum number of vehicles. Defaults to None.
+        periodic (bool, optional); True if vertices are to be visited periodically. Defaults to False.
         relax (bool, optional): True if variables are continuous. Defaults to True.
     """
 
@@ -17,6 +18,7 @@ class MasterProblemBase:
         routes,
         drop_penalty=None,
         num_vehicles=None,
+        periodic=False,
         relax=True,
     ):
         self.G = G
@@ -25,3 +27,4 @@ class MasterProblemBase:
         self.drop_penalty = drop_penalty
         self.relax = relax
         self.num_vehicles = num_vehicles
+        self.periodic = periodic

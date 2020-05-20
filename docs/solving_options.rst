@@ -56,7 +56,7 @@ In this case the CBC_ :cite:`forrest2018coin` solver of COIN-OR is used by defau
 
 	>>> prob.solve(cspy=False)
 	
-The subproblems that are solved are typically NP-hard, and using dynamic programming is typically quicker, as such algorithms run in pseudo-polynomial time.
+The subproblems that are solved are typically computationally intractable, and using dynamic programming is typically quicker, as such algorithms run in pseudo-polynomial time.
 However, solving the subproblems as MIPs may also be effective depending on the data set. Also, using commercial solvers may significantly help accelerating the procedure.
 If one has CPLEX or GUROBI at hand, they can be used by setting the ``solver`` parameter to "cplex" or "gurobi".
 

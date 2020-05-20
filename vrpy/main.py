@@ -38,12 +38,15 @@ class VehicleRoutingProblem:
         drop_penalty (int, optional):
             Value of penalty if node is dropped.
             Defaults to None.
-        fixed_cost (int: optional):
+        fixed_cost (int, optional):
             Fixed cost per vehicle.
             Defaults to 0.
-        num_vehicles (int: optional):
+        num_vehicles (int, optional):
             Maximum number of vehicles available.
             Defaults to None (in this case num_vehicles is unbounded).
+        periodic (bool, optional):
+            True if vertices are to be visited periodically.
+            Defaults to False.
     """
 
     def __init__(
@@ -58,6 +61,7 @@ class VehicleRoutingProblem:
         drop_penalty=None,
         fixed_cost=0,
         num_vehicles=None,
+        periodic=False,
     ):
         self.G = G
         # VRP options/constraints
@@ -70,6 +74,7 @@ class VehicleRoutingProblem:
         self.drop_penalty = drop_penalty
         self.fixed_cost = fixed_cost
         self.num_vehicles = num_vehicles
+        self.periodic = periodic
         self._preassignment_cost = 0
         self._initial_routes = []
         self._preassignments = []
@@ -170,6 +175,7 @@ class VehicleRoutingProblem:
             self._routes,
             self.drop_penalty,
             self.num_vehicles,
+            self.periodic,
             relax=False,
         )
         self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
@@ -228,6 +234,7 @@ class VehicleRoutingProblem:
             self._routes,
             self.drop_penalty,
             self.num_vehicles,
+            self.periodic,
             relax=True,
         )
         duals, relaxed_cost = masterproblem.solve(solver, time_limit)
@@ -425,9 +432,18 @@ class VehicleRoutingProblem:
         """Adds dummy attributes on nodes and edges if missing."""
         # Set attr = 0 if missing
         for v in self.G.nodes():
-            for attribute in ["demand", "collect", "service_time", "lower", "upper"]:
+            for attribute in [
+                "demand",
+                "collect",
+                "service_time",
+                "lower",
+                "upper",
+            ]:
                 if attribute not in self.G.nodes[v]:
                     self.G.nodes[v][attribute] = 0
+            for attribute in ["frequency"]:
+                if attribute not in self.G.nodes[v]:
+                    self.G.nodes[v][attribute] = 1
         # Add Source-Sink so that subproblem is always feasible
         if ("Source", "Sink") not in self.G.edges():
             self.G.add_edge("Source", "Sink", cost=0)

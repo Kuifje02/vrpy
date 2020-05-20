@@ -76,21 +76,20 @@ class MasterSolvePulp(MasterProblemBase):
             self.vartype = pulp.LpInteger
 
         # create variables, one per route
-        _routes = []
-        for r in self.routes:
-            _routes.append(r.graph["name"])
-        self.y = pulp.LpVariable.dicts(
-            "y", _routes, lowBound=0, upBound=1, cat=self.vartype
-        )
+        self.add_route_selection_variables()
 
         # if dropping nodes is allowed
         if self.drop_penalty:
             self.add_drop_variables()
 
+        # if frequencies, dummy variables are needed to find initial solution
+        if self.periodic:
+            self.add_artificial_variables()
+
         # cost function
         self.add_cost_function()
 
-        # visit each node once
+        # visit each node once (or periodically if frequencies are given)
         self.add_set_covering_constraints()
 
         # bound number of vehicles
@@ -111,14 +110,16 @@ class MasterSolvePulp(MasterProblemBase):
             )
         else:
             dropping_visits_cost = 0
-        self.prob += transport_cost + dropping_visits_cost
+        if self.periodic:
+            dummy_cost = 1e10 * pulp.lpSum([self.dummy[v] for v in self.dummy])
+        else:
+            dummy_cost = 0
+        self.prob += transport_cost + dropping_visits_cost + dummy_cost
 
     def add_set_covering_constraints(self):
         """
-        All vertices must be visited exactly once,
-        except if dropping nodes is allowed. In this
-        case the drop variable is activated (as well as
-        a penalty is the cost function).
+        All vertices must be visited exactly once, or periodically if frequencies are given.
+        If dropping nodes is allowed, the drop variable is activated (as well as a penalty is the cost function).
         """
         for v in self.G.nodes():
             if (
@@ -126,13 +127,19 @@ class MasterSolvePulp(MasterProblemBase):
                 and "depot_from" not in self.G.nodes[v]
                 and "depot_to" not in self.G.nodes[v]
             ):
-                right_hand_term = 1
-                if self.drop_penalty:
-                    right_hand_term -= self.drop[v]
+                if self.periodic:
+                    right_hand_term = self.G.nodes[v]["frequency"]
+                elif self.drop_penalty:
+                    right_hand_term = 1 - self.drop[v]
+                else:
+                    right_hand_term = 1
 
                 visit_node = pulp.lpSum(
                     [self.y[r.graph["name"]] for r in self.routes_with_node[v]]
                 )
+                if self.periodic:
+                    if v in self.dummy:
+                        visit_node += self.dummy[v]
                 if self.relax:
                     # set covering constraints
                     # cuts the dual space in half
@@ -140,6 +147,19 @@ class MasterSolvePulp(MasterProblemBase):
                 else:
                     # set partitioning constraints
                     self.prob += visit_node == right_hand_term, "visit_node_%s" % v
+
+    def add_route_selection_variables(self):
+        """
+        Boolean variable.
+        y[r] takes value 1 if and only if route r is selected.
+        """
+        self.y = pulp.LpVariable.dicts(
+            "y",
+            [r.graph["name"] for r in self.routes],
+            lowBound=0,
+            upBound=1,
+            cat=self.vartype,
+        )
 
     def add_drop_variables(self):
         """
@@ -152,6 +172,16 @@ class MasterSolvePulp(MasterProblemBase):
             lowBound=0,
             upBound=1,
             cat=self.vartype,
+        )
+
+    def add_artificial_variables(self):
+        """Continuous variable used for finding initial feasible solution."""
+        self.dummy = pulp.LpVariable.dicts(
+            "artificial",
+            [v for v in self.G.nodes() if self.G.nodes[v]["frequency"] > 1],
+            lowBound=0,
+            upBound=None,
+            cat=pulp.LpContinuous,
         )
 
     def get_duals(self):

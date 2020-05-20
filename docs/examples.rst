@@ -216,7 +216,7 @@ Network definition
 ******************
 
 The graph is considered complete, that is, there are edges between each pair of nodes, in both directions,
-and the cost on each edge is defined as the manhattan distance between both endpoints. 
+and the cost on each edge is defined as the *Manhattan* distance between both endpoints. 
 The network is displayed below (for readability, edges are not shown), with the depot in red, and the labels outside of the vertices
 are the demands:
 
@@ -283,7 +283,6 @@ With a maximum load of :math:`15` units per vehicle:
     >>> prob.best_routes_load
     {1: 15, 2: 15, 3: 15, 4: 15}
 
-The four routes are displayed below:
 
 The four routes are displayed below:
 

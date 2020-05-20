@@ -7,7 +7,7 @@ Mathematical Background
 A column generation approach
 ----------------------------
 
-VRPy solves vehicle routing problems with a column generation approach. The term `column generation` refers to the fact 
+*VRPy* solves vehicle routing problems with a column generation approach. The term `column generation` refers to the fact 
 that iteratively, routes (or `columns`) are `generated` with a pricing problem, and fed to a master problem which selects the best routes among
 a pool such that each vertex is serviced exactly once. The linear formulations of these problems are detailed hereafter.  
 	
@@ -69,7 +69,7 @@ In other words, the subproblem is a shortest elementary path problem, and additi
 give rise to a shortest path problem with *resource constraints*, hence the interest of using the *cspy* library.
 
 If there are negative cost cycles (which typically happens), the above formulation requires additional constraints
-to enforce path elementarity, and the problem becomes intractable.
+to enforce path elementarity, and the problem becomes computationally intractable.
 Linear formulations are then impractical, and algorithms such as the ones available in *cspy* become very handy.
 
 

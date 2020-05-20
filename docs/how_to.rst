@@ -37,7 +37,7 @@ To solve your routing problem, create a :class:`VehicleRoutingProblem` instance,
 
     >>> from vrpy import VehicleRoutingProblem
     >>> prob = VehicleRoutingProblem(G, load_capacity=10)
-	>>> prob.solve()
+    >>> prob.solve()
 
 Once the problem is solved, we can query useful attributes as
 

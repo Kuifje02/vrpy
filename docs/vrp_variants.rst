@@ -37,7 +37,7 @@ CVRP with resource constraints
 	
 Other resources can also be considered :
 	- maximum duration per trip; 
-	- maximum amount of customers that are visited.  
+	- maximum amount of customers per trip.  
 
 Taking into account duration constraints requires setting ``time`` attributes on each edge, and setting
 the ``duration`` attribute to the maximum amount of time per vehicle.
@@ -102,8 +102,8 @@ Following the above example:
 	>>> prob.distribution_collection = True
 	>>> prob.solve()
 	
-CVRP with Pickup and Deliveries 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CVRP with Pickup and Deliveries (VRPPD)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the pickup-and-delivery problem, each demand is made of a pickup node and a delivery node.
 Each pickup/delivery pair (or request) must be assigned to the same tour, and within this tour, the pickup node must be 
@@ -112,29 +112,79 @@ The total load must not exceed the vehicle's capacity.
 
 For every delivery node, the ``request`` attribute points to the name of the pickup node. Also, the ``pickup_delivery`` attribute
 is set to ``True``. The amount of goods to be shipped is counted positively for the pickup node, and negatively for the delivery node.
-For example, if :math:`2` units must be shipped from node :math:`1` to node :math:`2`, the ``demand`` attribute is set to :math:`2` for node :math:`1`, and :math:`-2` for node :math:`2`.
+For example, if :math:`3` units must be shipped from node :math:`1` to node :math:`2`, the ``demand`` attribute is set to :math:`3` for node :math:`1`, and :math:`-3` for node :math:`2`.
 
 .. code-block:: python
 
 	>>> G.nodes[1]["request"] = 2
-	>>> G.nodes[1]["demand"] = 2
-	>>> G.nodes[2]["demand"] = -2
+	>>> G.nodes[1]["demand"] = 3
+	>>> G.nodes[2]["demand"] = -3
 	>>> prob.pickup_delivery = True
 	>>> prob.load_capacity = 10
 	>>> prob.solve(cspy=False)
 
 .. note:: This variant has to be solved with the ``cspy`` attribute set to False. 
 
+Periodic CVRP (PCVRP)
+~~~~~~~~~~~~~~~~~~~~~
 
+In the periodic CVRP, the planning period is extended over a time horizon, and customers have to be serviced more than once. 
+The demand is considered constant over time, and the frequencies of each customer are known. 
+
+For each node, the ``frequency`` attribute (:class:`int`) is set, and the boolean parameter ``periodic`` is set to ``True.`` All nodes that
+have no frequency are visited exactly once. 
+
+.. code-block:: python
+
+	>>> G.nodes[1]["frequency"] = 2
+	>>> prob.periodic = True
+	>>> prob.solve()
+	
+.. note:: 
+
+	The PCVRP usually has additional constraints: some customers can only be serviced on specific days of the considered time span. 
+	For example, over a :math:`3` day planning period, a node with frequency :math:`2` could only be visited on days :math:`1` and
+	:math:`2` or :math:`2` and :math:`3` but not :math:`1` and :math:`3`. Such *combination* constraints are not taken into account by 
+	*VRPy* (yet).
+	
+VRP options
+~~~~~~~~~~~
+
+In this subsection are described different options which arise frequently in vehicle routing problems.
+
+Open VRP
+^^^^^^^^
+
+The `open` VRP refers to the case where vehicles can start and/or end their trip anywhere, instead of having to leave from
+the depot, and to return there after service. This is straightforward to model : setting distances (or costs) to :math:`0` on every edge outgoing from the Source 
+and incoming to the Sink achieves this.
+
+Fixed costs
+^^^^^^^^^^^
+
+Vehicles typically have a fixed cost. This can be taken into account with the ``fixed_cost`` attribute. For example, if the cost of using
+each vehicle is :math:`100`, no matter what the traveled distance is:
+
+.. code-block:: python
+
+	>>> prob.fixed_cost = 100
+	
+Limited fleet
+^^^^^^^^^^^^^
+	
+It is possible to limit the size of the fleet. For example, if at most :math:`10` vehicles are available:
+
+.. code-block:: python
+
+	>>> prob.num_vehicles = 10
+	
 Dropping visits
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
-In this variant, we consider the case where customers can be dropped, at the cost of a penalty. 
-For example, if you are solving a CVRP for which the optimal solution yields a number of vehicles that is 
-greater than your fleet, it may be interesting to decide which visits to drop in order to meet capacity constraints
-with your given fleet. This may happen if for example, the total demand at all locations exceeds the total capacity of the fleet.
-
-To do so, we set the ``drop_penalty`` attribute to an integer value that the solver will add to the total travel cost each time a node is dropped.
+Having a limited fleet may result in an infeasible problem. For example, if the total demand at all locations exceeds the total capacity of the fleet,
+the problem has no feasible solution. It may then be interesting to decide which visits to drop in order to meet capacity constraints
+while servicing as many customers as possible. To do so, we set the ``drop_penalty`` attribute to an integer value that the solver
+will add to the total travel cost each time a node is dropped.
 
 .. code-block:: python
 
@@ -142,22 +192,12 @@ To do so, we set the ``drop_penalty`` attribute to an integer value that the sol
 	
 This problem is sometimes referred to as the `capacitated profitable tour problem` or the `prize collecting tour problem.`
 	
-Open VRP
-~~~~~~~~
-
-The `open` VRP refers to the case where vehicles can start and/or end their trip anywhere, instead of having to leave from
-the depot, and to return there after service. 
-
-This is straightforward to model : setting distances (or costs) to :math:`0` on every edge outgoing from the Source 
-and incoming to the Sink achieves this.
-	
 	
 Other VRPs
 ~~~~~~~~~~
 
 Coming soon:
 
-- Periodic CVRP
 - CVRP with multiple depots
 - CVRP with heterogeneous fleet 
 
