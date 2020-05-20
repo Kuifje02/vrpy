@@ -128,7 +128,7 @@ For example, if :math:`3` units must be shipped from node :math:`1` to node :mat
 Periodic CVRP (PCVRP)
 ~~~~~~~~~~~~~~~~~~~~~
 
-In the periodic CVRP, the planning period is extended over a time horizon, and customers have to be serviced more than once. 
+In the periodic CVRP, the planning period is extended over a time horizon, and customers can be serviced more than once. 
 The demand is considered constant over time, and the frequencies of each customer are known. 
 
 For each node, the ``frequency`` attribute (:class:`int`) is set, and the boolean parameter ``periodic`` is set to ``True.`` All nodes that
