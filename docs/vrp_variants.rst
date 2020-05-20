@@ -82,6 +82,12 @@ Following the above example:
 	>>> G.nodes[2]["service_time"] = 2
 	>>> prob.time_windows = True
 	>>> prob.solve()
+	
+.. note:: 
+
+	Waiting time is allowed upon arrival at a node. This means that if a vehicle arrives at a node before the time window's
+	lower bound, the configuration remains feasible, it is considered that the driver waits before servicing the customer. 
+        
 
 
 CVRP with Simultaneous Distribution and Collection (CVRPSDC)
