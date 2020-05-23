@@ -14,11 +14,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: clone cspy-master
-          command: |
-            cd ..
-            git clone https://github.com/torressa/cspy.git
-      - run:
           name: install dependencies
           command: |
             python3 -m venv venv
@@ -45,11 +40,6 @@ jobs:
     working_directory: ~/vrpy
     steps:
       - checkout
-      - run: 
-          name: clone cspy-master
-          command: |
-            cd ..
-            git clone https://github.com/torressa/cspy.git
       - run:
           name: install dependencies
           command: |
@@ -70,11 +60,6 @@ jobs:
     working_directory: ~/vrpy
     steps:
       - checkout
-      - run: 
-          name: clone cspy-master
-          command: |
-            cd ..
-            git clone https://github.com/torressa/cspy.git
       - run:
           name: install dependencies
           command: |
@@ -88,7 +73,7 @@ jobs:
             . venv/bin/activate
             cd ~/vrpy/tests/
             pytest unittests/*
-  
+
 workflows:
   version: 2
   build:
