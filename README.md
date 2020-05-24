@@ -47,7 +47,9 @@ print(prob.best_routes)
 
 ## Install
 
-Coming soon.
+```sh
+pip install vrpy
+```
 
 ## Requirements
 
@@ -59,7 +61,6 @@ Coming soon.
 
 [PuLP](https://pypi.org/project/PuLP/)
 
-<!--[ortools](https://developers.google.com/optimization/install/python)-->
 
 ## Documentation
 

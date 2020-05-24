@@ -4,8 +4,6 @@ Getting started
 Installation
 ************
 
-[VRPy not released yet...]
-
 You can install the latest release of `VRPy` from PyPi_ by:
 
 .. code-block:: none
