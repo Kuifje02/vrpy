@@ -27,7 +27,7 @@ subject to set covering constraints:
 
 .. math:: 
 
-	\sum_{v\in V \mid v \in r} \lambda_r &= 1 \quad &\forall v \in V\quad &(1)
+	\sum_{r \in \Omega \mid v \in r} \lambda_r &= 1 \quad &\forall v \in V\quad &(1)
 
 	\lambda_r &\in \{ 0,1\} \quad &\forall r \in \Omega \quad &(2)
 
