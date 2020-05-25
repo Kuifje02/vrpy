@@ -36,6 +36,7 @@ CVRP with resource constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 Other resources can also be considered:
+
 	- maximum duration per trip; 
 	- maximum amount of customers per trip.  
 
