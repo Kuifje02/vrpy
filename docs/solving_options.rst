@@ -6,7 +6,7 @@ Setting initial routes for a search
 
 By default, an initial solution is computed with the well known Clarke and Wright algorithm :cite:`clarke1964scheduling`. If one already has a feasible solution at hand,
 it is possible to use it as an initial solution for the search of a potential better configuration. The solution is passed to the solver as a list of routes, where a route is a list
-of nodes starting from the Source and ending at the Sink. 
+of nodes starting from the *Source* and ending at the *Sink*. 
 
 .. code-block:: python
 
@@ -56,8 +56,8 @@ In this case the CBC_ :cite:`forrest2018coin` solver of COIN-OR is used by defau
 
 	>>> prob.solve(cspy=False)
 	
-The subproblems that are solved are typically computationally intractable, and using dynamic programming is typically quicker, as such algorithms run in pseudo-polynomial time.
-However, solving the subproblems as MIPs may also be effective depending on the data set. Also, using commercial solvers may significantly help accelerating the procedure.
+The sub problems that are solved are typically computationally intractable, and using dynamic programming is typically quicker, as such algorithms run in pseudo-polynomial time.
+However, solving the sub problems as MIPs may also be effective depending on the data set. Also, using commercial solvers may significantly help accelerating the procedure.
 If one has CPLEX or GUROBI at hand, they can be used by setting the ``solver`` parameter to "cplex" or "gurobi".
 
 .. code-block:: python
@@ -101,5 +101,5 @@ a route is found. As for `PrunePaths`, the idea is to look for routes in the sub
 where :math:`k` is a parameter that increases iteratively. 
 
 For each of these heuristic pricing strategies, if a route with negative reduced cost is found, it is fed to the master problem. Otherwise,
-the sub problem is solved exactly. Also, note that these strategies can be combined: for example, it is possible to solve the subproblem heuristically with 
+the sub problem is solved exactly. Also, note that these strategies can be combined: for example, it is possible to solve the sub problem heuristically with 
 `cspy` (option :math:`1`), with a bounded number of stops (option :math:`2`). 

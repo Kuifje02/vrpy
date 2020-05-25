@@ -35,7 +35,7 @@ Note that whether the problem is a distribution or a collection problem does not
 CVRP with resource constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
-Other resources can also be considered :
+Other resources can also be considered:
 	- maximum duration per trip; 
 	- maximum amount of customers per trip.  
 
@@ -116,7 +116,7 @@ Each pickup/delivery pair (or request) must be assigned to the same tour, and wi
 visited prior to the delivery node (as an item that is yet to be picked up cannot be delivered). 
 The total load must not exceed the vehicle's capacity.
 
-For every delivery node, the ``request`` attribute points to the name of the pickup node. Also, the ``pickup_delivery`` attribute
+For every pickup node, the ``request`` attribute points to the name of the delivery node. Also, the ``pickup_delivery`` attribute
 is set to ``True``. The amount of goods to be shipped is counted positively for the pickup node, and negatively for the delivery node.
 For example, if :math:`3` units must be shipped from node :math:`1` to node :math:`2`, the ``demand`` attribute is set to :math:`3` for node :math:`1`, and :math:`-3` for node :math:`2`.
 
@@ -135,9 +135,9 @@ Periodic CVRP (PCVRP)
 ~~~~~~~~~~~~~~~~~~~~~
 
 In the periodic CVRP, the planning period is extended over a time horizon, and customers can be serviced more than once. 
-The demand is considered constant over time, and the frequencies of each customer are known. 
+The demand is considered constant over time, and the frequencies (the number of visits) of each customer are known. 
 
-For each node, the ``frequency`` attribute (:class:`int`) is set, and the boolean parameter ``periodic`` is set to ``True.`` All nodes that
+For each node, the ``frequency`` attribute (type :class:`int`) is set, and the boolean parameter ``periodic`` is set to ``True.`` All nodes that
 have no frequency are visited exactly once. 
 
 .. code-block:: python
@@ -168,8 +168,8 @@ and incoming to the Sink achieves this.
 Fixed costs
 ^^^^^^^^^^^
 
-Vehicles typically have a fixed cost. This can be taken into account with the ``fixed_cost`` attribute. For example, if the cost of using
-each vehicle is :math:`100`, no matter what the traveled distance is:
+Vehicles typically have a *fixed cost* which is charged no matter what the traveled distance is. This can be taken into account with the ``fixed_cost`` attribute.
+For example, if the cost of using each vehicle is :math:`100`: 
 
 .. code-block:: python
 
@@ -190,7 +190,7 @@ Dropping visits
 Having a limited fleet may result in an infeasible problem. For example, if the total demand at all locations exceeds the total capacity of the fleet,
 the problem has no feasible solution. It may then be interesting to decide which visits to drop in order to meet capacity constraints
 while servicing as many customers as possible. To do so, we set the ``drop_penalty`` attribute to an integer value that the solver
-will add to the total travel cost each time a node is dropped.
+will add to the total travel cost each time a node is dropped. For example, if the value of the penalty is :math:`1000`:
 
 .. code-block:: python
 

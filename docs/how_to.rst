@@ -24,7 +24,7 @@ For example the following simple network fulfills the requirements listed above:
 	>>> G.add_edge(1, 2, cost=1)
 	>>> G.add_edge(2, 1, cost=1)
 	
-The customer demands are set as ``demand`` attributes (:class:`float`) on each node:
+The customer demands are set as ``demand`` attributes (of type :class:`float`) on each node:
 
 .. code-block:: python
 
@@ -39,7 +39,7 @@ To solve your routing problem, create a :class:`VehicleRoutingProblem` instance,
     >>> prob = VehicleRoutingProblem(G, load_capacity=10)
     >>> prob.solve()
 
-Once the problem is solved, we can query useful attributes as
+Once the problem is solved, we can query useful attributes as:
 
 .. code-block:: python
 
