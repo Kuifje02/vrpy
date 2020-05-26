@@ -4,7 +4,6 @@ from data import DISTANCES, DEMANDS
 import sys
 
 sys.path.append("../../")
-sys.path.append("../../../cspy")
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph

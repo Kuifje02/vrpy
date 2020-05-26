@@ -11,7 +11,6 @@ from data import DISTANCES, TRAVEL_TIMES, TIME_WINDOWS_LOWER, TIME_WINDOWS_UPPER
 import sys
 
 sys.path.append("../../")
-sys.path.append("../../../cspy")
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph
