@@ -13,14 +13,18 @@ class ClarkeWright:
     """
 
     def __init__(self, G, load_capacity=None, duration=None, num_stops=None):
-        self.G = G
+        self.G = G.copy()
+        self._format_cost()
         self._savings = {}
         self._ordered_edges = []
         self._route = {}
         self._best_routes = []
         self._processed_nodes = []
 
-        self.load_capacity = load_capacity
+        if isinstance(load_capacity, list):
+            self.load_capacity = load_capacity[0]
+        else:
+            self.load_capacity = load_capacity
         self.duration = duration
         self.num_stops = num_stops
 
@@ -181,6 +185,12 @@ class ClarkeWright:
             and j in self._route[j].successors("Source")  # 3a
         ):
             self._merge_route(j, i, "Source")
+
+    def _format_cost(self):
+        """If list of costs is given, first item of list is considered."""
+        for (i, j) in self.G.edges():
+            if isinstance(self.G.edges[i, j]["cost"], list):
+                self.G.edges[i, j]["cost"] = self.G.edges[i, j]["cost"][0]
 
     @property
     def best_value(self):

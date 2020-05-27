@@ -11,7 +11,7 @@ from vrpy import VehicleRoutingProblem
 #####################
 
 
-def test_consistency_vrp():
+def test_check_vrp():
     """Tests consistency of input graph."""
     G = Graph()
     with pytest.raises(TypeError):
@@ -30,13 +30,20 @@ def test_consistency_vrp():
     with pytest.raises(NetworkXError):
         VehicleRoutingProblem(G)
     G.remove_edge("Sink", 2)
+
+
+def test_check_arguments():
+    G = DiGraph()
+    G.add_edge("Source", "Sink", cost=1)
     with pytest.raises(TypeError):
-        VehicleRoutingProblem(G, num_stops=3.5)
+        prob = VehicleRoutingProblem(G, num_stops=3.5)
+        prob.solve()
     with pytest.raises(TypeError):
-        VehicleRoutingProblem(G, load_capacity=-10)
+        prob = VehicleRoutingProblem(G, load_capacity=-10)
+        prob.solve()
     with pytest.raises(TypeError):
-        VehicleRoutingProblem(G, duration=0)
-    G.remove_edge("Source", 1)
+        prob = VehicleRoutingProblem(G, duration=-1)
+        prob.solve()
 
 
 def test_consistency_parameters():
@@ -47,9 +54,21 @@ def test_consistency_parameters():
     # pickup delivery requires cspy=False
     with pytest.raises(NotImplementedError):
         prob.solve()
-    # pickup delivery requires pricing_strategy="Exact"
-    with pytest.raises(ValueError):
-        prob.solve(cspy=False, pricing_strategy="Stops")
     # pickup delivery expects at least one request
     with pytest.raises(KeyError):
         prob.solve(cspy=False, pricing_strategy="Exact")
+
+
+def test_mixed_fleet_consistency():
+    """Checks if mixed fleet arguments are consistent."""
+    G = DiGraph()
+    G.add_edge("Source", "Sink", cost=1)
+    with pytest.raises(TypeError):
+        prob = VehicleRoutingProblem(G, mixed_fleet=True, load_capacity=[2, 4])
+        prob.solve()
+    G.edges["Source", "Sink"]["cost"] = [1, 2]
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(
+            G, mixed_fleet=True, load_capacity=[2, 4], fixed_cost=[4]
+        )
+        prob.solve()

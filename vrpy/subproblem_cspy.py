@@ -147,8 +147,8 @@ class SubProblemCSPY(SubProblemBase):
                 ]
             )
         if self.load_capacity and self.distribution_collection:
-            self.max_res[4] = self.load_capacity
-            self.max_res[5] = self.load_capacity
+            self.max_res[4] = self.load_capacity[self.vehicle_type]
+            self.max_res[5] = self.load_capacity[self.vehicle_type]
 
     def add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""
@@ -157,12 +157,13 @@ class SubProblemCSPY(SubProblemBase):
         add_path(new_route, self.alg.path)
         self.total_cost = 0
         for (i, j) in new_route.edges():
-            edge_cost = self.sub_G.edges[i, j]["cost"]
+            edge_cost = self.sub_G.edges[i, j]["cost"][self.vehicle_type]
             self.total_cost += edge_cost
             new_route.edges[i, j]["cost"] = edge_cost
             if i != "Source":
                 self.routes_with_node[i].append(new_route)
         new_route.graph["cost"] = self.total_cost
+        new_route.graph["vehicle_type"] = self.vehicle_type
         self.routes.append(new_route)
 
     def add_max_stops(self):
@@ -183,7 +184,7 @@ class SubProblemCSPY(SubProblemBase):
 
     def add_max_load(self):
         """Updates maximum load."""
-        self.max_res[1] = self.load_capacity
+        self.max_res[1] = self.load_capacity[self.vehicle_type]
         for (i, j) in self.sub_G.edges():
             demand_head_node = self.sub_G.nodes[j]["demand"]
             self.sub_G.edges[i, j]["res_cost"][1] = demand_head_node

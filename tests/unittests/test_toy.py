@@ -40,6 +40,8 @@ class TestsToy:
             ["Source", 4, 5, "Sink"],
         ]
         assert set(prob.best_routes_cost.values()) == {30, 40}
+        prob.solve(exact=False)
+        assert prob.best_value == 70
 
     def test_cspy_stops_capacity(self):
         """Tests column generation procedure on toy graph
@@ -78,6 +80,10 @@ class TestsToy:
         """Tests column generation procedure on toy graph with stop constraints"""
         prob = VehicleRoutingProblem(self.G, num_stops=3)
         prob.solve(cspy=False)
+        assert prob.best_value == 70
+        prob.solve(cspy=False, pricing_strategy="Exact")
+        assert prob.best_value == 70
+        prob.solve(cspy=False, pricing_strategy="PrunePaths")
         assert prob.best_value == 70
 
     def test_LP_stops_capacity(self):
@@ -136,7 +142,7 @@ class TestsToy:
         self.G.nodes["Source"]["demand"] = 0
         self.G.nodes["Sink"]["demand"] = 0
         prob = VehicleRoutingProblem(self.G, load_capacity=10)
-        prob._get_num_stops_upper_bound()
+        prob._get_num_stops_upper_bound(10)
         assert prob.num_stops == 4
 
     def test_pricing_strategies(self):
@@ -215,3 +221,17 @@ class TestsToy:
             if 2 in prob.best_routes[r]:
                 frequency += 1
         assert frequency == 2
+
+    def test_mixed_fleet(self):
+        for (i, j) in self.G.edges():
+            self.G.edges[i, j]["cost"] = 2 * [self.G.edges[i, j]["cost"]]
+        prob = VehicleRoutingProblem(
+            self.G,
+            load_capacity=[10, 15],
+            fixed_cost=[10, 0],
+            num_vehicles=[5, 1],
+            mixed_fleet=True,
+        )
+        prob.solve()
+        assert prob.best_value == 80
+        assert set(prob.best_routes_type.values()) == {0, 1}

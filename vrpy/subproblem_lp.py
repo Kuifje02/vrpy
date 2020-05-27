@@ -55,20 +55,14 @@ class SubProblemLP(SubProblemBase):
         self.total_cost = 0
         for (i, j) in self.sub_G.edges():
             if pulp.value(self.x[(i, j)]) > 0.5:
-                edge_cost = self.sub_G.edges[i, j]["cost"]
+                edge_cost = self.sub_G.edges[i, j]["cost"][self.vehicle_type]
                 self.total_cost += edge_cost
                 new_route.add_edge(i, j, cost=edge_cost)
-                if self.time_windows:
-                    new_route.nodes[i]["time"] = pulp.value(self.t[i])
-                    # new_route.nodes["Sink"]["time"] = pulp.value(self.t["Sink"])
-                if self.distribution_collection:
-                    new_route.edges[i, j]["load"] = pulp.value(
-                        self.load[(i, j)]
-                    ) + pulp.value(self.unload[(i, j)])
                 if i != "Source":
                     self.routes_with_node[i].append(new_route)
 
         new_route.graph["cost"] = self.total_cost
+        new_route.graph["vehicle_type"] = self.vehicle_type
         self.routes.append(new_route)
         logger.debug(
             "new route %s %s" % (route_id, shortest_path(new_route, "Source", "Sink"))
@@ -174,8 +168,8 @@ class SubProblemLP(SubProblemBase):
                     for (i, j) in self.sub_G.edges()
                 ]
             )
-            <= self.load_capacity,
-            "max_load_{}".format(self.load_capacity),
+            <= self.load_capacity[self.vehicle_type],
+            "max_load_{}".format(self.load_capacity[self.vehicle_type]),
         )
 
     def add_max_duration(self):
@@ -254,12 +248,12 @@ class SubProblemLP(SubProblemBase):
             "load",
             self.sub_G.nodes(),
             lowBound=0,
-            upBound=self.load_capacity,
+            upBound=self.load_capacity[self.vehicle_type],
             cat=pulp.LpContinuous,
         )
 
         # Load definition
-        M = self.load_capacity
+        M = self.load_capacity[self.vehicle_type]
         for (i, j) in self.sub_G.edges():
             self.prob += (
                 self.load[i] + self.sub_G.nodes[j]["demand"]
@@ -286,7 +280,7 @@ class SubProblemLP(SubProblemBase):
             "unload",
             self.sub_G.edges(),
             lowBound=0,
-            upBound=self.load_capacity,
+            upBound=self.load_capacity[self.vehicle_type],
             cat=pulp.LpContinuous,
         )
         # Variables to track the collection load on each edge
@@ -294,7 +288,7 @@ class SubProblemLP(SubProblemBase):
             "load",
             self.sub_G.edges(),
             lowBound=0,
-            upBound=self.load_capacity,
+            upBound=self.load_capacity[self.vehicle_type],
             cat=pulp.LpContinuous,
         )
         # unload definition (distribution)
@@ -336,6 +330,6 @@ class SubProblemLP(SubProblemBase):
         for (u, v) in self.sub_G.edges():
             self.prob += (
                 self.load[(u, v)] + self.unload[(u, v)]
-                <= self.load_capacity * self.x[(u, v)],
+                <= self.load_capacity[self.vehicle_type] * self.x[(u, v)],
                 "capacity_%s_%s" % (u, v),
             )

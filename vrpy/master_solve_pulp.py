@@ -52,10 +52,12 @@ class MasterSolvePulp(MasterProblemBase):
                     )
                     best_routes.append(r)
             if self.drop_penalty:
-                dropped_nodes = [v for v in self.drop if pulp.value(self.drop[v]) > 0.5]
+                self.dropped_nodes = [
+                    v for v in self.drop if pulp.value(self.drop[v]) > 0.5
+                ]
             total_cost = pulp.value(self.prob.objective)
-            if not self.relax and self.drop_penalty and len(dropped_nodes) > 0:
-                logger.info("dropped nodes : %s" % dropped_nodes)
+            if not self.relax and self.drop_penalty and len(self.dropped_nodes) > 0:
+                logger.info("dropped nodes : %s" % self.dropped_nodes)
             logger.info("total cost = %s" % total_cost)
             if not total_cost:
                 total_cost = 0
@@ -202,15 +204,24 @@ class MasterSolvePulp(MasterProblemBase):
                 duals[v] = self.prob.constraints[constr_name].pi
         # num vehicles dual
         if self.num_vehicles:
-            duals["upper_bound_vehicles"] = self.prob.constraints[
-                "upper_bound_vehicles"
-            ].pi
+            duals["upper_bound_vehicles"] = {}
+            for k in range(len(self.num_vehicles)):
+                duals["upper_bound_vehicles"][k] = self.prob.constraints[
+                    "upper_bound_vehicles_%s" % k
+                ].pi
         return duals
 
     def add_bound_vehicles(self):
         """Adds constraint such that number of active variables <= num_vehicles."""
-        self.prob += (
-            pulp.lpSum([self.y[r.graph["name"]] for r in self.routes])
-            <= self.num_vehicles,
-            "upper_bound_vehicles",
-        )
+        for k in range(len(self.num_vehicles)):
+            self.prob += (
+                pulp.lpSum(
+                    [
+                        self.y[r.graph["name"]]
+                        for r in self.routes
+                        if r.graph["vehicle_type"] == k
+                    ]
+                )
+                <= self.num_vehicles[k],
+                "upper_bound_vehicles_%s" % k,
+            )
