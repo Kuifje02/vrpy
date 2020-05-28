@@ -21,7 +21,6 @@ class SubProblemBase:
         duals (dict): Dual values of master problem.
         routes_with_node (dict): Keys : nodes ; Values : list of routes which contain the node.
         routes (list): Current routes/variables/columns.
-        vehicle_type (int): Current vehicle type.
 
     Attributes:
         num_stops (int, optional):
@@ -62,7 +61,6 @@ class SubProblemBase:
         duals,
         routes_with_node,
         routes,
-        vehicle_type,
         num_stops=None,
         load_capacity=None,
         duration=None,
@@ -77,7 +75,6 @@ class SubProblemBase:
         self.duals = duals
         self.routes_with_node = routes_with_node
         self.routes = routes
-        self.vehicle_type = vehicle_type
         self.num_stops = num_stops
         self.load_capacity = load_capacity
         self.duration = duration
@@ -109,7 +106,7 @@ class SubProblemBase:
     def add_reduced_cost_attribute(self):
         """Substracts the dual values to compute reduced cost on each edge."""
         for edge in self.G.edges(data=True):
-            edge[2]["weight"] = edge[2]["cost"][self.vehicle_type]
+            edge[2]["weight"] = edge[2]["cost"]
             for v in self.duals:
                 if edge[0] == v:
                     edge[2]["weight"] -= self.duals[v]
@@ -117,7 +114,7 @@ class SubProblemBase:
             for v in self.G.successors("Source"):
                 self.G.edges["Source", v]["weight"] -= self.duals[
                     "upper_bound_vehicles"
-                ][self.vehicle_type]
+                ]
 
     def prune_edges(self, alpha):
         """
@@ -128,11 +125,9 @@ class SubProblemBase:
         where 0 < alpha < 1 is a parameter.
         """
         self.sub_G = self.G.copy()
-        largest_dual = max(
-            [self.duals[v] for v in self.duals if v != "upper_bound_vehicles"]
-        )
+        largest_dual = max([self.duals[v] for v in self.duals])
         for (u, v) in self.G.edges():
-            if self.G.edges[u, v]["cost"][self.vehicle_type] > alpha * largest_dual:
+            if self.G.edges[u, v]["cost"] > alpha * largest_dual:
                 self.sub_G.remove_edge(u, v)
 
         # If pruning the graph disconnects the source and the sink,
