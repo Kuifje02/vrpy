@@ -64,7 +64,7 @@ class MasterSolvePulp(MasterProblemBase):
         """
         self._formulate()
         self._solve()
-        if self.prob.status != -1:
+        if self.prob.status != 1:
             return
 
         depth = 0
@@ -82,7 +82,7 @@ class MasterSolvePulp(MasterProblemBase):
                 value_to_fix = 1
                 self.prob += var_to_fix <= value_to_fix
                 self.prob += var_to_fix >= value_to_fix
-                self.prob.solve()
+                self._solve()
                 # if NOT optimal.
                 # status code from : https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
                 if self.prob.status != 1:

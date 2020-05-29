@@ -147,7 +147,6 @@ class VehicleRoutingProblem:
                 Defaults to "cbc", available by default.
             dive (bool, optional):
                 True if diving heuristic is used.
-                This gives a tighter lower bound.
                 Defaults to True.
 
         Returns:
