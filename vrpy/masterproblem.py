@@ -16,15 +16,19 @@ class MasterProblemBase:
         G,
         routes_with_node,
         routes,
-        drop_penalty=None,
-        num_vehicles=None,
-        periodic=False,
-        relax=True,
+        drop_penalty,
+        num_vehicles,
+        periodic,
+        solver,
+        time_limit,
+        relax,
     ):
         self.G = G
         self.routes_with_node = routes_with_node
         self.routes = routes
         self.drop_penalty = drop_penalty
-        self.relax = relax
         self.num_vehicles = num_vehicles
         self.periodic = periodic
+        self.solver = solver
+        self.time_limit = time_limit
+        self.relax = relax
