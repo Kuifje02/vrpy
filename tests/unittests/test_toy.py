@@ -271,3 +271,7 @@ class TestsToy:
             prob.solve(cspy=False, time_limit=0)
         prob.solve(cspy=False, time_limit=0.01)
         assert prob.best_value == 110
+
+    def test_dive(self):
+        # TODO
+        pass

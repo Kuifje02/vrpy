@@ -108,7 +108,7 @@ class VehicleRoutingProblem:
         exact=True,
         time_limit=None,
         solver="cbc",
-        dive=True,
+        dive=False,
     ):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
@@ -147,7 +147,7 @@ class VehicleRoutingProblem:
                 Defaults to "cbc", available by default.
             dive (bool, optional):
                 True if diving heuristic is used.
-                Defaults to True.
+                Defaults to False.
 
         Returns:
             float: Optimal solution of MIP based on generated columns
@@ -186,27 +186,28 @@ class VehicleRoutingProblem:
             # Stop if no improvement limit is passed
             if self._no_improvement > 1000:
                 break
-        # if self._dive:
-        #     self._solve_and_dive()
-
-        # Solve as MIP
-        try:
-            masterproblem_mip = MasterSolvePulp(
-                self.G,
-                self._routes_with_node,
-                self._routes,
-                self.drop_penalty,
-                self.num_vehicles,
-                self.periodic,
-                self._solver,
-                self._get_time_remaining(),
-                relax=False,
+        if self._dive:
+            self._best_value, self._best_routes_as_graphs = self._solve_and_dive(
             )
-            self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
-            )
-        except Exception:
-            self._best_value, self._best_routes_as_graphs = self._lower_bound[
-                -1], self.routes
+        else:
+            # Solve as MIP
+            try:
+                masterproblem_mip = MasterSolvePulp(
+                    self.G,
+                    self._routes_with_node,
+                    self._routes,
+                    self.drop_penalty,
+                    self.num_vehicles,
+                    self.periodic,
+                    self._solver,
+                    self._get_time_remaining(),
+                    relax=False,
+                )
+                self._best_value, self._best_routes_as_graphs = masterproblem_mip.solve(
+                )
+            except Exception:
+                self._best_value, self._best_routes_as_graphs = self._lower_bound[
+                    -1], self.routes
         # Get dropped nodes
         if self.drop_penalty:
             self._dropped_nodes = masterproblem_mip.dropped_nodes
@@ -335,7 +336,7 @@ class VehicleRoutingProblem:
             self._get_time_remaining(),
             relax=True,
         )
-        dive_cost = masterproblem.solve_and_dive()
+        return masterproblem.solve_and_dive()
 
     def _get_time_remaining(self):
         # Returns time remaning in seconds or None if no time limit set.

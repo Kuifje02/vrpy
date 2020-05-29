@@ -32,28 +32,7 @@ class MasterSolvePulp(MasterProblemBase):
             return duals, pulp.value(self.prob.objective)
 
         else:
-            best_routes = []
-            for r in self.routes:
-                val = pulp.value(self.y[r.graph["name"]])
-                if val is not None and val > 0:
-                    logger.debug("%s cost %s load %s" % (
-                        shortest_path(r, "Source", "Sink"),
-                        r.graph["cost"],
-                        sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
-                    ))
-                    best_routes.append(r)
-            if self.drop_penalty:
-                self.dropped_nodes = [
-                    v for v in self.drop if pulp.value(self.drop[v]) > 0.5
-                ]
-            total_cost = pulp.value(self.prob.objective)
-            if not self.relax and self.drop_penalty and len(
-                    self.dropped_nodes) > 0:
-                logger.info("dropped nodes : %s" % self.dropped_nodes)
-            logger.info("total cost = %s" % total_cost)
-            if not total_cost:
-                total_cost = 0
-            return total_cost, best_routes
+            return self._get_total_cost_and_routes()
 
     def solve_and_dive(self, max_depth=3, max_discrepancy=3):
         """
@@ -96,7 +75,7 @@ class MasterSolvePulp(MasterProblemBase):
                              len(tabu_list))
                 break
         self._solve()
-        return self.prob.objective.value()
+        return self._get_total_cost_and_routes()
 
     def get_duals(self):
         """Gets the dual values of each constraint of the master problem.
@@ -119,6 +98,44 @@ class MasterSolvePulp(MasterProblemBase):
                 duals["upper_bound_vehicles"][k] = self.prob.constraints[
                     "upper_bound_vehicles_%s" % k].pi
         return duals
+
+    # Private methods to solve and output #
+
+    def _solve(self):
+        if self.time_limit and self.time_limit <= 0:
+            return
+        if self.solver == "cbc":
+            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=self.time_limit))
+        elif self.solver == "cplex":
+            self.prob.solve(pulp.solvers.CPLEX_CMD(timelimit=self.time_limit))
+        elif self.solver == "gurobi":
+            gurobi_options = [("TimeLimit", self.time_limit)]
+            self.prob.solve(pulp.solvers.GUROBI_CMD(options=gurobi_options))
+
+    def _get_total_cost_and_routes(self):
+        best_routes = []
+        for r in self.routes:
+            val = pulp.value(self.y[r.graph["name"]])
+            if val is not None and val > 0:
+                logger.debug("%s cost %s load %s" % (
+                    shortest_path(r, "Source", "Sink"),
+                    r.graph["cost"],
+                    sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
+                ))
+                best_routes.append(r)
+        if self.drop_penalty:
+            self.dropped_nodes = [
+                v for v in self.drop if pulp.value(self.drop[v]) > 0.5
+            ]
+        total_cost = pulp.value(self.prob.objective)
+        if not self.relax and self.drop_penalty and len(self.dropped_nodes) > 0:
+            logger.info("dropped nodes : %s" % self.dropped_nodes)
+        logger.info("total cost = %s" % total_cost)
+        if not total_cost:
+            total_cost = 0
+        return total_cost, best_routes
+
+    # Private methods for formulating the problem #
 
     def _formulate(self):
         """
@@ -154,17 +171,6 @@ class MasterSolvePulp(MasterProblemBase):
         # bound number of vehicles
         if self.num_vehicles:
             self._add_bound_vehicles()
-
-    def _solve(self):
-        if self.time_limit and self.time_limit <= 0:
-            return
-        if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=self.time_limit))
-        elif self.solver == "cplex":
-            self.prob.solve(pulp.solvers.CPLEX_CMD(timelimit=self.time_limit))
-        elif self.solver == "gurobi":
-            gurobi_options = [("TimeLimit", self.time_limit)]
-            self.prob.solve(pulp.solvers.GUROBI_CMD(options=gurobi_options))
 
     def _add_cost_function(self):
         """
