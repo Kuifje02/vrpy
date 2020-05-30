@@ -279,12 +279,11 @@ class VehicleRoutingProblem:
 
             # Solve pricing problem with randomised greedy algorithm
             if (
-                False
+                False  # not active !!
                 and not self.time_windows
                 and not self.distribution_collection
                 and not self.pickup_delivery
             ):
-                # print("greedy search")
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
                 if self._more_routes:
@@ -316,7 +315,6 @@ class VehicleRoutingProblem:
             # if not self._more_routes and self._pricing_strategy == "PruneEdges":
             if self._pricing_strategy == "PruneEdges":
                 for alpha in [0.3, 0.5, 0.7, 0.9]:
-                    # print("PruneEdge search", alpha)
                     subproblem = self._def_subproblem(
                         duals, vehicle, "PruneEdges", alpha,
                     )
@@ -328,7 +326,6 @@ class VehicleRoutingProblem:
 
             # If no column was found heuristically, solve subproblem exactly
             if not self._more_routes or self._pricing_strategy == "Exact":
-                print("Exact search")
                 subproblem = self._def_subproblem(duals, vehicle)
                 self.routes, self._more_routes = subproblem.solve(
                     self._get_time_remaining()

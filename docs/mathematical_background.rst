@@ -77,9 +77,9 @@ Does VRPy return an optimal solution?
 -------------------------------------
 
 *VRPy* does not necessarily return an optimal solution (even with no time limit). Indeed, once the pricing problems fails to find
-a route with negative marginal cost, the master problem is solved as a MIP. This strategy does not guarantee optimality. Note however that it
+a route with negative marginal cost, the master problem is solved as a MIP. This *price-and-branch* strategy does not guarantee optimality. Note however that it
 can be shown :cite:`bramel1997solving` that asymptotically, the relative error goes to zero as the number of customers increases.   
-To guarantee that an optimal solution is returned, the column generation procedure should be embedded in a branch-and-bound scheme. This
+To guarantee that an optimal solution is returned, the column generation procedure should be embedded in a branch-and-bound scheme (*branch-and-price*). This
 is part of the future work listed below.
 
 TO DO
