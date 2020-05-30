@@ -209,6 +209,8 @@ Complete program
     print(prob.best_routes)
     print(prob.best_value)
 
+.. _hfvrp:
+
 Mixed fleet
 ***********
 

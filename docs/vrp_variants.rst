@@ -211,7 +211,7 @@ For example, if the cost of using each vehicle is :math:`100`:
 .. note:: 
 
 	If the fleet is mixed, the same logic holds for ``fixed_cost``: a list of costs is given, where each item of the list is the fixed cost per vehicle type.
-	The order of the items of the list has to be consistent with the other lists (``cost`` and ``load_capacity``).
+	The order of the items of the list has to be consistent with the other lists (``cost`` and ``load_capacity``). See example :ref:`hfvrp`.
 	
 Limited fleet
 ^^^^^^^^^^^^^
