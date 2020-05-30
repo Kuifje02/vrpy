@@ -209,6 +209,41 @@ Complete program
     print(prob.best_routes)
     print(prob.best_value)
 
+Mixed fleet
+***********
+
+We end this small example with an illustration of the ``mixed_fleet`` option, when vehicles of different
+types (capacities, travel costs, fixed costs) are operating.
+
+The first vehicle has a ``load_capacity`` of :math:`5` units, and no ``fixed_cost``, while
+the second vehicle has a ``load_capacity`` of :math:`20` units, and a ``fixed_cost`` with value
+:math:`5`. The travel costs of the second vehicle are :math:`1` unit more expensive than 
+those of the first vehicle:
+
+.. code:: python
+
+    >>> from networkx import DiGraph
+    >>> from vrpy import VehicleRoutingProblem
+    >>> G = DiGraph()
+    >>> for v in [1, 2, 3, 4, 5]:
+           G.add_edge("Source", v, cost=[10, 11])
+           G.add_edge(v, "Sink", cost=[10, 11])
+           G.nodes[v]["demand"] = 5
+    >>> G.add_edge(1, 2, cost=[10, 11])
+    >>> G.add_edge(2, 3, cost=[10, 11])
+    >>> G.add_edge(3, 4, cost=[15, 16])
+    >>> G.add_edge(4, 5, cost=[10, 11])
+    >>> prob=VehicleRoutingProblem(G, mixed_fleet=True, fixed_cost=[0, 5], load_capacity=[5, 20])
+    >>> prob.best_value
+	85
+    >>> prob.best_routes
+	{1: ['Source', 1, 'Sink'], 2: ['Source', 2, 3, 4, 5, 'Sink']}
+    >>> prob.best_routes_cost
+	{1: 20, 2: 65}
+    >>> prob.best_routes_type
+	{1: 0, 2: 1}
+
+
 
 An example borrowed from *ortools*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

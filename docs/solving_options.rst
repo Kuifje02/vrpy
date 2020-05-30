@@ -69,7 +69,7 @@ If one has CPLEX or GUROBI at hand, they can be used by setting the ``solver`` p
 Pricing strategy
 ~~~~~~~~~~~~~~~~
 
-By default, at each iteration the sub problem is solved optimally with a bidirectional dynamic programming, with the `cspy` library.
+In theory, at each iteration, the sub problem is solved optimally. VRPy does so with a bidirectional labeling algorithm with dynamic halfway point :cite:`tilk2017asymmetry` from the `cspy` library.
 
 This may result in a slow convergence. To speed up the resolution, there are two ways to change this pricing strategy: 
 
@@ -103,3 +103,5 @@ where :math:`k` is a parameter that increases iteratively.
 For each of these heuristic pricing strategies, if a route with negative reduced cost is found, it is fed to the master problem. Otherwise,
 the sub problem is solved exactly. Also, note that these strategies can be combined: for example, it is possible to solve the sub problem heuristically with 
 `cspy` (option :math:`1`), with a bounded number of stops (option :math:`2`). 
+
+The default pricing strategy is *PruneEdges*, with ``exact=True`` (i.e., with the bidirectional labeling algorithm).

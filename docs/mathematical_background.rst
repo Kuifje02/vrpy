@@ -65,7 +65,7 @@ subject to flow balance constraints :
 Why use the `cspy` library?
 ---------------------------
 
-In other words, the subproblem is a shortest elementary path problem, and additional constraints (such as capacities, time) 
+In other words, the sub problem is a shortest elementary path problem, and additional constraints (such as capacities, time) 
 give rise to a shortest path problem with *resource constraints*, hence the interest of using the *cspy* library.
 
 If there are negative cost cycles (which typically happens), the above formulation requires additional constraints
@@ -77,7 +77,8 @@ Does VRPy return an optimal solution?
 -------------------------------------
 
 *VRPy* does not necessarily return an optimal solution (even with no time limit). Indeed, once the pricing problems fails to find
-a route with negative marginal cost, the master problem is solved as a MIP. This strategy does not guarantee optimality. 
+a route with negative marginal cost, the master problem is solved as a MIP. This strategy does not guarantee optimality. Note however that it
+can be shown :cite:`bramel1997solving` that asymptotically, the relative error goes to zero as the number of customers increases.   
 To guarantee that an optimal solution is returned, the column generation procedure should be embedded in a branch-and-bound scheme. This
 is part of the future work listed below.
 

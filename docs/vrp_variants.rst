@@ -38,7 +38,7 @@ CVRP with resource constraints
 Other resources can also be considered:
 
 	- maximum duration per trip; 
-	- maximum amount of customers per trip.  
+	- maximum number of customers per trip.  
 
 Taking into account duration constraints requires setting ``time`` attributes on each edge, and setting
 the ``duration`` attribute to the maximum amount of time per vehicle.
@@ -154,6 +154,38 @@ have no frequency are visited exactly once.
 	:math:`2` or :math:`2` and :math:`3` but not :math:`1` and :math:`3`. Such *combination* constraints are not taken into account by 
 	*VRPy* (yet).
 	
+CVRP with heterogeneous fleet (HFCVRP)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the CVRP with *heterogeneous fleet* (or mixed fleet), there are different types of vehicles, which can differ in capacities and costs (fixed costs
+and travel costs). Typically, a vehicle with a larger capacity will be more expensive. The problem consists in finding the best combination of
+vehicles to satisfy the demands while minimizing global costs. 
+
+First, the ``cost`` attribute on each of the graph is now a *list* of costs, with as many items as vehicle types (even if costs are equal). For example,
+if there are *two* types of vehicles, the following graph satisfies the input requirements:
+
+.. code-block:: python
+
+	>>> from networkx import DiGraph
+	>>> G = DiGraph()
+	>>> G.add_edge("Source", 1, cost=[1, 2])
+	>>> G.add_edge("Source", 2, cost=[2, 4])
+	>>> G.add_edge(1, "Sink", cost=[0, 0])
+	>>> G.add_edge(2, "Sink", cost=[2, 4])
+	>>> G.add_edge(1, 2, cost=[1, 2])
+
+When defining the ``VehicleRoutingProblem``, the ``mixed_fleet`` argument is set to ``True``, and the ``load_capacity`` argument is now also of type :class:`list`,
+where each item of the list is the maximum load per vehicle type. For example, if the two types of vehicles have capacities :math:`10` and :math:`15`, respectively:
+
+.. code-block:: python
+
+    >>> from vrpy import VehicleRoutingProblem
+    >>> prob = VehicleRoutingProblem(G, mixed_fleet=True, load_capacity=[10, 15])
+
+Note how the dimensions of ``load_capacity`` and ``cost`` are consistent: each list must have as many items as vehicle types, and the
+order of the items of the ``load_capacity`` list is consistent with the order of the ``cost`` list on every edge of the graph.
+  
+	
 VRP options
 ~~~~~~~~~~~
 
@@ -176,6 +208,11 @@ For example, if the cost of using each vehicle is :math:`100`:
 
 	>>> prob.fixed_cost = 100
 	
+.. note:: 
+
+	If the fleet is mixed, the same logic holds for ``fixed_cost``: a list of costs is given, where each item of the list is the fixed cost per vehicle type.
+	The order of the items of the list has to be consistent with the other lists (``cost`` and ``load_capacity``).
+	
 Limited fleet
 ^^^^^^^^^^^^^
 	
@@ -184,6 +221,12 @@ It is possible to limit the size of the fleet. For example, if at most :math:`10
 .. code-block:: python
 
 	>>> prob.num_vehicles = 10
+	
+.. note:: 
+
+	If the fleet is mixed, the same logic holds for ``num_vehicles``: a list of integers is given, where each item of the list is
+	the number of available vehicles, per vehicle type. The order of the items of the list has to be consistent with the other
+	lists (``cost``, ``load_capacity``, ``fixed_cost``).
 	
 Dropping visits
 ^^^^^^^^^^^^^^^

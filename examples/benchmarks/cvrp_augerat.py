@@ -5,7 +5,7 @@ from pandas import read_csv
 import sys
 
 sys.path.append("../../")
-sys.path.append("../../../cspy")
+# sys.path.append("../../../cspy")
 from vrpy.main import VehicleRoutingProblem
 
 import logging
@@ -58,7 +58,6 @@ class DataSet:
                 if i == 5:
                     self.max_load = int(line.split()[2])
         fp.close()
-
         # Create network and store name + capacity
         self.G = DiGraph(name=instance_name[:-4], vehicle_capacity=self.max_load,)
 
@@ -118,31 +117,3 @@ class DataSet:
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
         return round(sqrt(delta_x ** 2 + delta_y ** 2), 0)
-
-    def solve(
-        self,
-        initial_routes=None,
-        cspy=False,
-        num_stops=None,
-        exact=True,
-        time_limit=None,
-        pricing_strategy="PrunePaths",
-    ):
-        """Instantiates instance as VRP and solves."""
-        if cspy:
-            self.G.graph["subproblem"] = "cspy"
-        else:
-            self.G.graph["subproblem"] = "lp"
-        print(self.G.graph["name"], self.G.graph["subproblem"])
-        print("===========")
-        prob = VehicleRoutingProblem(
-            self.G, load_capacity=self.max_load, num_stops=num_stops,
-        )
-        prob.solve(
-            initial_routes=initial_routes,
-            cspy=cspy,
-            exact=exact,
-            time_limit=time_limit,
-            pricing_strategy=pricing_strategy,
-        )
-        self.best_value, self.best_routes = prob.best_value, prob.best_routes
