@@ -55,8 +55,11 @@ class MasterSolvePulp(MasterProblemBase):
             non_integer_vars = list(
                 var for var in relax.variables()
                 if abs(var.varValue - round(var.varValue)) != 0)
+            # All non-integer variables not already fixed in this or any
+            # iteration of the diving heuristic
             vars_to_fix = [
-                var for var in non_integer_vars if var.name not in tabu_list
+                var for var in non_integer_vars
+                if var.name not in self._tabu_list and var.name not in tabu_list
             ]
             if vars_to_fix and len(tabu_list) <= max_discrepancy - 1:
                 var_to_fix = min(
