@@ -32,3 +32,4 @@ class MasterProblemBase:
         self.solver = solver
         self.time_limit = time_limit
         self.relax = relax
+        self._tabu_list = []
