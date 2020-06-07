@@ -82,26 +82,37 @@ This may result in a slow convergence. To speed up the resolution, there are two
  
 2. By modifying the ``pricing_strategy`` argument of the ``solve`` method to one of the following:
 
-	- `Stops`;
-	- `PrunePaths`;
-	- `PruneEdges`.
+	- `BestEdges1`,
+	- `BestEdges2`,
+	- `BestPaths`,
+	
 
 .. code-block:: python
 
-	>>> prob.solve(pricing_strategy="Stops")
+	>>> prob.solve(pricing_strategy="BestEdges1")
 	
-The idea behind the `Stops` pricing strategy is to look for routes with a bounded number of stops. This bound is increased iteratively
-if no route with negative reduced cost is found. 
-
-The two other strategies, `PruneEdges` and `PrunePaths`, look for routes in a subgraph of the original graph. That is, a subset of nodes and
-edges are removed to limit the search space. Both differ in the way the subgraph is created. `PruneEdges`, described for example in :cite:`dell2006branch`,
-removes all edges :math:`(i,j)` which verify :math:`c_{ij} > \alpha \; \pi_{max},` where :math:`c_{ij}` is the edge's cost, :math:`\alpha \in ]0,1[` is parameter,
+``BestEdges1``, described for example in :cite:`dell2006branch`, is a sparsification strategy: a subset of nodes and
+edges are removed to limit the search space. The subgraph is created as follows: all edges :math:`(i,j)` which verify :math:`c_{ij} > \alpha \; \pi_{max},` where :math:`c_{ij}` is the edge's cost, :math:`\alpha \in ]0,1[` is parameter,
 and :math:`\pi_{max}` is the largest dual value returned by the current restricted relaxed master problem. The parameter :math:`\alpha` is increased iteratively until
-a route is found. As for `PrunePaths`, the idea is to look for routes in the subgraph induced by the :math:`k` shortest paths from the `Source` to the `Sink` (without any resource constraints), 
-where :math:`k` is a parameter that increases iteratively. 
+a route is found. ``BestEdges2`` is another sparsification strategy, described for example in :cite:`santini2018branch`. The :math:`\beta` edges with highest reduced cost are discarded, where :math:`\beta` is a parameter that is increased iteratively.
+As for ``BestPaths``, the idea is to look for routes in the subgraph induced by the :math:`k` shortest paths from the Source to the Sink (without any resource constraints),
+where :math:`k` is a parameter that increases iteratively.
 
 For each of these heuristic pricing strategies, if a route with negative reduced cost is found, it is fed to the master problem. Otherwise,
-the sub problem is solved exactly. Also, note that these strategies can be combined: for example, it is possible to solve the sub problem heuristically with 
-`cspy` (option :math:`1`), with a bounded number of stops (option :math:`2`). 
+the sub problem is solved exactly. 
 
-The default pricing strategy is *PruneEdges*, with ``exact=True`` (i.e., with the bidirectional labeling algorithm).
+The default pricing strategy is ``BestEdges1``, with ``exact=True`` (i.e., with the bidirectional labeling algorithm).
+
+A greedy randomized heuristic
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the CVRP, or the CVRP with resource constraints, one can activate the option of running a greedy randomized heuristic before pricing:
+
+.. code-block:: python
+
+	>>> prob.solve(greedy="True")
+
+This algorithm, described in :cite:`santini2018branch`, generates a path starting at the *Source* node and then randomly selects an edge among the :math:`\gamma` outgoing edges
+of least reduced cost that do not close a cycle and that meet operational constraints (:math:`\gamma` is a parameter).
+This is repeated until the *Sink* node is reached . The same procedure is applied backwards, starting from the *Sink* and ending at the *Source*, and is run
+:math:`20` times. All paths with negative reduced cost are added to the pool of columns.

@@ -317,7 +317,7 @@ With a maximum load of :math:`15` units per vehicle:
 
     >>> from vrpy import VehicleRoutingProblem
     >>> prob = VehicleRoutingProblem(G, load_capacity=15)
-    >>> prob.solve(pricing_strategy="PrunePaths")
+    >>> prob.solve()
     >>> prob.best_value
     6208.0
     >>> prob.best_routes
@@ -388,7 +388,7 @@ The `load_capacity` is unchanged, and the ``distribution_collection`` attribute 
 
     >>> from vrpy import VehicleRoutingProblem
     >>> prob = VehicleRoutingProblem(G, load_capacity=15, distribution_collection=True)
-    >>> prob.solve(pricing_strategy="PrunePaths") 
+    >>> prob.solve() 
 	>>> prob.best_value
     6208.0
     >>> prob.best_routes
@@ -478,7 +478,7 @@ This time, the network is defined by its distance matrix and its time matrix:
 	
     # The VRP is defined and solved
     prob = VehicleRoutingProblem(G, time_windows=True)
-    prob.solve(pricing_strategy="PrunePaths")
+    prob.solve()
 	
 The solution is displayed below:
 	
@@ -594,7 +594,7 @@ Once the graph is properly defined, a VRP instance is created, with attributes `
 
     >>> from vrpy import VehicleRoutingProblem
     >>> prob = VehicleRoutingProblem(G, load_capacity=15, num_vehicles=4, drop_penalty=1000)
-    >>> prob.solve(pricing_strategy="PrunePaths")
+    >>> prob.solve()
     >>> prob.best_value
     7776.0
     >>> prob.best_routes

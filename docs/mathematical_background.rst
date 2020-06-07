@@ -85,13 +85,16 @@ is part of the future work listed below.
 TO DO
 -----
 
-- Embed the solving procedure in a branch-and-bound scheme (branch-and-price).
+- Embed the solving procedure in a branch-and-bound scheme:
+
+  - branch-and-price (exact)
+  - diving (heuristic)
 - Implement heuristics for initial solutions.
 - More acceleration strategies:
 
   - other heuristic pricing strategies
   - switch to other LP modeling library (?)
-  - stabilization techniques
+  - improve stabilization
   - ...
 - Include more VRP variants:
 
