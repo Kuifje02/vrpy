@@ -8,12 +8,15 @@ tags:
 authors:
   - name: Romain Montagné
     orcid: 0000-0003-3139-4519
+    affiliation: "2"
   - name: David Torres Sanchez
     orcid: 0000-0002-2894-9432
     affiliation: "1"
 affiliations:
  - name: SINTEF Digital, Mathematics and Cybernetics
    index: 1
+ - name: EURODECISION
+   index: 2
 date: June 2020
 bibliography: paper.bib
 ---
