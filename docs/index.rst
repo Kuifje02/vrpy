@@ -6,7 +6,7 @@
 -   the Capacitated VRP (CVRP),
 -   the CVRP with resource constraints,
 -   the CVRP with time windows (CVRPTW),
--   the CVRP with simultaneous distribution and collection,
+-   the CVRP with simultaneous distribution and collection (CVRPSDC),
 -   the CVRP with heterogeneous fleet (HFCVRP).
 
 Check out section :ref:`vrp` to find more variants and options.
