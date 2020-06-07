@@ -23,11 +23,11 @@ bibliography: paper.bib
 
 # Introduction
 
-The Vehicle Routing Problem (VRP) is amongst the most well known combinatorial optimization problems. The most classical version of the VRP, the Capacitated VRP (CVRP), can be described as follows. A fleet of vehicles with uniform capacity must serve customers with known demand for a single commodity.
+The Vehicle Routing Problem (VRP) is amongst the most well known combinatorial optimization problems. The most classical version of the VRP, the Capacitated VRP (CVRP) [@laporte2007you], can be described as follows. A fleet of vehicles with uniform capacity must serve customers with known demand for a single commodity.
 The vehicles start and end their routes at a common depot and each customer must be served by exactly one vehicle.
 The objective is to assign a sequence of customers to each truck of the fleet (a route), minimizing the total distance traveled, such that all customers are served and the total demand served by each truck does not exceed its capacity. Note that the VRP generalises the well-known traveling salesman problem (TSP) and is therefore computationally intractable.
 
-Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever since, algorithms and computational power have not stopped improving. State of the art techniques include column generation approaches  [@costa2019exact] on which ``vrpy`` relies; more details are given hereafter.
+Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever since, algorithms and computational power have not stopped improving. State of the art techniques include column generation approaches  [@costa2019exact; bramel1997solving] on which ``vrpy`` relies; more details are given hereafter.
 
 ``vrpy`` is of interest to the operational research community and others (e.g., logisticians, supply chain analysts) who wish to solve vehicle routing problems, and therefore has many obvious applications in industry.
 
@@ -35,11 +35,12 @@ Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever s
 
 ``vrpy`` is a Python package that allows one to solve variants of the VRP including:
 
--   the Capacitated VRP (CVRP),
--   the CVRP with resource constraints,
--   the CVRP with time windows (CVRPTW),
--   the CVRP with simultaneous distribution and collection (CVRPSDC),
--   the CVRP with heterogeneous fleet (HFCVRP).
+-   the Capacitated VRP (CVRP) [@laporte2007you;@baldacci2010exact],
+-   the CVRP with resource constraints [@laporte1985optimal],
+-   the CVRP with time windows (CVRPTW) [@cordeau2000vrp],
+-   the CVRP with simultaneous distribution and collection (CVRPSDC) [@dell2006branch],
+-   the CVRP with pickups and deliveries (CPDP) [@desrosiers1988shortest],
+-   the CVRP with heterogeneous fleet (HFCVRP) [@choi2007column].
 
 For each of these variants, it is possible to i/ set initial routes for the search (if one already has a solution at hand and wishes to improve it) ii/ lock routes (if part of the solution is imposed and must not be optimized) iii/ drop nodes (ignore a customer at the cost of a penalty).
 
