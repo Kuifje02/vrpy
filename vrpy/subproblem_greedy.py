@@ -41,8 +41,13 @@ class SubProblemGreedy(SubProblemBase):
                 more_routes = True
                 self._add_new_route()
                 a += 1
+            # else:
+            # print("")
+            # print(self._load, self.load_capacity[self.vehicle_type])
+            # print(self._current_path, self._weight)
 
         # The backwards search is run n_runs times
+        b = 0
         for run in range(n_runs):
             self._initialize_run()
             self.run_backwards()
@@ -50,8 +55,8 @@ class SubProblemGreedy(SubProblemBase):
                 logger.debug("negative column %s" % self._weight)
                 more_routes = True
                 self._add_new_route()
-                a += 1
-        # print("greedy found %s columns" % a)
+                b += 1
+        # print(" -> greedy found %s + %s columns" % (a, b))
         return self.routes, more_routes
 
     def run_forward(self):
@@ -137,6 +142,8 @@ class SubProblemGreedy(SubProblemBase):
                     # Finish path
                     self._current_path.append("Sink")
                     return False
+                elif self._new_node == "Sink":
+                    return False
             else:
                 self._weight += self.sub_G.edges[self._new_node, self._last_node][
                     "weight"
@@ -146,6 +153,8 @@ class SubProblemGreedy(SubProblemBase):
                 if self._stops == self.num_stops and self._new_node != "Source":
                     # Finish path
                     self._current_path.insert(0, "Source")
+                    return False
+                elif self._new_node == "Source":
                     return False
             return extend
 

@@ -49,8 +49,8 @@ class SubProblemBase:
             True if the subproblem is solved.
         pricing_strategy (string):
             Strategy used for solving subproblem.
-            Either "Exact", "Stops", "PrunePaths", "PruneEdges".
-            Defaults to "Exact".
+            Either "Exact", "BestEdges1", "BestEdges2", "BestPaths".
+            Defaults to "BestEdges1".
         pricing_parameter (float):
             Parameter used depending on pricing_strategy.
             Defaults to None.
@@ -93,16 +93,15 @@ class SubProblemBase:
         if pricing_strategy == "Exact":
             # The graph remains as is
             self.sub_G = self.G.copy()
-        if pricing_strategy == "Stops":
-            # The maximum number of stops is modified
-            self.sub_G = self.G.copy()
-            self.num_stops = pricing_parameter
-        if pricing_strategy == "PrunePaths":
+        if pricing_strategy == "BestEdges1":
             # The graph is pruned
-            self.prune_paths(pricing_parameter)
-        if pricing_strategy == "PruneEdges":
+            self.remove_edges_1(pricing_parameter)
+        if pricing_strategy == "BestEdges2":
             # The graph is pruned
-            self.prune_edges(pricing_parameter)
+            self.remove_edges_2(pricing_parameter)
+        if pricing_strategy == "BestPaths":
+            # The graph is pruned
+            self.remove_edges_3(pricing_parameter)
 
         logger.debug("Pricing strategy %s, %s" % (pricing_strategy, pricing_parameter))
 
@@ -119,7 +118,14 @@ class SubProblemBase:
                     "upper_bound_vehicles"
                 ][self.vehicle_type]
 
-    def prune_edges(self, alpha):
+    def discard_nodes(self):
+        """Removes nodes with marginal cost = 0."""
+        for v in self.duals:
+            if v != "upper_bound_vehicles" and self.duals[v] == 0:
+                self.sub_G.remove_node(v)
+                print("removed node", v)
+
+    def remove_edges_1(self, alpha):
         """
         Removes edges based on criteria described here :
         https://pubsonline.informs.org/doi/10.1287/trsc.1050.0118
@@ -143,7 +149,36 @@ class SubProblemBase:
         except NetworkXException:
             self.run_subsolve = False
 
-    def prune_paths(self, beta):
+    def remove_edges_2(self, ratio):
+        """
+        Removes edges based on criteria described here :
+        https://www.sciencedirect.com/science/article/abs/pii/S0377221717306045
+
+        Edges are sorted by non decreasing reduced cost, and only
+        the K|E| ones with lowest reduced cost are kept, where K is a parameter (ratio).
+        """
+
+        self.sub_G = self.G.copy()
+        # Sort the edges by non decreasing reduced cost
+        reduced_cost = {}
+        for (u, v) in self.G.edges():
+            if u != "Source" and v != "Sink":
+                reduced_cost[(u, v)] = self.G.edges[u, v]["weight"]
+        sorted_edges = sorted(reduced_cost, key=reduced_cost.get)
+
+        # Keep the best ones
+        limit = int(ratio * len(sorted_edges))
+        self.sub_G.remove_edges_from(sorted_edges[limit:])
+
+        # If pruning the graph disconnects the source and the sink,
+        # do not solve the subproblem.
+        try:
+            if not has_path(self.sub_G, "Source", "Sink"):
+                self.run_subsolve = False
+        except NetworkXException:
+            self.run_subsolve = False
+
+    def remove_edges_3(self, beta):
         """
         Heuristic pruning:
         1. Normalize weights in interval [-1,1]

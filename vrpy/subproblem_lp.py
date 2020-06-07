@@ -28,33 +28,28 @@ class SubProblemLP(SubProblemBase):
             return self.routes, False
         if time_limit and time_limit <= 0:
             return self.routes, False
-        self.formulate()
+
+        self._formulate()
         if not exact:
-            self.update_prob()
+            self._update_prob()
         # self.prob.writeLP("subprob.lp")
-        if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
-        elif self.solver == "cplex":
-            self.prob.solve(pulp.solvers.CPLEX_CMD(msg=0, timelimit=time_limit))
-        elif self.solver == "gurobi":
-            gurobi_options = [("TimeLimit", time_limit)]
-            self.prob.solve(pulp.solvers.GUROBI_CMD(options=gurobi_options))
-        logger.debug("")
+        self._solve(time_limit)
+
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective %s" % pulp.value(self.prob.objective))
         if (
             pulp.value(self.prob.objective) is not None
             and pulp.value(self.prob.objective) < -(10 ** -3)
-        ) or (exact == False and pulp.LpStatus[self.prob.status] == "Optimal"):
+        ) or (exact == False and pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
             more_routes = True
-            self.add_new_route()
+            self._add_new_route()
             return self.routes, more_routes
         else:
             more_routes = False
             return self.routes, more_routes
 
-    def add_new_route(self):
+    def _add_new_route(self):
         route_id = len(self.routes) + 1
         new_route = DiGraph(name=route_id)
         self.total_cost = 0
@@ -79,7 +74,16 @@ class SubProblemLP(SubProblemBase):
         # routes_txt = open("routes.txt", "a")
         # routes_txt.write(str(shortest_path(new_route, "Source", "Sink")) + "\n")
 
-    def formulate(self):
+    def _solve(self, time_limit):
+        if self.solver == "cbc":
+            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
+        elif self.solver == "cplex":
+            self.prob.solve(pulp.CPLEX_CMD(msg=0, timelimit=time_limit))
+        elif self.solver == "gurobi":
+            gurobi_options = [("TimeLimit", time_limit)]
+            self.prob.solve(pulp.GUROBI_CMD(options=gurobi_options))
+
+    def _formulate(self):
         # minimize reduced cost
         self.prob += pulp.lpSum(
             [
@@ -117,24 +121,24 @@ class SubProblemLP(SubProblemBase):
 
         # Problem specific constraints
         if self.time_windows:
-            self.add_time_windows()
+            self._add_time_windows()
         if self.num_stops:
-            self.add_max_stops()
+            self._add_max_stops()
         if self.load_capacity:
-            self.add_max_load()
+            self._add_max_load()
         if self.duration:
-            self.add_max_duration()
+            self._add_max_duration()
         self.elementarity = False
         if negative_edge_cycle(self.G):
             logger.debug("negative cycle found")
-            self.add_elementarity()
+            self._add_elementarity()
             self.elementarity = True
         if self.pickup_delivery:
-            self.add_pickup_delivery()
+            self._add_pickup_delivery()
         if self.distribution_collection:
-            self.add_distribution_collection()
+            self._add_distribution_collection()
 
-    def update_prob(self):
+    def _update_prob(self):
         """Reformulate to find a feasible solution with negative reduced cost."""
 
         # Update objective function (dummy)
@@ -150,7 +154,7 @@ class SubProblemLP(SubProblemBase):
             <= -1
         )
 
-    def add_time_windows(self):
+    def _add_time_windows(self):
         # Big-M definition
         M = self.sub_G.nodes["Sink"]["upper"]
         # Add varibles
@@ -171,7 +175,7 @@ class SubProblemLP(SubProblemBase):
             self.prob += self.t[v] <= self.sub_G.nodes[v]["upper"], "node_%s_up" % v
             self.prob += self.t[v] >= self.sub_G.nodes[v]["lower"], "node_%s_low" % v
 
-    def add_max_stops(self):
+    def _add_max_stops(self):
         # Add max stop constraint
         # S stops => S+1 arcs
         self.prob += (
@@ -180,7 +184,7 @@ class SubProblemLP(SubProblemBase):
             "max_{}".format(self.num_stops),
         )
 
-    def add_max_load(self):
+    def _add_max_load(self):
         # Add maximum load constraints
         self.prob += (
             pulp.lpSum(
@@ -193,7 +197,7 @@ class SubProblemLP(SubProblemBase):
             "max_load_{}".format(self.load_capacity[self.vehicle_type]),
         )
 
-    def add_max_duration(self):
+    def _add_max_duration(self):
         # Add maximum duration constraints
         self.prob += (
             pulp.lpSum(
@@ -210,7 +214,7 @@ class SubProblemLP(SubProblemBase):
             "max_duration_{}".format(self.duration),
         )
 
-    def add_elementarity(self):
+    def _add_elementarity(self):
         """Ensures a node is visited at most once."""
         # Big-M definition
         M = len(self.sub_G.nodes())
@@ -235,14 +239,14 @@ class SubProblemLP(SubProblemBase):
             if v != "Sink":
                 self.prob += self.y[v] <= self.y["Sink"], "Sink_after_%s" % v
 
-    def add_pickup_delivery(self):
+    def _add_pickup_delivery(self):
         """
         Adds precedence and consistency constraints
         for pickup and delivery options.
         """
         if not self.elementarity:
             # rank variables are needed
-            self.add_elementarity()
+            self._add_elementarity()
         for v in self.sub_G.nodes():
             if "request" in self.sub_G.nodes[v]:
                 delivery_node = self.sub_G.nodes[v]["request"]
@@ -290,7 +294,7 @@ class SubProblemLP(SubProblemBase):
         self.prob += self.load["Source"] == 0, "source_load"
         self.prob += self.load["Sink"] == 0, "sink_load"
 
-    def add_distribution_collection(self):
+    def _add_distribution_collection(self):
         """
         The following formulation tracks the amount of load to be
         collected and delivered on each edge.

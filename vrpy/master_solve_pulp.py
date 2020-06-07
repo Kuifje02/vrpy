@@ -115,15 +115,29 @@ class MasterSolvePulp(MasterProblemBase):
     # Private methods to solve and output #
 
     def _solve(self):
-        if self.time_limit and self.time_limit <= 0:
-            return
         if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=self.time_limit))
+            self.prob.solve(
+                pulp.PULP_CBC_CMD(
+                    msg=0,
+                    maxSeconds=self.time_limit,
+                    options=["startalg", "barrier", "crossover", "0"],
+                )
+            )
         elif self.solver == "cplex":
-            self.prob.solve(pulp.solvers.CPLEX_CMD(timelimit=self.time_limit))
+            self.prob.solve(
+                pulp.CPLEX_CMD(
+                    msg=0,
+                    timelimit=self.time_limit,
+                    options=["set lpmethod 4", "set barrier crossover -1"],
+                )
+            )
         elif self.solver == "gurobi":
-            gurobi_options = [("TimeLimit", self.time_limit)]
-            self.prob.solve(pulp.solvers.GUROBI_CMD(options=gurobi_options))
+            gurobi_options = [
+                ("TimeLimit", self.time_limit),
+                ("Method", 2),  # 2 = barrier
+                ("Crossover", 0),
+            ]
+            self.prob.solve(pulp.GUROBI_CMD(options=gurobi_options))
 
     def _get_total_cost_and_routes(self):
         best_routes = []

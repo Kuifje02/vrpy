@@ -44,6 +44,9 @@ def test_check_arguments():
     with pytest.raises(TypeError):
         prob = VehicleRoutingProblem(G, duration=-1)
         prob.solve()
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(G)
+        prob.solve(pricing_strategy="Best")
 
 
 def test_consistency_parameters():

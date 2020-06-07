@@ -9,7 +9,9 @@ from numpy import matrix
 import sys
 
 sys.path.append("../../vrpy/")
-from examples.ortools.data import (
+sys.path.append("../../vrpy/examples/")
+from vrpy import VehicleRoutingProblem
+from ortools.data import (
     DISTANCES,
     TRAVEL_TIMES,
     TIME_WINDOWS_LOWER,
@@ -18,7 +20,6 @@ from examples.ortools.data import (
     DEMANDS,
     COLLECT,
 )
-from vrpy import VehicleRoutingProblem
 
 
 class TestsOrTools:

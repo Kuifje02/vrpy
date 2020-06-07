@@ -17,8 +17,11 @@ set_node_attributes(G, values=DEMANDS, name="demand")
 G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 
 if __name__ == "__main__":
+    from time import time
 
     prob = VehicleRoutingProblem(G, load_capacity=15)
-    prob.solve(pricing_strategy="PruneEdges")
+    start = time()
+    prob.solve(cspy=False, solver="cplex")
+    print(round(time() - start), "sec")
     print(prob.best_value)
     print(prob.best_routes)

@@ -82,9 +82,7 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, num_stops=3)
         prob.solve(cspy=False)
         assert prob.best_value == 70
-        prob.solve(cspy=False, pricing_strategy="Exact")
-        assert prob.best_value == 70
-        prob.solve(cspy=False, pricing_strategy="PrunePaths")
+        prob.solve(cspy=False, pricing_strategy="BestEdges1")
         assert prob.best_value == 70
 
     def test_LP_stops_capacity(self):
@@ -149,7 +147,7 @@ class TestsToy:
     def test_pricing_strategies(self):
         prob = VehicleRoutingProblem(self.G, num_stops=4)
         sol = []
-        for strategy in ["Exact", "Stops", "PrunePaths", "PruneEdges"]:
+        for strategy in ["Exact", "BestPaths", "BestEdges1", "BestEdges2"]:
             prob.solve(pricing_strategy=strategy)
             sol.append(prob.best_value)
         assert len(set(sol)) == 1
