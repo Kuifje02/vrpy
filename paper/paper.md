@@ -27,10 +27,9 @@ The Vehicle Routing Problem (VRP) is amongst the most well known combinatorial o
 The vehicles start and end their routes at a common depot and each customer must be served by exactly one vehicle.
 The objective is to assign a sequence of customers to each truck of the fleet (a route), minimizing the total distance traveled, such that all customers are served and the total demand served by each truck does not exceed its capacity. Note that the VRP generalises the well-known traveling salesman problem (TSP) and is therefore computationally intractable.
 
-Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever since, algorithms and computational power have not stopped improving. State of the art techniques include column generation approaches  [@costa2019exact] on which ``vrpy`` relies; more details are given in the following section.
+Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever since, algorithms and computational power have not stopped improving. State of the art techniques include column generation approaches  [@costa2019exact] on which ``vrpy`` relies; more details are given hereafter.
 
 ``vrpy`` is of interest to the operational research community and others (e.g., logisticians, supply chain analysts) who wish to solve vehicle routing problems, and therefore has many obvious applications in industry.
-
 
 # Features
 
@@ -42,12 +41,13 @@ Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever s
 -   the CVRP with simultaneous distribution and collection (CVRPSDC),
 -   the CVRP with heterogeneous fleet (HFCVRP).
 
-
 For each of these variants, it is possible to i/ set initial routes for the search (if one already has a solution at hand and wishes to improve it) ii/ lock routes (if part of the solution is imposed and must not be optimized) iii/ drop nodes (ignore a customer at the cost of a penalty).
+
+``vrpy`` is built upon the well known *NetworkX* library [@hagberg2008exploring] and thus benefits of a user friendly API.
 
 # Mathematical background
 
-``vrpy`` solves vehicle routing problems with a column generation approach. The term *column generation* refers to the fact that iteratively, routes (or columns) are generated with a pricing problem, and fed to a master problem which selects the best routes among a pool such that each vertex is serviced exactly once. This procedure is illustrated in the Figure 1 below:
+``vrpy`` solves vehicle routing problems with a column generation approach. The term *column generation* refers to the fact that iteratively, routes (or columns) are generated with a pricing problem, and fed to a master problem which selects the best routes among a pool such that each vertex is serviced exactly once. Results from the master problem are then used to search for new potential routes likely to improve the solution's cost, and so forth. This procedure is illustrated in Figure 1 below:
 
 <!---
 ![Column Generation.\label{fig:colgen}](colgen.png)
@@ -58,19 +58,16 @@ For each of these variants, it is possible to i/ set initial routes for the sear
 | :------------------------------: |
 |  *Figure 1: Column Generation*   |
 
-The master problem is a set partitioning linear formulation, while the sub problem is a shortest elementary path problem with *resource constraints*, hence the interest of using the ``cspy`` library [@cspy] which is designed to solve such problems.
-
-# Examples
+The master problem is a set partitioning linear formulation and is solved with the open source solver CLP of COIN-OR [@johnjforrest_2020], while the sub problem is a shortest elementary path problem with *resource constraints*. It is solved with the help of the  ``cspy`` library [@cspy] which is specifically designed for such problems.
 
 <!---
+# Examples
+
 The package has been used in the following examples:
 
 - [`vrpy`](https://github.com/Kuifje02/vrpy) : vehicle routing framework which solves different variants of the vehicle routing problem (including capacity constraints and time-windows) using column generation. The framework has been tested on standard vehicle routing instances.
 - [`cgar`](https://github.com/torressa/cspy/tree/master/examples/cgar) : Complex example using column generation applied to the aircraft recovery problem.
 - [`jpath`](https://github.com/torressa/cspy/tree/master/examples/jpath) : Simple example showing the necessary graph adaptations and the use of custom resource extension functions.
 -->
-
-# Acknowledgements
-
 
 # References
