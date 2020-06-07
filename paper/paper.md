@@ -8,15 +8,15 @@ tags:
 authors:
   - name: Romain Montagné
     orcid: 0000-0003-3139-4519
-    affiliation: "2"
+    affiliation: "1"
   - name: David Torres Sanchez
     orcid: 0000-0002-2894-9432
-    affiliation: "1"
+    affiliation: "2"
 affiliations:
  - name: SINTEF Digital, Mathematics and Cybernetics
-   index: 1
- - name: EURODECISION
    index: 2
+ - name: EURODECISION
+   index: 1
 date: June 2020
 bibliography: paper.bib
 ---
@@ -58,7 +58,7 @@ For each of these variants, it is possible to i/ set initial routes for the sear
 | :------------------------------: |
 |  *Figure 1: Column Generation*   |
 
-The master problem is a set partitioning linear formulation, while the sub problem is a shortest elementary path problem with *resource constraints*, hence the interest of using the ``cspy`` library (@cspy) which is designed to solve such problems.
+The master problem is a set partitioning linear formulation, while the sub problem is a shortest elementary path problem with *resource constraints*, hence the interest of using the ``cspy`` library [@cspy] which is designed to solve such problems.
 
 # Examples
 
