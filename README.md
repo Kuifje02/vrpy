@@ -62,7 +62,6 @@ pip install vrpy
 
 [PuLP](https://pypi.org/project/PuLP/)
 
-
 ## Documentation
 
 Documentation is found [here](https://vrpy.readthedocs.io/en/latest/).
