@@ -37,10 +37,10 @@ Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever s
 
 -   the Capacitated VRP (CVRP) [@laporte2007you;@baldacci2010exact],
 -   the CVRP with resource constraints [@laporte1985optimal],
--   the CVRP with time windows (CVRPTW) [@cordeau2000vrp],
--   the CVRP with simultaneous distribution and collection (CVRPSDC) [@dell2006branch],
--   the CVRP with pickups and deliveries (CPDP) [@desrosiers1988shortest],
--   the CVRP with heterogeneous fleet (HFCVRP) [@choi2007column].
+-   the CVRP with time windows  [@cordeau2000vrp],
+-   the CVRP with simultaneous distribution and collection [@dell2006branch],
+-   the CVRP with pickups and deliveries [@desrosiers1988shortest],
+-   the CVRP with heterogeneous fleet [@choi2007column].
 
 For each of these variants, it is possible to i/ set initial routes for the search (if one already has a solution at hand and wishes to improve it) ii/ lock routes (if part of the solution is imposed and must not be optimized) iii/ drop nodes (ignore a customer at the cost of a penalty).
 
@@ -60,6 +60,10 @@ For each of these variants, it is possible to i/ set initial routes for the sear
 |  *Figure 1: Column Generation*   |
 
 The master problem is a set partitioning linear formulation and is solved with the open source solver CLP of COIN-OR [@johnjforrest_2020], while the sub problem is a shortest elementary path problem with *resource constraints*. It is solved with the help of the  ``cspy`` library [@cspy] which is specifically designed for such problems.
+
+This column generation procedure is very generic, as for each of the featuring VRP variants, the master problem is identical and partitions the customers into subsets (routes). It is the sub problem (or pricing problem) that differs from one variant to another. More specifically, each variant has its unique set of *resources* which must remain in a given interval. For example, for the CVRP, a resource representing the vehicle's load is carried along the path and must not exceed the vehicle capacity; for the CVRP with time windows, two extra resources must be considered: the first one for time, and the second one for time window feasibility.
+
+The flexibility and genericity of ``vrpy`` is strongly due to the power of column generation, and the relevance of ``cspy``.
 
 <!---
 # Examples
