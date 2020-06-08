@@ -121,22 +121,25 @@ class MasterSolvePulp(MasterProblemBase):
                     msg=0,
                     maxSeconds=self.time_limit,
                     options=["startalg", "barrier", "crossover", "0"],
-                )
-            )
+                ))
         elif self.solver == "cplex":
             self.prob.solve(
                 pulp.CPLEX_CMD(
                     msg=0,
                     timelimit=self.time_limit,
                     options=["set lpmethod 4", "set barrier crossover -1"],
-                )
-            )
+                ))
         elif self.solver == "gurobi":
             gurobi_options = [
-                ("TimeLimit", self.time_limit),
                 ("Method", 2),  # 2 = barrier
                 ("Crossover", 0),
             ]
+            # Only specify time limit if given (o.w. errors)
+            if self.time_limit is not None:
+                gurobi_options.append((
+                    "TimeLimit",
+                    self.time_limit,
+                ))
             self.prob.solve(pulp.GUROBI_CMD(options=gurobi_options))
 
     def _get_total_cost_and_routes(self):
