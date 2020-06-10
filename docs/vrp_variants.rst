@@ -249,5 +249,4 @@ Other VRPs
 Coming soon:
 
 - CVRP with multiple depots
-- CVRP with heterogeneous fleet 
 
