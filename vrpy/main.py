@@ -141,6 +141,7 @@ class VehicleRoutingProblem:
                 Solver used.
                 Three options available: "cbc", "cplex", "gurobi".
                 Using "cplex" or "gurobi" requires installation. Not available by default.
+                Additionally, "gurobi" requires pulp to be installed from source.
                 Defaults to "cbc", available by default.
             dive (bool, optional):
                 True if diving heuristic is used.

@@ -140,7 +140,7 @@ class MasterSolvePulp(MasterProblemBase):
                     "TimeLimit",
                     self.time_limit,
                 ))
-            self.prob.solve(pulp.GUROBI_CMD(options=gurobi_options))
+            self.prob.solve(pulp.GUROBI(msg=0, options=gurobi_options))
 
     def _get_total_cost_and_routes(self):
         best_routes = []
