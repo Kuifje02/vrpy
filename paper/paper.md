@@ -13,10 +13,10 @@ authors:
     orcid: 0000-0002-2894-9432
     affiliation: "2"
 affiliations:
- - name: SINTEF Digital, Mathematics and Cybernetics
-   index: 2
  - name: EURODECISION
    index: 1
+ - name: SINTEF Digital, Mathematics and Cybernetics
+   index: 2
 date: June 2020
 bibliography: paper.bib
 ---
@@ -54,18 +54,18 @@ For each of these variants, it is possible to i/ set initial routes for the sear
 | :------------------------------: |
 |  *Figure 1: Column Generation*   |
 
-The master problem is a set partitioning linear formulation and is solved with the open source solver Cbc from COIN-OR [@johnjforrest_2020_Cbc], while the subproblem is a shortest elementary path problem with *resource constraints*. It is solved with the help of the  ``cspy`` library [@cspy] which is specifically designed for such problems.
+The master problem is a set partitioning linear formulation and is solved with the open source solver Clp from COIN-OR [@johnjforrest_2020_clp], while the subproblem is a shortest elementary path problem with *resource constraints*. It is solved with the help of the  ``cspy`` library [@cspy] which is specifically designed for such problems.
 
 This column generation procedure is very generic, as for each of the featuring VRP variants, the master problem is identical and partitions the customers into subsets (routes). It is the subproblem (or pricing problem) that differs from one variant to another. More specifically, each variant has its unique set of *resources* which must remain in a given interval. For example, for the CVRP, a resource representing the vehicle's load is carried along the path and must not exceed the vehicle capacity; for the CVRP with time windows, two extra resources must be considered: the first one for time, and the second one for time window feasibility.
 
-The flexibility and genericity of ``vrpy`` is strongly due to the power of column generation.
+The flexibility and genericity of ``vrpy`` is strongly due to the power of column generation, and the relevance of ``cspy``.
 
 # Advanced Features
 
 For more advanced users, there are different pricing strategies (approaches for solving subproblems)
 and some pre-pricing heuristics available that can lead to faster solutions.
 The pricing strategies include: sparsification strategies [@dell2006branch] and [@santini2018branch]
-and increasing k/-shortest path [@].
+and increasing k/-shortest path.
 The heuristics implemented include: a greedy randomized heuristic
 (for the CVRP and the CVRP with resource constraints) [@santini2018branch].
 
