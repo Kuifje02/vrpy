@@ -62,11 +62,7 @@ The flexibility and genericity of ``vrpy`` is strongly due to the power of colum
 
 # Advanced Features
 
-For more advanced users, there are different pricing strategies (approaches for solving subproblems)
-and some pre-pricing heuristics available that can lead to faster solutions.
-The pricing strategies include: sparsification strategies [@dell2006branch] and [@santini2018branch]
-and increasing k/-shortest path.
-The heuristics implemented include: a greedy randomized heuristic
+For more advanced users, there are different pricing strategies (approaches for solving subproblems), namely sparsification strategies [@dell2006branch;@santini2018branch], as well as pre-pricing heuristics available that can lead to faster solutions. The heuristics implemented include: a greedy randomized heuristic
 (for the CVRP and the CVRP with resource constraints) [@santini2018branch].
 
 # References
