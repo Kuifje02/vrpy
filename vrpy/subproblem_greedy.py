@@ -31,7 +31,6 @@ class SubProblemGreedy(SubProblemBase):
     def solve(self, n_runs=5):
         """The forward and backwards search are run."""
         more_routes = False
-        a = 0
         # The forward search is run n_runs times
         for run in range(n_runs):
             self._initialize_run()
@@ -40,14 +39,7 @@ class SubProblemGreedy(SubProblemBase):
                 logger.debug("negative column %s" % self._weight)
                 more_routes = True
                 self._add_new_route()
-                a += 1
-            # else:
-            # print("")
-            # print(self._load, self.load_capacity[self.vehicle_type])
-            # print(self._current_path, self._weight)
-
         # The backwards search is run n_runs times
-        b = 0
         for run in range(n_runs):
             self._initialize_run()
             self.run_backwards()
@@ -55,8 +47,6 @@ class SubProblemGreedy(SubProblemBase):
                 logger.debug("negative column %s" % self._weight)
                 more_routes = True
                 self._add_new_route()
-                b += 1
-        # print(" -> greedy found %s + %s columns" % (a, b))
         return self.routes, more_routes
 
     def run_forward(self):
@@ -69,7 +59,6 @@ class SubProblemGreedy(SubProblemBase):
         extend = True
         new_node = True
         while extend and new_node:
-            # while self._current_path[-1] != "Sink" and self._new_node:
             new_node = self._get_next_node()
             extend = self._update(forward=True)
 
@@ -96,7 +85,7 @@ class SubProblemGreedy(SubProblemBase):
             return False
         elif self.load_capacity and not self._check_capacity(v):
             return False
-        elif self.duration and self._check_duration(v, forward):
+        elif self.duration and not self._check_duration(v, forward):
             return False
         else:
             return True
@@ -140,7 +129,10 @@ class SubProblemGreedy(SubProblemBase):
                 self._current_path.append(self._new_node)
                 if self._stops == self.num_stops and self._new_node != "Sink":
                     # Finish path
-                    self._current_path.append("Sink")
+                    if self._new_node in self.sub_G.predecessors("Sink"):
+                        self._current_path.append("Sink")
+                    else:
+                        self._new_node = False
                     return False
                 elif self._new_node == "Sink":
                     return False
@@ -152,7 +144,10 @@ class SubProblemGreedy(SubProblemBase):
                 self._current_path.insert(0, self._new_node)
                 if self._stops == self.num_stops and self._new_node != "Source":
                     # Finish path
-                    self._current_path.insert(0, "Source")
+                    if self._new_node in self.sub_G.successors("Sink"):
+                        self._current_path.insert(0, "Source")
+                    else:
+                        self._new_node = False
                     return False
                 elif self._new_node == "Source":
                     return False
