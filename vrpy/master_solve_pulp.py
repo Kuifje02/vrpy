@@ -37,53 +37,66 @@ class MasterSolvePulp(MasterProblemBase):
 
     def solve_and_dive(self, max_depth=3, max_discrepancy=1):
         """
-        Implements diving algorithm with Limited Discrepancy Search by
-        `Sadykov et al. (2019)`_
-        Parameters as suggested by the authors.
+        Implements diving algorithm with Limited Discrepancy Search
+        Parameters as suggested by the authors. This only fixes one column.
+        `Sadykov et al. (2019)`_.
 
         .. _Sadykov et al. (2019): https://pubsonline.informs.org/doi/abs/10.1287/ijoc.2018.0822
         """
         self._formulate()
         self._solve()
 
-        relax = self.prob.deepcopy()
         depth = 0
         tabu_list = []
-        constrs = {}
         stop_diving = True
+        relax = self.relax.model.deepcopy()
+        constrs = {}
         while depth <= max_depth and len(tabu_list) <= max_discrepancy:
-            non_integer_vars = list(
-                var for var in relax.variables()
-                if abs(var.varValue - round(var.varValue)) != 0)
-            # All non-integer variables not already fixed in this or any
-            # iteration of the diving heuristic
+            a_relax_vars = list(var for var in relax.variables()
+                                if abs(var.varValue - round(var.varValue)) != 0)
             vars_to_fix = [
-                var for var in non_integer_vars
-                if var.name not in self._tabu_list and var.name not in tabu_list
+                var for var in a_relax_vars
+                if var.name not in tabu_list and var.name not in self._tabu_list
             ]
-            if vars_to_fix and len(tabu_list) <= max_discrepancy - 1:
+            if vars_to_fix:
+                # If non-integer variables not already fixed and
+                # max_discrepancy not violated
+                stop_diving = False
+
                 var_to_fix = min(
                     vars_to_fix,
                     key=lambda x: abs(x.varValue - round(x.varValue)))
-                # Fix variable to 1
-                relax += var_to_fix <= 1
-                relax += var_to_fix >= 1
-                constrs["fix_{}_LE".format(
-                    var_to_fix.name)] = pulp.LpConstraint(
-                        var_to_fix, pulp.LpConstraintLE, 1)
-                constrs["fix_{}_GE".format(
-                    var_to_fix.name)] = pulp.LpConstraint(
-                        var_to_fix, pulp.LpConstraintGE, 1)
+                value_to_fix = 1
+                value_previous = var_to_fix.varValue
+
+                name_le = "fix_{}_LE".format(var_to_fix.name)
+                name_ge = "fix_{}_GE".format(var_to_fix.name)
+                constrs[name_le] = pulp.LpConstraint(var_to_fix,
+                                                     pulp.LpConstraintLE,
+                                                     name=name_le,
+                                                     rhs=value_to_fix)
+                constrs[name_ge] = pulp.LpConstraint(var_to_fix,
+                                                     pulp.LpConstraintGE,
+                                                     name=name_ge,
+                                                     rhs=value_to_fix)
+
+                relax += constrs[name_le]  # add <= constraint
+                relax += constrs[name_ge]  # add >= constraint
                 relax.solve()
-                stop_diving = False
                 # if not optimal status code from :
                 # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
-                if relax.status != 1:
+                if relax.status != 1 or all(
+                        abs(v.varValue - round(v.varValue)) == 0
+                        for v in relax.variables()):
+                    stop_diving = True
+                    break
+                if len(tabu_list) >= max_discrepancy:
                     break
                 tabu_list.append(var_to_fix.name)
-                # Only add constraints if not infeasible
-                self.prob.extend(constrs)
                 depth += 1
+                self.relax.model.extend(constrs)
+                logger.info("fixed %s with previous value %s", var_to_fix.name,
+                            value_previous)
             else:
                 break
         logger.debug("Ran diving with LDS and fixed %s vars", len(tabu_list))
