@@ -7,6 +7,7 @@ from vrpy.subproblem_lp import SubProblemLP
 from vrpy.subproblem_cspy import SubProblemCSPY
 from vrpy.subproblem_greedy import SubProblemGreedy
 from vrpy.clarke_wright import ClarkeWright, RoundTrip
+from vrpy.schedule import Schedule
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -46,9 +47,9 @@ class VehicleRoutingProblem:
         num_vehicles (int, optional):
             Maximum number of vehicles available.
             Defaults to None (in this case num_vehicles is unbounded).
-        periodic (bool, optional):
-            True if vertices are to be visited periodically.
-            Defaults to False.
+        periodic (int, optional):
+            Time span if vertices are to be visited periodically.
+            Defaults to None.
         mixed_fleet (bool, optional):
             True if heterogeneous fleet.
             Defaluts to False.
@@ -66,7 +67,7 @@ class VehicleRoutingProblem:
         drop_penalty=None,
         fixed_cost=0,
         num_vehicles=None,
-        periodic=False,
+        periodic=None,
         mixed_fleet=False,
     ):
         self.G = G
@@ -215,6 +216,18 @@ class VehicleRoutingProblem:
             self._dropped_nodes = masterproblem_mip.dropped_nodes
         # Convert best routes into lists of nodes
         self._best_routes_as_node_lists()
+        # Schedule routes over time span if Periodic CVRP
+        if self.periodic:
+            schedule = Schedule(
+                self.G,
+                self.periodic,
+                self.best_routes,
+                self.best_routes_type,
+                self.num_vehicles,
+                self._solver,
+            )
+            schedule.solve(self._time_limit)
+            self._schedule = schedule.routes_per_day
 
     def _column_generation(self):
         while self._more_routes:
@@ -465,6 +478,7 @@ class VehicleRoutingProblem:
             and not self.pickup_delivery
             and not self.distribution_collection
             and not self.mixed_fleet
+            and not self.periodic
         ):
             alg = ClarkeWright(
                 self.G, self.load_capacity, self.duration, self.num_stops
@@ -646,8 +660,7 @@ class VehicleRoutingProblem:
             # Ignore demand at Source/Sink
             if v in ["Source", "Sink"] and self.G.nodes[v]["demand"] > 0:
                 logger.warning(
-                    "Demand at node %s (%s) is ignored."
-                    % (v, self.G.nodes[v]["demand"])
+                    "Demand %s at node %s is ignored." % (self.G.nodes[v]["demand"], v)
                 )
                 self.G.nodes[v]["demand"] = 0
 
@@ -998,3 +1011,10 @@ class VehicleRoutingProblem:
                     + self._H.nodes[head]["service_time"]
                 )
         return departure
+
+    @property
+    def schedule(self):
+        """If Periodic CVRP, returns a dict with keys a day number and values the route IDs scheduled this day."""
+        if self.periodic:
+            return self._schedule
+        return
