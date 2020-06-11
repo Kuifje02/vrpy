@@ -52,11 +52,14 @@ class MasterSolvePulp(MasterProblemBase):
         relax = self.relax.model.deepcopy()
         constrs = {}
         while depth <= max_depth and len(tabu_list) <= max_discrepancy:
-            a_relax_vars = list(var for var in relax.variables()
-                                if abs(var.varValue - round(var.varValue)) != 0)
+            non_integer_vars = list(
+                var for var in relax.variables()
+                if abs(var.varValue - round(var.varValue)) != 0)
+            # All non-integer variables not already fixed in this or any
+            # iteration of the diving heuristic
             vars_to_fix = [
-                var for var in a_relax_vars
-                if var.name not in tabu_list and var.name not in self._tabu_list
+                var for var in non_integer_vars
+                if var.name not in self._tabu_list and var.name not in tabu_list
             ]
             if vars_to_fix:
                 # If non-integer variables not already fixed and
@@ -118,7 +121,7 @@ class MasterSolvePulp(MasterProblemBase):
                 constr_name = "visit_node_%s" % v
                 duals[v] = self.prob.constraints[constr_name].pi
         # num vehicles dual
-        if self.num_vehicles:
+        if self.num_vehicles and not self.periodic:
             duals["upper_bound_vehicles"] = {}
             for k in range(len(self.num_vehicles)):
                 duals["upper_bound_vehicles"][k] = self.prob.constraints[
@@ -209,7 +212,7 @@ class MasterSolvePulp(MasterProblemBase):
         self._add_set_covering_constraints()
 
         # bound number of vehicles
-        if self.num_vehicles:
+        if self.num_vehicles and not self.periodic:
             self._add_bound_vehicles()
 
         # cost function
@@ -232,7 +235,7 @@ class MasterSolvePulp(MasterProblemBase):
         else:
             dummy_periodic_cost = 0
         # Penalties for artificial variables if the number of available vehicles is bounded
-        if self.num_vehicles and self.relax:
+        if self.num_vehicles and self.relax and not self.periodic:
             dummy_bound_cost = 1e10 * pulp.lpSum(
                 [self.dummy_bound[k] for k in range(len(self.num_vehicles))])
         else:

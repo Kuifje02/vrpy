@@ -212,7 +212,7 @@ class TestsToy:
 
     def test_periodic(self):
         self.G.nodes[2]["frequency"] = 2
-        prob = VehicleRoutingProblem(self.G, num_stops=2, periodic=True)
+        prob = VehicleRoutingProblem(self.G, num_stops=2, periodic=2)
         prob.solve()
         assert prob.best_value == 90
         frequency = 0
