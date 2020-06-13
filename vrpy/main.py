@@ -679,7 +679,9 @@ class VehicleRoutingProblem:
         # Readjust Sink time windows
         if self.G.nodes["Sink"]["upper"] == 0:
             self.G.nodes["Sink"]["upper"] = max(
-                self.G.nodes[u]["upper"] + self.G.edges[u, "Sink"]["time"]
+                self.G.nodes[u]["upper"]
+                + self.G.nodes[u]["service_time"]
+                + self.G.edges[u, "Sink"]["time"]
                 for u in self.G.predecessors("Sink")
             )
         # Keep a (deep) copy of the graph
