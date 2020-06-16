@@ -345,7 +345,7 @@ class VehicleRoutingProblem:
                         # self._get_time_remaining(),
                         self._time_limit,
                         # 30,
-                        exact=False,
+                        # exact=False,
                     )
                     if self._more_routes:
                         break
@@ -492,7 +492,7 @@ class VehicleRoutingProblem:
             )
 
             # Run greedy algorithm if possible
-            if not self.duration:
+            if False:  # not self.duration:
                 alg = Greedy(self.G, self.load_capacity)
                 alg.run()
                 logger.info(
@@ -534,10 +534,10 @@ class VehicleRoutingProblem:
             G.graph["vehicle_type"] = 0
             self._routes.append(G)
             for v in r:
-                if v in self._routes_with_node:
-                    self._routes_with_node[v].append(G)
-                else:
-                    self._routes_with_node[v] = [G]
+                # if v in self._routes_with_node:
+                #    self._routes_with_node[v].append(G)
+                # else:
+                self._routes_with_node[v] = [G]
 
     def _get_num_stops_upper_bound(self, max_capacity):
         """
