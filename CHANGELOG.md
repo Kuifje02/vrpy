@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Periodic CVRP scheduling option
+- Initial solution for CVRP computed with Greedy Algorithm 
 
 ## [v0.2.0] - 07/06/2020
 
