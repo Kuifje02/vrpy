@@ -37,6 +37,10 @@ class Schedule:
             upBound=1,
             cat=pulp.LpBinary,
         )
+        # max load
+        self.load_max = pulp.LpVariable("load_max", lowBound=0, cat=pulp.LpContinuous)
+        # min load
+        self.load_min = pulp.LpVariable("load_min", lowBound=0, cat=pulp.LpContinuous)
 
     def solve(self, time_limit):
         """Formulates the scheduling problem as a linear program and solves it."""
@@ -50,8 +54,22 @@ class Schedule:
     def _formulate(self):
         """Scheduling problem as LP."""
 
-        # dummy objective function
-        self.prob += 0
+        # objective function : balance load over planning planning period
+        self.prob += self.load_max - self.load_min
+
+        # load_max definition
+        for t in range(self.time_span):
+            self.prob += (
+                pulp.lpSum([self.y[r][t] for r in self.routes]) <= self.load_max,
+                "load_max_%s" % t,
+            )
+
+        # load_min definition
+        for t in range(self.time_span):
+            self.prob += (
+                pulp.lpSum([self.y[r][t] for r in self.routes]) >= self.load_min,
+                "load_min_%s" % t,
+            )
 
         # one day per route
         for r in self.routes:

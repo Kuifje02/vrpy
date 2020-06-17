@@ -220,6 +220,7 @@ class TestsToy:
             if 2 in prob.best_routes[r]:
                 frequency += 1
         assert frequency == 2
+        assert prob.schedule[0] in [[1], [1, 2]]
 
     def test_mixed_fleet(self):
         for (i, j) in self.G.edges():
