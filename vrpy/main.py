@@ -90,13 +90,6 @@ class VehicleRoutingProblem:
         # Check if given inputs are consistent
         self._check_vrp()
 
-        # Keep track of paths containing nodes
-        self._routes = []
-        self._routes_with_node = {}
-        for v in self.G.nodes():
-            if v not in ["Source", "Sink"]:
-                self._routes_with_node[v] = []
-
     def solve(
         self,
         initial_routes=None,
@@ -492,8 +485,8 @@ class VehicleRoutingProblem:
             )
 
             # Run greedy algorithm if possible
-            if False:  # not self.duration:
-                alg = Greedy(self.G, self.load_capacity)
+            if not self.duration:
+                alg = Greedy(self.G, self.load_capacity, self.num_stops)
                 alg.run()
                 logger.info(
                     "Greedy solution found with value %s and %s vehicles"
@@ -521,6 +514,7 @@ class VehicleRoutingProblem:
         """
         route_id = 0
         self._routes = []
+        self._routes_with_node = {}
         for r in self._initial_routes:
             total_cost = 0
             route_id += 1
@@ -533,11 +527,11 @@ class VehicleRoutingProblem:
             G.graph["cost"] = total_cost
             G.graph["vehicle_type"] = 0
             self._routes.append(G)
-            for v in r:
-                # if v in self._routes_with_node:
-                #    self._routes_with_node[v].append(G)
-                # else:
-                self._routes_with_node[v] = [G]
+            for v in r[1:-1]:
+                if v in self._routes_with_node:
+                    self._routes_with_node[v].append(G)
+                else:
+                    self._routes_with_node[v] = [G]
 
     def _get_num_stops_upper_bound(self, max_capacity):
         """
@@ -792,7 +786,7 @@ class VehicleRoutingProblem:
                 raise ValueError(
                     "Route %s must start at Source and end at Sink" % route
                 )
-        # Check if every node is in exactly one route
+        # Check if every node is in at least one route
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
                 node_found = 0
@@ -801,10 +795,6 @@ class VehicleRoutingProblem:
                         node_found += 1
                 if node_found == 0:
                     raise KeyError("Node %s missing from initial solution." % v)
-                if node_found > 1:
-                    raise ValueError(
-                        "Node %s in more than one route in initial solution." % v
-                    )
         # Check if edges from initial solution exist and have cost attribute
         for route in self._initial_routes:
             edges = list(zip(route[:-1], route[1:]))

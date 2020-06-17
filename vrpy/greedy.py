@@ -64,11 +64,9 @@ class Greedy:
         if out_going_costs == {}:
             logger.debug("path cannot be extended")
             self._new_node = "Sink"
-            self._best_value += self.G.edges[self._last_node, "Sink"]["cost"]
         else:
             # Select best successor
             self._new_node = sorted(out_going_costs, key=out_going_costs.get)[0]
-            self._best_value += out_going_costs[self._new_node]
 
     def _constraints_met(self, v):
         """Checks if constraints are respected."""
@@ -82,12 +80,15 @@ class Greedy:
     def _update(self):
         """Updates path, path load, unprocessed nodes."""
         self._load += self.G.nodes[self._new_node]["demand"]
+        last_node = self._current_path[-1]
         self._current_path.append(self._new_node)
         if self._new_node not in ["Source", "Sink"]:
             self._unprocessed_nodes.remove(self._new_node)
         self._stops += 1
-        if self._stops == self.num_stops:
+        self._best_value += self.G.edges[last_node, self._new_node]["cost"]
+        if self._stops == self.num_stops and self._new_node != "Sink":
             # End path
+            self._best_value += self.G.edges[self._new_node, "Sink"]["cost"]
             self._new_node = "Sink"
             self._current_path.append("Sink")
 
