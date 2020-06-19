@@ -281,8 +281,6 @@ class MasterSolvePulp(MasterProblemBase):
                 # Set RHS
                 if self.periodic:
                     right_hand_term = self.G.nodes[node]["frequency"]
-                elif self.drop_penalty:
-                    right_hand_term = 1 - self.drop[node]
                 else:
                     right_hand_term = 1
 
