@@ -12,7 +12,16 @@ class ClarkeWright:
         num_stops (int, optional) : Maximum number of stops per route. Defaults to None.
     """
 
-    def __init__(self, G, load_capacity=None, duration=None, num_stops=None):
+    def __init__(
+        self,
+        G,
+        load_capacity=None,
+        duration=None,
+        num_stops=None,
+        alpha=1,
+        beta=0,
+        gamma=0,
+    ):
         self.G = G.copy()
         self._format_cost()
         self._savings = {}
@@ -20,6 +29,10 @@ class ClarkeWright:
         self._route = {}
         self._best_routes = []
         self._processed_nodes = []
+
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
 
         if isinstance(load_capacity, list):
             self.load_capacity = load_capacity[0]
@@ -71,7 +84,12 @@ class ClarkeWright:
                 self._savings[(i, j)] = (
                     self.G.edges[i, "Sink"]["cost"]
                     + self.G.edges["Source", j]["cost"]
-                    - self.G.edges[i, j]["cost"]
+                    - self.alpha * self.G.edges[i, j]["cost"]
+                    + self.beta
+                    * abs(
+                        self.G.edges["Source", i]["cost"]
+                        - self.G.edges[j, "Sink"]["cost"]
+                    )
                 )
         self._ordered_edges = sorted(self._savings, key=self._savings.get, reverse=True)
 
