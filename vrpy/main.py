@@ -156,8 +156,8 @@ class VehicleRoutingProblem:
         self._exact = exact
         self._cspy = cspy
         self._dive = False
-        self._start_time = time()
         self._greedy = greedy
+        self._start_time = time()
         if preassignments:
             self._preassignments = preassignments
         if initial_routes:
@@ -192,8 +192,7 @@ class VehicleRoutingProblem:
                     self.num_vehicles,
                     self.periodic,
                     self._solver,
-                    self._time_limit,
-                    # self._get_time_remaining(),
+                    self._get_time_remaining(),
                     relax=False,
                 )
                 (
@@ -220,7 +219,7 @@ class VehicleRoutingProblem:
                 self.num_vehicles,
                 self._solver,
             )
-            schedule.solve(self._time_limit)
+            schedule.solve(self._get_time_remaining())
             self._schedule = schedule.routes_per_day
 
     def _column_generation(self):
@@ -228,9 +227,7 @@ class VehicleRoutingProblem:
             # Generate good columns
             stop = self._find_columns()
             # Stop if time limit is passed
-            # FIXME issue #23
-            # if self._get_time_remaining() and self._get_time_remaining() <= 0.0:
-            if self._time_limit and (time() - self._start_time > self._time_limit):
+            if self._get_time_remaining() and self._get_time_remaining() <= 5:
                 logger.info("time up !")
                 break
             # Stop if no improvement limit is passed
@@ -323,8 +320,7 @@ class VehicleRoutingProblem:
                         duals, vehicle, "BestPaths", k_shortest_paths,
                     )
                     self.routes, self._more_routes = subproblem.solve(
-                        # self._get_time_remaining()
-                        self._time_limit
+                        self._get_time_remaining()
                     )
                     if self._more_routes:
                         break
@@ -335,9 +331,7 @@ class VehicleRoutingProblem:
                         duals, vehicle, "BestEdges1", alpha,
                     )
                     self.routes, self._more_routes = subproblem.solve(
-                        # self._get_time_remaining(),
-                        self._time_limit,
-                        # 30,
+                        self._get_time_remaining(),
                         # exact=False,
                     )
                     if self._more_routes:
@@ -349,9 +343,7 @@ class VehicleRoutingProblem:
                         duals, vehicle, "BestEdges2", ratio,
                     )
                     self.routes, self._more_routes = subproblem.solve(
-                        # self._get_time_remaining()
-                        self._time_limit,
-                        # 30,
+                        self._get_time_remaining(),
                         # exact=False,
                     )
                     if self._more_routes:
@@ -361,8 +353,7 @@ class VehicleRoutingProblem:
             if not self._more_routes or self._pricing_strategy == "Exact":
                 subproblem = self._def_subproblem(duals, vehicle)
                 self.routes, self._more_routes = subproblem.solve(
-                    # self._get_time_remaining()
-                    self._time_limit,
+                    self._get_time_remaining(),
                     # exact=False,
                 )
 
@@ -391,9 +382,18 @@ class VehicleRoutingProblem:
         return masterproblem.solve_and_dive()
 
     def _get_time_remaining(self):
-        # Returns time remaining in seconds or None if no time limit set.
-        if self._time_limit is not None:
-            return self._time_limit - (time() - self._start_time)
+        """
+        Returns:
+            - time remaining (in seconds) if time remaining > 5
+            - 5 if time remaining < 5
+            - None if no time limit set.
+        """
+        if self._time_limit:
+            remaining_time = self._time_limit - (time() - self._start_time)
+            if remaining_time > 5:
+                return remaining_time
+            else:
+                return 5
         return None
 
     def _def_subproblem(
@@ -466,6 +466,7 @@ class VehicleRoutingProblem:
             - with Clarke & Wright if possible;
             - with a round trip otherwise.
         """
+        self._initial_routes = []
         # Run Clarke & Wright if possible
         if (
             not self.time_windows
@@ -474,14 +475,28 @@ class VehicleRoutingProblem:
             and not self.mixed_fleet
             and not self.periodic
         ):
-            alg = ClarkeWright(
-                self.G, self.load_capacity, self.duration, self.num_stops
-            )
-            alg.run()
-            self._initial_routes = alg.best_routes
+            best_value = 1e10
+            best_num_vehicles = 1e10
+            for alpha in [x / 10 for x in range(1, 20)]:
+                for beta in [x / 10 for x in range(20)]:
+                    alg = ClarkeWright(
+                        self.G,
+                        self.load_capacity,
+                        self.duration,
+                        self.num_stops,
+                        alpha,
+                        beta,
+                    )
+                    alg.run()
+                    self._initial_routes += alg.best_routes
+                    if alg.best_value < best_value:
+                        best_value = alg.best_value
+                        best_num_vehicles = len(alg.best_routes)
+                    if alpha == 1 and beta == 0:
+                        print("CW", alg.best_value)
             logger.info(
                 "Clarke & Wright solution found with value %s and %s vehicles"
-                % (alg.best_value, len(alg.best_routes))
+                % (best_value, best_num_vehicles)
             )
 
             # Run greedy algorithm if possible
