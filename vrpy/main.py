@@ -478,36 +478,35 @@ class VehicleRoutingProblem:
             best_value = 1e10
             best_num_vehicles = 1e10
             for alpha in [x / 10 for x in range(1, 20)]:
-                for beta in [x / 10 for x in range(20)]:
-                    alg = ClarkeWright(
-                        self.G,
-                        self.load_capacity,
-                        self.duration,
-                        self.num_stops,
-                        alpha,
-                        beta,
-                    )
-                    alg.run()
-                    self._initial_routes += alg.best_routes
-                    if alg.best_value < best_value:
-                        best_value = alg.best_value
-                        best_num_vehicles = len(alg.best_routes)
-                    if alpha == 1 and beta == 0:
-                        print("CW", alg.best_value)
+                # for beta in  [x / 10 for x in range(20)]:
+                # for gamma in  [x / 10 for x in range(20)]:
+                alg = ClarkeWright(
+                    self.G,
+                    self.load_capacity,
+                    self.duration,
+                    self.num_stops,
+                    alpha,
+                    # beta,
+                    # gamma,
+                )
+                alg.run()
+                self._initial_routes += alg.best_routes
+                if alg.best_value < best_value:
+                    best_value = alg.best_value
+                    best_num_vehicles = len(alg.best_routes)
             logger.info(
                 "Clarke & Wright solution found with value %s and %s vehicles"
                 % (best_value, best_num_vehicles)
             )
 
             # Run greedy algorithm if possible
-            if not self.duration:
-                alg = Greedy(self.G, self.load_capacity, self.num_stops)
-                alg.run()
-                logger.info(
-                    "Greedy solution found with value %s and %s vehicles"
-                    % (alg.best_value, len(alg.best_routes))
-                )
-                self._initial_routes += alg.best_routes
+            alg = Greedy(self.G, self.load_capacity, self.num_stops, self.duration)
+            alg.run()
+            logger.info(
+                "Greedy solution found with value %s and %s vehicles"
+                % (alg.best_value, len(alg.best_routes))
+            )
+            self._initial_routes += alg.best_routes
 
         # If pickup and delivery, initial routes are Source-pickup-delivery-Sink
         elif self.pickup_delivery:
