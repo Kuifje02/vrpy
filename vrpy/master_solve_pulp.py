@@ -130,7 +130,7 @@ class MasterSolvePulp(MasterProblemBase):
         self._add_single_route_selecting_variable(new_route)
         self.prob.writeLP("./check.lp")
 
-    def get_duals(self): 
+    def get_duals(self):
         """Gets the dual values of each constraint of the master problem.
 
         Returns:
@@ -195,9 +195,7 @@ class MasterSolvePulp(MasterProblemBase):
                 ))
             self.prob.setSolver(pulp.GUROBI(msg=0, options=gurobi_options))
 
-    def _get_total_cost_and_routes(
-        self, relax: bool
-    ): 
+    def _get_total_cost_and_routes(self, relax: bool):
         best_routes = []
         for r in self.routes:
             val = pulp.value(self.y[r.graph["name"]])
@@ -227,7 +225,8 @@ class MasterSolvePulp(MasterProblemBase):
         Set covering formulation.
         Variables are continuous when relaxed, otherwise binary.
         """
-                self._add_set_covering_constraints()
+
+        self._add_set_covering_constraints()
 
         if self.num_vehicles and not self.periodic:
             self._add_bound_vehicles()
@@ -310,6 +309,7 @@ class MasterSolvePulp(MasterProblemBase):
             self._add_single_route_selecting_variable(route)
 
     def _add_single_route_selecting_variable(self, route):
+        self.y[route.graph["name"]] = pulp.LpVariable(
             "y{}".format(route.graph["name"]),
             lowBound=0,
             upBound=1,
@@ -320,8 +320,6 @@ class MasterSolvePulp(MasterProblemBase):
                           for k in range(len(self.num_vehicles))
                           if route.graph["vehicle_type"] == k) +
                route.graph["cost"] * self.objective))
-
-
 
     def _add_vehicle_dummy_variables(self):
         for key in range(len(self.num_vehicles)):
