@@ -194,5 +194,17 @@ class SubProblemGreedy(SubProblemBase):
             )
 
     """
-    def _check_time_windows(self):
+    NOT IMPLEMENTED YET
+    def _check_time_windows(self, v, forward):
+        #Checks time window feasibility
+        if forward:
+            return (
+                self._time + self.sub_G.edges[self._last_node, v]["time"]
+                <= self.sub_G.nodes[v]["upper"]
+            )
+        else:
+            return (
+                self._time + self.sub_G.edges[v, self._last_node]["time"]
+                <= self.sub_G.nodes[v]["upper"]
+            )
     """

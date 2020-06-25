@@ -2,6 +2,7 @@ from networkx import DiGraph, shortest_path, NetworkXError, has_path
 import logging
 from time import time
 
+from vrpy.greedy import Greedy
 from vrpy.master_solve_pulp import MasterSolvePulp
 from vrpy.subproblem_lp import SubProblemLP
 from vrpy.subproblem_cspy import SubProblemCSPY
@@ -109,23 +110,19 @@ class VehicleRoutingProblem:
         # Check if given inputs are consistent
         self._check_vrp()
 
-        # Keep track of paths containing nodes
-        self._routes = []
-        self._routes_with_node = {}
-        for node in self.G.nodes():
-            if node not in ["Source", "Sink"]:
-                self._routes_with_node[node] = []
 
-    def solve(self,
-              initial_routes=None,
-              preassignments=None,
-              pricing_strategy="BestEdges1",
-              cspy=True,
-              exact=True,
-              time_limit=None,
-              solver="cbc",
-              dive=False,
-              greedy=False):
+    def solve(
+        self,
+        initial_routes=None,
+        preassignments=None,
+        pricing_strategy="BestEdges1",
+        cspy=True,
+        exact=True,
+        time_limit=None,
+        solver="cbc",
+        dive=False,
+        greedy=False,
+    ):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -182,8 +179,8 @@ class VehicleRoutingProblem:
         self._exact = exact
         self._cspy = cspy
         self._dive = False
-        self._start_time = time()
         self._greedy = greedy
+        self._start_time = time()
         if preassignments:
             self._preassignments = preassignments
         if initial_routes:
@@ -232,8 +229,23 @@ class VehicleRoutingProblem:
                 self.num_vehicles,
                 solver,
             )
-            schedule.solve(self._time_limit)
+            schedule.solve(self._get_time_remaining())
             self._schedule = schedule.routes_per_day
+
+
+    def _column_generation(self):
+        while self._more_routes:
+            # Generate good columns
+            stop = self._find_columns()
+            # Stop if time limit is passed
+            if self._get_time_remaining() and self._get_time_remaining() <= 5:
+                logger.info("time up !")
+                break
+            # Stop if no improvement limit is passed
+            if self._no_improvement > 1000:
+                break
+            if self._dive and stop:
+                break
 
     def _pre_solve(self):
         """Some pre-processing."""
@@ -330,8 +342,8 @@ class VehicleRoutingProblem:
                         k_shortest_paths,
                     )
                     self.routes, self._more_routes = subproblem.solve(
-                        # self._get_time_remaining()
-                        self._time_limit)
+                        self._get_time_remaining()
+                    )
                     if self._more_routes:
                         break
 
@@ -344,9 +356,7 @@ class VehicleRoutingProblem:
                         alpha,
                     )
                     self.routes, self._more_routes = subproblem.solve(
-                        # self._get_time_remaining(),
-                        self._time_limit,
-                        # 30,
+                        self._get_time_remaining(),
                         # exact=False,
                     )
                     if self._more_routes:
@@ -361,9 +371,7 @@ class VehicleRoutingProblem:
                         ratio,
                     )
                     self.routes, self._more_routes = subproblem.solve(
-                        # self._get_time_remaining()
-                        self._time_limit,
-                        # 30,
+                        self._get_time_remaining(),
                         # exact=False,
                     )
                     if self._more_routes:
@@ -373,8 +381,7 @@ class VehicleRoutingProblem:
             if not self._more_routes or self._pricing_strategy == "Exact":
                 subproblem = self._def_subproblem(duals, vehicle)
                 self.routes, self._more_routes = subproblem.solve(
-                    # self._get_time_remaining()
-                    self._time_limit,
+                    self._get_time_remaining(),
                     # exact=False,
                 )
             if self._more_routes:
@@ -392,9 +399,18 @@ class VehicleRoutingProblem:
         return stop_diving if self._dive else False
 
     def _get_time_remaining(self):
-        # Returns time remaining in seconds or None if no time limit set.
-        if self._time_limit is not None:
-            return self._time_limit - (time() - self._start_time)
+        """
+        Returns:
+            - time remaining (in seconds) if time remaining > 5
+            - 5 if time remaining < 5
+            - None if no time limit set.
+        """
+        if self._time_limit:
+            remaining_time = self._time_limit - (time() - self._start_time)
+            if remaining_time > 5:
+                return remaining_time
+            else:
+                return 5
         return None
 
     def _def_subproblem(
@@ -467,16 +483,47 @@ class VehicleRoutingProblem:
             - with Clarke & Wright if possible;
             - with a round trip otherwise.
         """
+        self._initial_routes = []
         # Run Clarke & Wright if possible
-        if (not self.time_windows and not self.pickup_delivery
-                and not self.distribution_collection and not self.mixed_fleet
-                and not self.periodic):
-            alg = ClarkeWright(self.G, self.load_capacity, self.duration,
-                               self.num_stops)
+        if (
+            not self.time_windows
+            and not self.pickup_delivery
+            and not self.distribution_collection
+            and not self.mixed_fleet
+            and not self.periodic
+        ):
+            best_value = 1e10
+            best_num_vehicles = 1e10
+            for alpha in [x / 10 for x in range(1, 20)]:
+                # for beta in  [x / 10 for x in range(20)]:
+                # for gamma in  [x / 10 for x in range(20)]:
+                alg = ClarkeWright(
+                    self.G,
+                    self.load_capacity,
+                    self.duration,
+                    self.num_stops,
+                    alpha,
+                    # beta,
+                    # gamma,
+                )
+                alg.run()
+                self._initial_routes += alg.best_routes
+                if alg.best_value < best_value:
+                    best_value = alg.best_value
+                    best_num_vehicles = len(alg.best_routes)
+            logger.info(
+                "Clarke & Wright solution found with value %s and %s vehicles"
+                % (best_value, best_num_vehicles)
+            )
+
+            # Run greedy algorithm if possible
+            alg = Greedy(self.G, self.load_capacity, self.num_stops, self.duration)
             alg.run()
-            logger.info("Initial solution found with value %s" %
-                        alg.best_value)
-            self._initial_routes = alg.best_routes
+            logger.info(
+                "Greedy solution found with value %s and %s vehicles"
+                % (alg.best_value, len(alg.best_routes))
+            )
+            self._initial_routes += alg.best_routes
 
         # If pickup and delivery, initial routes are Source-pickup-delivery-Sink
         elif self.pickup_delivery:
@@ -497,6 +544,7 @@ class VehicleRoutingProblem:
         """
         route_id = 0
         self._routes = []
+        self._routes_with_node = {}
         for r in self._initial_routes:
             total_cost = 0
             route_id += 1
@@ -509,8 +557,11 @@ class VehicleRoutingProblem:
             G.graph["cost"] = total_cost
             G.graph["vehicle_type"] = 0
             self._routes.append(G)
-            for v in r:
-                self._routes_with_node[v] = [G]
+            for v in r[1:-1]:
+                if v in self._routes_with_node:
+                    self._routes_with_node[v].append(G)
+                else:
+                    self._routes_with_node[v] = [G]
 
     def _get_num_stops_upper_bound(self, max_capacity):
         """
@@ -664,8 +715,11 @@ class VehicleRoutingProblem:
         # Readjust Sink time windows
         if self.G.nodes["Sink"]["upper"] == 0:
             self.G.nodes["Sink"]["upper"] = max(
-                self.G.nodes[u]["upper"] + self.G.edges[u, "Sink"]["time"]
-                for u in self.G.predecessors("Sink"))
+                self.G.nodes[u]["upper"]
+                + self.G.nodes[u]["service_time"]
+                + self.G.edges[u, "Sink"]["time"]
+                for u in self.G.predecessors("Sink")
+            )
         # Keep a (deep) copy of the graph
         self._H = self.G.to_directed()
 
@@ -755,8 +809,9 @@ class VehicleRoutingProblem:
         for route in self._initial_routes:
             if route[0] != "Source" or route[-1] != "Sink":
                 raise ValueError(
-                    "Route %s must start at Source and end at Sink" % route)
-        # Check if every node is in exactly one route
+                    "Route %s must start at Source and end at Sink" % route
+                )
+        # Check if every node is in at least one route
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
                 node_found = 0
@@ -764,12 +819,7 @@ class VehicleRoutingProblem:
                     if v in route:
                         node_found += 1
                 if node_found == 0:
-                    raise KeyError("Node %s missing from initial solution." %
-                                   v)
-                if node_found > 1:
-                    raise ValueError(
-                        "Node %s in more than one route in initial solution." %
-                        v)
+                    raise KeyError("Node %s missing from initial solution." % v)
         # Check if edges from initial solution exist and have cost attribute
         for route in self._initial_routes:
             edges = list(zip(route[:-1], route[1:]))

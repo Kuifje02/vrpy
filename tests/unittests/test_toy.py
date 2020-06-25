@@ -220,6 +220,7 @@ class TestsToy:
             if 2 in prob.best_routes[r]:
                 frequency += 1
         assert frequency == 2
+        assert prob.schedule[0] in [[1], [1, 2]]
 
     def test_mixed_fleet(self):
         for (i, j) in self.G.edges():
@@ -235,16 +236,13 @@ class TestsToy:
         assert prob.best_value == 80
         assert set(prob.best_routes_type.values()) == {0, 1}
 
+    def test_time_limit(self):
+        prob = VehicleRoutingProblem(self.G, num_stops=3)
+        prob.solve(cspy=False, time_limit=0.01)
+        assert prob.best_value == 70
+
 
 """
-    def test_time_limit(self):
-        self.G.nodes[2]["frequency"] = 2
-        prob = VehicleRoutingProblem(self.G, num_stops=2, periodic=True)
-        with raises(Exception):
-            prob.solve(cspy=False, time_limit=0)
-        prob.solve(cspy=False, time_limit=0.01)
-        assert prob.best_value == 110
-
     def test_dive(self):
         # TODO
         pass
