@@ -19,9 +19,7 @@ class MasterProblemBase:
         drop_penalty,
         num_vehicles,
         periodic,
-        solver,
         time_limit,
-        relax,
     ):
         self.G = G
         self.routes_with_node = routes_with_node
@@ -29,7 +27,4 @@ class MasterProblemBase:
         self.drop_penalty = drop_penalty
         self.num_vehicles = num_vehicles
         self.periodic = periodic
-        self.solver = solver
         self.time_limit = time_limit
-        self.relax = relax
-        self._tabu_list = []
