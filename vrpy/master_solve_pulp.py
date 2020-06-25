@@ -14,6 +14,7 @@ class MasterSolvePulp(MasterProblemBase):
 
     Inherits problem parameters from MasterProblemBase
     """
+
     def __init__(self, *args, solver):
         super(MasterSolvePulp, self).__init__(*args)
         # create problem
@@ -35,7 +36,7 @@ class MasterSolvePulp(MasterProblemBase):
         self._set_solver(solver)
 
     def solve(self, relax):
-        self.prob.writeLP("master.lp")
+        # self.prob.writeLP("master.lp")
         self._solve(relax)
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
@@ -76,8 +77,8 @@ class MasterSolvePulp(MasterProblemBase):
             # All non-integer variables not already fixed in this or any
             # iteration of the diving heuristic
             vars_to_fix = [
-                var for var in non_integer_vars if
-                var.name not in self._tabu_list and var.name not in tabu_list
+                var for var in non_integer_vars
+                if var.name not in self._tabu_list and var.name not in tabu_list
             ]
             if vars_to_fix:
                 # If non-integer variables not already fixed and
@@ -127,8 +128,7 @@ class MasterSolvePulp(MasterProblemBase):
     def update(self, new_route):
         """Add new column.
         """
-        self._add_single_route_selecting_variable(new_route)
-        self.prob.writeLP("./check.lp")
+        self._add_route_selection_variable(new_route)
 
     def get_duals(self):
         """Gets the dual values of each constraint of the master problem.
@@ -139,9 +139,9 @@ class MasterSolvePulp(MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"]
-                    and "depot_from" not in self.G.nodes[node]
-                    and "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 duals[node] = self.prob.constraints[constr_name].pi
         # num vehicles dual
@@ -232,7 +232,9 @@ class MasterSolvePulp(MasterProblemBase):
             self._add_bound_vehicles()
 
         # Add variables #
-        self._add_route_selection_variables()
+        # Route selection variables
+        for route in self.routes:
+            self._add_route_selection_variable(route)
         # if dropping nodes is allowed
         if self.drop_penalty:
             self._add_drop_variables()
@@ -240,81 +242,48 @@ class MasterSolvePulp(MasterProblemBase):
         # if frequencies, dummy variables are needed to find initial solution
         if self.periodic:
             self._add_artificial_variables()
+        # Add constraints to problem
         for k in self.set_covering_constrs:
             self.prob += self.set_covering_constrs[k]
         for k in self.vehicle_bound_constrs:
             self.prob += self.vehicle_bound_constrs[k]
 
-        #add dummy_vehicle variables
+        # Add dummy_vehicle variables
         self._add_vehicle_dummy_variables()
 
         # Set objective function
         self.prob.sense = pulp.LpMinimize
         self.prob.setObjective(self.objective)
 
-    def _add_cost_function(self):
-        # Will disappear in the column based version
-        # Travel costs
-        transport_cost = pulp.lpSum(
-            [self.y[r.graph["name"]] * r.graph["cost"] for r in self.routes])
-        # Penalties if nodes are dropped
-        if self.drop_penalty:
-            dropping_visits_cost = self.drop_penalty * pulp.lpSum(
-                [self.drop[v] for v in self.drop])
-        else:
-            dropping_visits_cost = 0
-        # Penalties for artificial variables if periodicity
-        if self.periodic:
-            dummy_periodic_cost = 1e10 * pulp.lpSum(
-                [self.dummy[v] for v in self.dummy])
-        else:
-            dummy_periodic_cost = 0
-        # Penalties for artificial variables if the number of available vehicles is bounded
-        if self.num_vehicles and self.relax and not self.periodic:
-            dummy_bound_cost = 1e10 * pulp.lpSum(
-                [self.dummy_bound[k] for k in range(len(self.num_vehicles))])
-        else:
-            dummy_bound_cost = 0
-        # Minimize the sum of all the above defined costs
-        self.prob += (transport_cost + dropping_visits_cost +
-                      dummy_periodic_cost + dummy_bound_cost)
-
     def _add_set_covering_constraints(self):
         """
-         All vertices must be visited exactly once, or periodically if frequencies are given.
-         If dropping nodes is allowed, the drop variable is activated (as well as a penalty is the cost     function).
+        All vertices must be visited exactly once, or periodically if
+        frequencies are given.
+        If dropping nodes is allowed, the drop variable is activated
+        (as well as a penalty is the cost function).
         """
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"]
-                    and "depot_from" not in self.G.nodes[node]
-                    and "depot_to" not in self.G.nodes[node]):
-
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 # Set RHS
                 if self.periodic:
                     right_hand_term = self.G.nodes[node]["frequency"]
                 else:
                     right_hand_term = 1
-
-                # set covering constraints
+                # Save set covering constraints
                 self.set_covering_constrs[node] = pulp.LpConstraintVar(
                     "visit_node_%s" % node, pulp.LpConstraintGE,
                     right_hand_term)
 
-    def _add_route_selection_variables(self):
-        """
-        Boolean variable.
-        y[r] takes value 1 if and only if route r is selected.
-        """
-        for route in self.routes:
-            self._add_single_route_selecting_variable(route)
-
-    def _add_single_route_selecting_variable(self, route):
+    def _add_route_selection_variable(self, route):
         self.y[route.graph["name"]] = pulp.LpVariable(
             "y{}".format(route.graph["name"]),
             lowBound=0,
             upBound=1,
             cat=pulp.LpInteger,
-            e=(pulp.lpSum(self.set_covering_constrs[r] for r in route.nodes()
+            e=(pulp.lpSum(self.set_covering_constrs[r]
+                          for r in route.nodes()
                           if r not in ["Source", "Sink"]) +
                pulp.lpSum(self.vehicle_bound_constrs[k]
                           for k in range(len(self.num_vehicles))
@@ -355,8 +324,7 @@ class MasterSolvePulp(MasterProblemBase):
                     lowBound=0,
                     upBound=None,
                     cat=pulp.LpInteger,
-                    e=(1e10 * self.objective +
-                       self.set_covering_constrs[node]))
+                    e=(1e10 * self.objective + self.set_covering_constrs[node]))
 
     def _add_bound_vehicles(self):
         """Adds empty constraints and sets the right hand side"""
