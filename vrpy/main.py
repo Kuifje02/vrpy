@@ -55,6 +55,7 @@ class VehicleRoutingProblem:
             True if heterogeneous fleet.
             Defaluts to False.
     """
+
     def __init__(
         self,
         G,
@@ -109,7 +110,6 @@ class VehicleRoutingProblem:
 
         # Check if given inputs are consistent
         self._check_vrp()
-
 
     def solve(
         self,
@@ -232,7 +232,6 @@ class VehicleRoutingProblem:
             schedule.solve(self._get_time_remaining())
             self._schedule = schedule.routes_per_day
 
-
     def _column_generation(self):
         while self._more_routes:
             # Generate good columns
@@ -291,24 +290,6 @@ class VehicleRoutingProblem:
                                              self._get_time_remaining(),
                                              solver=solver)
 
-    def _column_generation(self):
-        while self._more_routes:
-            # Generate good columns
-            stop = self._find_columns()
-            # Stop if time limit is passed
-            # FIXME issue #23
-            # if self._get_time_remaining() and self._get_time_remaining() <= 0.0:
-            if self._time_limit and (time() - self._start_time >
-                                     self._time_limit):
-                logger.info("time up !")
-                break
-            # Stop if no improvement limit is passed
-            if self._no_improvement > 1000:
-                break
-            if self._dive and stop:
-                break
-
-    # @profile
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
 
@@ -324,9 +305,9 @@ class VehicleRoutingProblem:
         for vehicle in range(self._vehicle_types):
 
             # Solve pricing problem with randomised greedy algorithm
-            if (self._greedy and not self.time_windows
-                    and not self.distribution_collection
-                    and not self.pickup_delivery):
+            if (self._greedy and not self.time_windows and
+                    not self.distribution_collection and
+                    not self.pickup_delivery):
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
 
@@ -342,8 +323,7 @@ class VehicleRoutingProblem:
                         k_shortest_paths,
                     )
                     self.routes, self._more_routes = subproblem.solve(
-                        self._get_time_remaining()
-                    )
+                        self._get_time_remaining())
                     if self._more_routes:
                         break
 
@@ -485,13 +465,9 @@ class VehicleRoutingProblem:
         """
         self._initial_routes = []
         # Run Clarke & Wright if possible
-        if (
-            not self.time_windows
-            and not self.pickup_delivery
-            and not self.distribution_collection
-            and not self.mixed_fleet
-            and not self.periodic
-        ):
+        if (not self.time_windows and not self.pickup_delivery and
+                not self.distribution_collection and not self.mixed_fleet and
+                not self.periodic):
             best_value = 1e10
             best_num_vehicles = 1e10
             for alpha in [x / 10 for x in range(1, 20)]:
@@ -512,17 +488,15 @@ class VehicleRoutingProblem:
                     best_value = alg.best_value
                     best_num_vehicles = len(alg.best_routes)
             logger.info(
-                "Clarke & Wright solution found with value %s and %s vehicles"
-                % (best_value, best_num_vehicles)
-            )
+                "Clarke & Wright solution found with value %s and %s vehicles" %
+                (best_value, best_num_vehicles))
 
             # Run greedy algorithm if possible
-            alg = Greedy(self.G, self.load_capacity, self.num_stops, self.duration)
+            alg = Greedy(self.G, self.load_capacity, self.num_stops,
+                         self.duration)
             alg.run()
-            logger.info(
-                "Greedy solution found with value %s and %s vehicles"
-                % (alg.best_value, len(alg.best_routes))
-            )
+            logger.info("Greedy solution found with value %s and %s vehicles" %
+                        (alg.best_value, len(alg.best_routes)))
             self._initial_routes += alg.best_routes
 
         # If pickup and delivery, initial routes are Source-pickup-delivery-Sink
@@ -571,6 +545,7 @@ class VehicleRoutingProblem:
         A knapsack problem is solved to maximize the number of
         visits, subject to capacity constraints.
         """
+
         def knapsack(weights, capacity):
             """
             Binary knapsack solver with identical profits of weight 1.
@@ -715,11 +690,9 @@ class VehicleRoutingProblem:
         # Readjust Sink time windows
         if self.G.nodes["Sink"]["upper"] == 0:
             self.G.nodes["Sink"]["upper"] = max(
-                self.G.nodes[u]["upper"]
-                + self.G.nodes[u]["service_time"]
-                + self.G.edges[u, "Sink"]["time"]
-                for u in self.G.predecessors("Sink")
-            )
+                self.G.nodes[u]["upper"] + self.G.nodes[u]["service_time"] +
+                self.G.edges[u, "Sink"]["time"]
+                for u in self.G.predecessors("Sink"))
         # Keep a (deep) copy of the graph
         self._H = self.G.to_directed()
 
@@ -728,8 +701,7 @@ class VehicleRoutingProblem:
         # if G is not a DiGraph
         if not isinstance(self.G, DiGraph):
             raise TypeError(
-                "Input graph must be of type networkx.classes.digraph.DiGraph."
-            )
+                "Input graph must be of type networkx.classes.digraph.DiGraph.")
         for v in ["Source", "Sink"]:
             # If Source or Sink is missing
             if v not in self.G.nodes():
@@ -751,16 +723,15 @@ class VehicleRoutingProblem:
     def _check_arguments(self):
         """Checks if arguments are consistent."""
         # If num_stops/load_capacity/duration are not integers
-        if self.num_stops and (not isinstance(self.num_stops, int)
-                               or self.num_stops <= 0):
-            raise TypeError(
-                "Maximum number of stops must be positive integer.")
+        if self.num_stops and (not isinstance(self.num_stops, int) or
+                               self.num_stops <= 0):
+            raise TypeError("Maximum number of stops must be positive integer.")
         if self.load_capacity:
             for value in self.load_capacity:
                 if not isinstance(value, int) or value <= 0:
                     raise TypeError("Load capacity must be positive integer.")
-        if self.duration and (not isinstance(self.duration, int)
-                              or self.duration < 0):
+        if self.duration and (not isinstance(self.duration, int) or
+                              self.duration < 0):
             raise TypeError("Maximum duration must be positive integer.")
         strategies = [
             "Exact",
@@ -809,8 +780,7 @@ class VehicleRoutingProblem:
         for route in self._initial_routes:
             if route[0] != "Source" or route[-1] != "Sink":
                 raise ValueError(
-                    "Route %s must start at Source and end at Sink" % route
-                )
+                    "Route %s must start at Source and end at Sink" % route)
         # Check if every node is in at least one route
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
@@ -947,8 +917,8 @@ class VehicleRoutingProblem:
     def best_routes_load(self):
         """Returns dict with route ids as keys and route loads as values."""
         load = {}
-        if (not self.load_capacity or self.distribution_collection
-                or self.pickup_delivery):
+        if (not self.load_capacity or self.distribution_collection or
+                self.pickup_delivery):
             return load
         for route in self.best_routes:
             load[route] = sum(
@@ -964,8 +934,8 @@ class VehicleRoutingProblem:
         If truck is distributing, load refers to accumulated amount that has been unloaded.
         """
         load = {}
-        if (not self.load_capacity and not self.pickup_delivery
-                and not self.distribution_collection):
+        if (not self.load_capacity and not self.pickup_delivery and
+                not self.distribution_collection):
             return load
         for i in self.best_routes:
             load[i] = {}
