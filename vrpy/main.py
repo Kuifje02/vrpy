@@ -208,7 +208,7 @@ class VehicleRoutingProblem:
             # FIXME issue #23
             try:
                 self._best_value, self._best_routes_as_graphs = self.masterproblem.solve(
-                    relax=False)
+                    relax=False, time_limit=self._get_time_remaining())
             except Exception:
                 self._best_value, self._best_routes_as_graphs = (
                     self._lower_bound[-1],
@@ -281,14 +281,10 @@ class VehicleRoutingProblem:
         # Initial routes are converted to digraphs
         self._convert_initial_routes_to_digraphs()
         # Init master problem
-        self.masterproblem = MasterSolvePulp(self.G,
-                                             self._routes_with_node,
-                                             self._routes,
-                                             self.drop_penalty,
-                                             self.num_vehicles,
-                                             self.periodic,
-                                             self._get_time_remaining(),
-                                             solver=solver)
+        self.masterproblem = MasterSolvePulp(self.G, self._routes_with_node,
+                                             self._routes, self.drop_penalty,
+                                             self.num_vehicles, self.periodic,
+                                             solver)
 
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
@@ -296,9 +292,10 @@ class VehicleRoutingProblem:
         # Solve restricted relaxed master problem
         if self._dive:
             relaxed_cost, stop_diving = self.masterproblem.solve_and_dive(
-                relax=True)
+                relax=True, time_limit=self._get_time_remaining())
         else:
-            duals, relaxed_cost = self.masterproblem.solve(relax=True)
+            duals, relaxed_cost = self.masterproblem.solve(
+                relax=True, time_limit=self._get_time_remaining())
         logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
         # One subproblem per vehicle type

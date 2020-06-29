@@ -15,7 +15,7 @@ class MasterSolvePulp(MasterProblemBase):
     Inherits problem parameters from MasterProblemBase
     """
 
-    def __init__(self, *args, solver):
+    def __init__(self, *args):
         super(MasterSolvePulp, self).__init__(*args)
         # create problem
         self.prob = pulp.LpProblem("MasterProblem", pulp.LpMinimize)
@@ -33,10 +33,10 @@ class MasterSolvePulp(MasterProblemBase):
         # Diving attributes
         self._tabu_list = []
         self._formulate()
-        self._set_solver(solver)
 
-    def solve(self, relax):
+    def solve(self, relax, time_limit):
         # self.prob.writeLP("master.lp")
+        self._set_solver(time_limit)
         self._solve(relax)
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
@@ -55,7 +55,7 @@ class MasterSolvePulp(MasterProblemBase):
         else:
             return self._get_total_cost_and_routes(relax=False)
 
-    def solve_and_dive(self, max_depth=3, max_discrepancy=1):
+    def solve_and_dive(self, time_limit, max_depth=3, max_discrepancy=1):
         """
         Implements diving algorithm with Limited Discrepancy Search
         Parameters as suggested by the authors. This only fixes one column.
@@ -63,6 +63,7 @@ class MasterSolvePulp(MasterProblemBase):
 
         .. _Sadykov et al. (2019): https://pubsonline.informs.org/doi/abs/10.1287/ijoc.2018.0822
         """
+        self._set_solver(time_limit)
         self._solve(relax=True)
 
         depth = 0
@@ -167,31 +168,31 @@ class MasterSolvePulp(MasterProblemBase):
         # Solve with solver already set
         self.prob.resolve()
 
-    def _set_solver(self, solver):
-        if solver == "cbc":
+    def _set_solver(self, time_limit):
+        if self.solver == "cbc":
             self.prob.setSolver(
                 pulp.PULP_CBC_CMD(
                     msg=0,
-                    maxSeconds=self.time_limit,
+                    maxSeconds=time_limit,
                     options=["startalg", "barrier", "crossover", "0"],
                 ))
-        elif solver == "cplex":
+        elif self.solver == "cplex":
             self.prob.setSolver(
                 pulp.CPLEX_CMD(
                     msg=0,
-                    timelimit=self.time_limit,
+                    timelimit=time_limit,
                     options=["set lpmethod 4", "set barrier crossover -1"],
                 ))
-        elif solver == "gurobi":
+        elif self.solver == "gurobi":
             gurobi_options = [
                 ("Method", 2),  # 2 = barrier
                 ("Crossover", 0),
             ]
             # Only specify time limit if given (o.w. errors)
-            if self.time_limit is not None:
+            if time_limit is not None:
                 gurobi_options.append((
                     "TimeLimit",
-                    self.time_limit,
+                    time_limit,
                 ))
             self.prob.setSolver(pulp.GUROBI(msg=0, options=gurobi_options))
 
