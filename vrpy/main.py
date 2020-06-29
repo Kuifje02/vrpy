@@ -55,7 +55,6 @@ class VehicleRoutingProblem:
             True if heterogeneous fleet.
             Defaluts to False.
     """
-
     def __init__(
         self,
         G,
@@ -92,7 +91,7 @@ class VehicleRoutingProblem:
         self._pricing_strategy = None
         self._exact = None
         self._cspy = None
-        self._dive = False
+        self._dive = None
         self._start_time = None
         self._greedy = None
         # parameters for column generation stopping criteria
@@ -201,19 +200,21 @@ class VehicleRoutingProblem:
 
         if dive:
             self._dive = True
+            self._more_routes = True
             # Initialization
             self._column_generation()
+            self._best_value, self._best_routes_as_graphs = self.masterproblem.get_total_cost_and_routes(
+                relax=True)
+            print("relaxed", self._best_routes_as_graphs)
         else:
             # Solve as MIP
             # FIXME issue #23
-            try:
-                self._best_value, self._best_routes_as_graphs = self.masterproblem.solve(
-                    relax=False)
-            except Exception:
-                self._best_value, self._best_routes_as_graphs = (
-                    self._lower_bound[-1],
-                    self.routes,
-                )
+            _, _ = self.masterproblem.solve(relax=False)
+            self._best_value, self._best_routes_as_graphs = self.masterproblem.get_total_cost_and_routes(
+                relax=False)
+            print("unreleaxed best valuye", self._best_value)
+            print("unrelaxed", self._best_routes_as_graphs)
+
         # Get dropped nodes
         if self.drop_penalty:
             self._dropped_nodes = self.masterproblem.dropped_nodes
@@ -270,7 +271,7 @@ class VehicleRoutingProblem:
         if self.load_capacity and not self.pickup_delivery:
             self._get_num_stops_upper_bound(self._max_capacity)
 
-    def _initialize(self, solver):
+    def _initialize(self, solver):  #
         """Initialization with feasible solution."""
         if self._initial_routes:
             # Initial solution is given as input
@@ -295,8 +296,9 @@ class VehicleRoutingProblem:
 
         # Solve restricted relaxed master problem
         if self._dive:
-            relaxed_cost, stop_diving = self.masterproblem.solve_and_dive(
-                relax=True)
+            duals, relaxed_cost, stop_diving = self.masterproblem.solve_and_dive(
+            )
+            stop_diving = False
         else:
             duals, relaxed_cost = self.masterproblem.solve(relax=True)
         logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
@@ -305,9 +307,9 @@ class VehicleRoutingProblem:
         for vehicle in range(self._vehicle_types):
 
             # Solve pricing problem with randomised greedy algorithm
-            if (self._greedy and not self.time_windows and
-                    not self.distribution_collection and
-                    not self.pickup_delivery):
+            if (self._greedy and not self.time_windows
+                    and not self.distribution_collection
+                    and not self.pickup_delivery):
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
 
@@ -465,9 +467,9 @@ class VehicleRoutingProblem:
         """
         self._initial_routes = []
         # Run Clarke & Wright if possible
-        if (not self.time_windows and not self.pickup_delivery and
-                not self.distribution_collection and not self.mixed_fleet and
-                not self.periodic):
+        if (not self.time_windows and not self.pickup_delivery
+                and not self.distribution_collection and not self.mixed_fleet
+                and not self.periodic):
             best_value = 1e10
             best_num_vehicles = 1e10
             for alpha in [x / 10 for x in range(1, 20)]:
@@ -488,8 +490,8 @@ class VehicleRoutingProblem:
                     best_value = alg.best_value
                     best_num_vehicles = len(alg.best_routes)
             logger.info(
-                "Clarke & Wright solution found with value %s and %s vehicles" %
-                (best_value, best_num_vehicles))
+                "Clarke & Wright solution found with value %s and %s vehicles"
+                % (best_value, best_num_vehicles))
 
             # Run greedy algorithm if possible
             alg = Greedy(self.G, self.load_capacity, self.num_stops,
@@ -545,7 +547,6 @@ class VehicleRoutingProblem:
         A knapsack problem is solved to maximize the number of
         visits, subject to capacity constraints.
         """
-
         def knapsack(weights, capacity):
             """
             Binary knapsack solver with identical profits of weight 1.
@@ -701,7 +702,8 @@ class VehicleRoutingProblem:
         # if G is not a DiGraph
         if not isinstance(self.G, DiGraph):
             raise TypeError(
-                "Input graph must be of type networkx.classes.digraph.DiGraph.")
+                "Input graph must be of type networkx.classes.digraph.DiGraph."
+            )
         for v in ["Source", "Sink"]:
             # If Source or Sink is missing
             if v not in self.G.nodes():
@@ -723,15 +725,16 @@ class VehicleRoutingProblem:
     def _check_arguments(self):
         """Checks if arguments are consistent."""
         # If num_stops/load_capacity/duration are not integers
-        if self.num_stops and (not isinstance(self.num_stops, int) or
-                               self.num_stops <= 0):
-            raise TypeError("Maximum number of stops must be positive integer.")
+        if self.num_stops and (not isinstance(self.num_stops, int)
+                               or self.num_stops <= 0):
+            raise TypeError(
+                "Maximum number of stops must be positive integer.")
         if self.load_capacity:
             for value in self.load_capacity:
                 if not isinstance(value, int) or value <= 0:
                     raise TypeError("Load capacity must be positive integer.")
-        if self.duration and (not isinstance(self.duration, int) or
-                              self.duration < 0):
+        if self.duration and (not isinstance(self.duration, int)
+                              or self.duration < 0):
             raise TypeError("Maximum duration must be positive integer.")
         strategies = [
             "Exact",
@@ -789,7 +792,8 @@ class VehicleRoutingProblem:
                     if v in route:
                         node_found += 1
                 if node_found == 0:
-                    raise KeyError("Node %s missing from initial solution." % v)
+                    raise KeyError("Node %s missing from initial solution." %
+                                   v)
         # Check if edges from initial solution exist and have cost attribute
         for route in self._initial_routes:
             edges = list(zip(route[:-1], route[1:]))
@@ -917,8 +921,8 @@ class VehicleRoutingProblem:
     def best_routes_load(self):
         """Returns dict with route ids as keys and route loads as values."""
         load = {}
-        if (not self.load_capacity or self.distribution_collection or
-                self.pickup_delivery):
+        if (not self.load_capacity or self.distribution_collection
+                or self.pickup_delivery):
             return load
         for route in self.best_routes:
             load[route] = sum(
@@ -934,8 +938,8 @@ class VehicleRoutingProblem:
         If truck is distributing, load refers to accumulated amount that has been unloaded.
         """
         load = {}
-        if (not self.load_capacity and not self.pickup_delivery and
-                not self.distribution_collection):
+        if (not self.load_capacity and not self.pickup_delivery
+                and not self.distribution_collection):
             return load
         for i in self.best_routes:
             load[i] = {}
