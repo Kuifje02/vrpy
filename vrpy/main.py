@@ -236,15 +236,13 @@ class VehicleRoutingProblem:
     def _column_generation(self):
         while self._more_routes:
             # Generate good columns
-            stop = self._find_columns()
+            self._find_columns()
             # Stop if time limit is passed
             if self._get_time_remaining() and self._get_time_remaining() <= 5:
                 logger.info("time up !")
                 break
             # Stop if no improvement limit is passed
             if self._no_improvement > 1000:
-                break
-            if self._dive and stop:
                 break
 
     def _pre_solve(self):
@@ -296,9 +294,8 @@ class VehicleRoutingProblem:
 
         # Solve restricted relaxed master problem
         if self._dive:
-            duals, relaxed_cost, stop_diving = self.masterproblem.solve_and_dive(
-            )
-            stop_diving = False
+            print(self.masterproblem.prob)
+            duals, relaxed_cost = self.masterproblem.solve_and_dive()
         else:
             duals, relaxed_cost = self.masterproblem.solve(relax=True)
         logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
@@ -377,8 +374,6 @@ class VehicleRoutingProblem:
             self._no_improvement = 0
         self._lower_bound.append(relaxed_cost)
         # Add column (new route) to the master problem
-
-        return stop_diving if self._dive else False
 
     def _get_time_remaining(self):
         """

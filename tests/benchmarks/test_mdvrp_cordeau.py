@@ -28,7 +28,7 @@ class TestsCordeau:
     def test_setup_edges(self):
         assert len(self.G.edges()) == 128
 
-    def test_subproblem_lp_with_initial_routes(self):
+    def test_subproblem_lp_with_initial_routes_dive(self):
         # initial solution
         # ugly, needs more genericity
         ini = []
@@ -37,3 +37,13 @@ class TestsCordeau:
                 ini.append(["Source", 51, v, str(51) + "_", "Sink"])
         self.data.solve(initial_routes=ini, cspy=False, dive=True)
         assert round(self.data.best_value, 1) == 141.9
+
+    def test_subproblem_lp_with_initial_routes(self):
+    # initial solution
+    # ugly, needs more genericity
+    ini = []
+    for v in self.G.nodes():
+        if "customer" in self.G.nodes[v]:
+            ini.append(["Source", 51, v, str(51) + "_", "Sink"])
+    self.data.solve(initial_routes=ini, cspy=False, dive=True)
+    assert round(self.data.best_value, 1) == 141.9
