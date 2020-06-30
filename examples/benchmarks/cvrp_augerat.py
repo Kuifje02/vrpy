@@ -130,7 +130,7 @@ class DataSet:
               exact=True,
               time_limit=None,
               pricing_strategy="BestPaths",
-              dive=None):
+              dive=False):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"

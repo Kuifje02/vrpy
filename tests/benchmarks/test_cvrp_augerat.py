@@ -43,9 +43,6 @@ class TestsAugerat:
         self.data.solve(cspy=True, dive=True)
         assert round(self.data.best_value, -1) in [450, 460]
 
-    def test_master_dive(self):
-        self.data.solve(dive=True)  #?
-
     def test_subproblem_lp_with_initial_routes_dive(self):
         # benchmark result
         # http://vrp.galgos.inf.puc-rio.br/index.php/en/

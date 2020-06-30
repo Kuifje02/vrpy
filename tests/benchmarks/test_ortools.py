@@ -47,7 +47,7 @@ class TestsOrTools:
         self.prob.load_capacity = 15
         self.prob.solve(cspy=False, pricing_strategy="BestEdges1", dive=True)
         sol_lp = self.prob.best_value
-        self.prob.solve(pricing_strategy="BestEdges1")
+        self.prob.solve(pricing_strategy="BestEdges1", dive=True)
         sol_cspy = self.prob.best_value
         assert int(sol_lp) == 6208
         assert int(sol_cspy) == 6208
@@ -56,7 +56,7 @@ class TestsOrTools:
         self.prob.time_windows = True
         self.prob.solve(cspy=False, dive=True)
         sol_lp = self.prob.best_value
-        self.prob.solve()
+        self.prob.solve(dive=True)
         sol_cspy = self.prob.best_value
         assert int(sol_lp) == 6528
         assert int(sol_cspy) == 6528
@@ -66,7 +66,7 @@ class TestsOrTools:
         self.prob.distribution_collection = True
         self.prob.solve(cspy=False, pricing_strategy="BestEdges1", dive=True)
         sol_lp = self.prob.best_value
-        self.prob.solve(pricing_strategy="BestEdges1")
+        self.prob.solve(pricing_strategy="BestEdges1", dive=True)
         sol_cspy = self.prob.best_value
         assert int(sol_lp) == 6208
         assert int(sol_cspy) == 6208

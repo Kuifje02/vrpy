@@ -125,7 +125,7 @@ class DataSet:
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
         return sqrt(delta_x**2 + delta_y**2)
 
-    def solve(self, initial_routes=None, cspy=False, dive=None):
+    def solve(self, initial_routes=None, cspy=False, dive=False):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"

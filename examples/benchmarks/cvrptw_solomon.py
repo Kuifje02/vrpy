@@ -121,7 +121,7 @@ class DataSet:
         pricing_strategy="BestEdges1",
         time_limit=None,
         solver="cbc",
-        dive=None,
+        dive=False,
     ):
         """Instantiates instance as VRP and solves."""
         if cspy:
