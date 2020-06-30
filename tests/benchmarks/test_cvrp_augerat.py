@@ -36,6 +36,14 @@ class TestsAugerat:
         self.data.solve(dive=True)
         assert round(self.data.best_value, -1) in [450, 460]
 
+    def test_subproblem_lp_greedy(self):
+        self.data.solve(greedy=True)
+        assert round(self.data.best_value, -1) in [450, 460]
+
+    def test_subproblem_lp_greedy_dive(self):
+        self.data.solve(greedy=True, dive=True)
+        assert round(self.data.best_value, -1) in [450, 460]
+
     def test_subproblem_cspy(self):
         self.data.solve(cspy=True)
         assert round(self.data.best_value, -1) in [450, 460]

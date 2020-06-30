@@ -111,9 +111,7 @@ class MasterSolvePulp(MasterProblemBase):
                              value_previous)
             else:
                 break
-        logger.debug("Ran diving with LDS and fixed %s vars", len(tabu_list))
         self._tabu_list.extend(tabu_list)  # Update global tabu list
-
         # To avoid resolving the problem again, use the local `relax` lp
         if not relax.status != 1:
             return self.get_duals(relax), relax.objective.value()
@@ -157,12 +155,6 @@ class MasterSolvePulp(MasterProblemBase):
                     duals["upper_bound_vehicles"][k] = relax.constraints[
                         "upper_bound_vehicles_%s" % k].pi
         return duals
-
-    def check_all_integer(self):
-        """Check if all variables have integer values."""
-        return all(
-            abs(v.varValue - round(v.varValue)) == 0.0
-            for v in self.prob.variables())
 
     # Private methods to solve and output #
 

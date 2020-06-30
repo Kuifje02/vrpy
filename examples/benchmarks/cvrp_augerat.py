@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class AugeratNodePosition:
     """Stores coordinates of a node of Augerat's instances (set P)."""
+
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[0]).item()
@@ -28,6 +29,7 @@ class AugeratNodePosition:
 
 class AugeratNodeDemand:
     """Stores attributes of a node of Augerat's instances (set P)."""
+
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[0]).item()
@@ -44,6 +46,7 @@ class DataSet:
         path (str) : Path to data folder.
         instance_name (str) : Name of instance to read.
     """
+
     def __init__(self, path, instance_name):
 
         # Read vehicle capacity
@@ -130,7 +133,8 @@ class DataSet:
               exact=True,
               time_limit=None,
               pricing_strategy="BestPaths",
-              dive=False):
+              dive=False,
+              greedy=False):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -148,5 +152,6 @@ class DataSet:
                    exact=exact,
                    time_limit=time_limit,
                    pricing_strategy=pricing_strategy,
-                   dive=dive)
+                   dive=dive,
+                   greedy=greedy)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes

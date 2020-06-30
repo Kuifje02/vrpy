@@ -304,6 +304,12 @@ class VehicleRoutingProblem:
                     not self.pickup_delivery):
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
+                # TODO: needs checking as there must be a better way
+                # Update master problem only with new routes
+                if self._more_routes:
+                    for r in (r for r in self.routes
+                              if r.graph["name"] not in self.masterproblem.y):
+                        self.masterproblem.update(r)
 
             # Continue searching for columns
             self._more_routes = False
