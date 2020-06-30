@@ -60,7 +60,6 @@ class MasterSolvePulp(MasterProblemBase):
         .. _Sadykov et al. (2019): https://pubsonline.informs.org/doi/abs/10.1287/ijoc.2018.0822
         """
         self._solve(relax=True)
-        print("Running solve and dive")
         depth = 0
         tabu_list = []
         relax = self.prob.deepcopy()
@@ -105,11 +104,7 @@ class MasterSolvePulp(MasterProblemBase):
                 tabu_list.append(var_to_fix.name)
                 depth += 1
                 if not (relax.status != 1):
-                    print("Optimal")
                     self.prob.extend(constrs)
-                else:
-                    print("no optimal solution")
-                    print(relax == self.prob)
                 logger.info("fixed %s with previous value %s", var_to_fix.name,
                             value_previous)
             else:
@@ -125,7 +120,6 @@ class MasterSolvePulp(MasterProblemBase):
     def update(self, new_route):
         """Add new column.
         """
-        #self.routes.append(new_route)
         self._add_route_selection_variable(new_route)
 
     def get_duals(self, relax: pulp.LpProblem = None):

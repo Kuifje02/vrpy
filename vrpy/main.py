@@ -205,15 +205,12 @@ class VehicleRoutingProblem:
             self._column_generation()
             self._best_value, self._best_routes_as_graphs = self.masterproblem.get_total_cost_and_routes(
                 relax=True)
-            print("relaxed", self._best_routes_as_graphs)
         else:
             # Solve as MIP
             # FIXME issue #23
             _, _ = self.masterproblem.solve(relax=False)
             self._best_value, self._best_routes_as_graphs = self.masterproblem.get_total_cost_and_routes(
                 relax=False)
-            print("unreleaxed best valuye", self._best_value)
-            print("unrelaxed", self._best_routes_as_graphs)
 
         # Get dropped nodes
         if self.drop_penalty:
@@ -294,7 +291,6 @@ class VehicleRoutingProblem:
 
         # Solve restricted relaxed master problem
         if self._dive:
-            print(self.masterproblem.prob)
             duals, relaxed_cost = self.masterproblem.solve_and_dive()
         else:
             duals, relaxed_cost = self.masterproblem.solve(relax=True)
