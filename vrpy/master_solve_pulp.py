@@ -15,7 +15,7 @@ class MasterSolvePulp(MasterProblemBase):
     Inherits problem parameters from MasterProblemBase
     """
 
-    def __init__(self, *args, solver):
+    def __init__(self, *args):
         super(MasterSolvePulp, self).__init__(*args)
         # create problem
         self.prob = pulp.LpProblem("MasterProblem", pulp.LpMinimize)
@@ -33,10 +33,10 @@ class MasterSolvePulp(MasterProblemBase):
         # Diving attributes
         self._tabu_list = []
         self._formulate()
-        self._set_solver(solver)
 
-    def solve(self, relax):
+    def solve(self, relax, time_limit):
         # self.prob.writeLP("master.lp")
+        self._set_solver(time_limit)
         self._solve(relax)
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
@@ -48,14 +48,12 @@ class MasterSolvePulp(MasterProblemBase):
             for r in self.routes:
                 if pulp.value(self.y[r.graph["name"]]) > 0.5:
                     logger.debug("route %s selected" % r.graph["name"])
-            duals = self.get_duals()
-            logger.debug("duals : %s" % duals)
-            return duals, self.prob.objective.value()
+        duals = self.get_duals()
+        logger.debug("duals : %s" % duals)
 
-        else:
-            return self._get_total_cost_and_routes(relax=False)
+        return duals, self.prob.objective.value()
 
-    def solve_and_dive(self, max_depth=3, max_discrepancy=1):
+    def solve_and_dive(self, time_limit, max_depth=3, max_discrepancy=1):
         """
         Implements diving algorithm with Limited Discrepancy Search
         Parameters as suggested by the authors. This only fixes one column.
@@ -63,14 +61,13 @@ class MasterSolvePulp(MasterProblemBase):
 
         .. _Sadykov et al. (2019): https://pubsonline.informs.org/doi/abs/10.1287/ijoc.2018.0822
         """
+        self._set_solver(time_limit)
         self._solve(relax=True)
-
         depth = 0
         tabu_list = []
-        stop_diving = True
         relax = self.prob.deepcopy()
         constrs = {}
-        while depth <= max_depth and len(tabu_list) <= max_discrepancy:
+        while depth <= max_depth and len(tabu_list) < max_discrepancy:
             non_integer_vars = list(
                 var for var in relax.variables()
                 if abs(var.varValue - round(var.varValue)) != 0)
@@ -83,7 +80,6 @@ class MasterSolvePulp(MasterProblemBase):
             if vars_to_fix:
                 # If non-integer variables not already fixed and
                 # max_discrepancy not violated
-                stop_diving = False
 
                 var_to_fix = min(
                     vars_to_fix,
@@ -104,34 +100,35 @@ class MasterSolvePulp(MasterProblemBase):
 
                 relax += constrs[name_le]  # add <= constraint
                 relax += constrs[name_ge]  # add >= constraint
-                relax.solve()
-                # if not optimal status code from :
-                # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
-                if relax.status != 1 or all(
-                        abs(v.varValue - round(v.varValue)) == 0
-                        for v in relax.variables()):
-                    stop_diving = True
-                    break
-                if len(tabu_list) >= max_discrepancy:
-                    break
+                relax.resolve()
                 tabu_list.append(var_to_fix.name)
                 depth += 1
-                self.prob.extend(constrs)
-                logger.info("fixed %s with previous value %s", var_to_fix.name,
-                            value_previous)
+                # if not optimal status code from :
+                # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
+                if not (relax.status != 1):
+                    self.prob.extend(constrs)
+                logger.debug("fixed %s with previous value %s", var_to_fix.name,
+                             value_previous)
             else:
                 break
-        logger.debug("Ran diving with LDS and fixed %s vars", len(tabu_list))
-        self._tabu_list.extend(tabu_list)
-        return self._get_total_cost_and_routes(relax=True), stop_diving
+        self._tabu_list.extend(tabu_list)  # Update global tabu list
+        # To avoid resolving the problem again, use the local `relax` lp
+        if not relax.status != 1:
+            return self.get_duals(relax), relax.objective.value()
+        # Otherwise solve the master problem again and use that
+        else:
+            self.prob.resolve()
+            return self.get_duals(), self.prob.objective.value()
 
     def update(self, new_route):
         """Add new column.
         """
         self._add_route_selection_variable(new_route)
 
-    def get_duals(self):
+    def get_duals(self, relax: pulp.LpProblem = None):
         """Gets the dual values of each constraint of the master problem.
+        If a input LpProblem is given (assuming it's a copy),
+        it uses that instead.
 
         Returns:
             dict: Duals with constraint names as keys and dual variables as values
@@ -143,13 +140,20 @@ class MasterSolvePulp(MasterProblemBase):
                     "depot_from" not in self.G.nodes[node] and
                     "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
-                duals[node] = self.prob.constraints[constr_name].pi
+                if not relax:
+                    duals[node] = self.prob.constraints[constr_name].pi
+                else:
+                    duals[node] = relax.constraints[constr_name].pi
         # num vehicles dual
         if self.num_vehicles and not self.periodic:
             duals["upper_bound_vehicles"] = {}
             for k in range(len(self.num_vehicles)):
-                duals["upper_bound_vehicles"][k] = self.prob.constraints[
-                    "upper_bound_vehicles_%s" % k].pi
+                if not relax:
+                    duals["upper_bound_vehicles"][k] = self.prob.constraints[
+                        "upper_bound_vehicles_%s" % k].pi
+                else:
+                    duals["upper_bound_vehicles"][k] = relax.constraints[
+                        "upper_bound_vehicles_%s" % k].pi
         return duals
 
     # Private methods to solve and output #
@@ -161,41 +165,42 @@ class MasterSolvePulp(MasterProblemBase):
                 var.cat = pulp.LpContinuous
             else:
                 var.cat = pulp.LpInteger
+                # Force vehicle bound artificial variable to 0
                 if "artificial_bound_" in var.name:
                     var.upBound = 0
                     var.lowBound = 0
         # Solve with solver already set
         self.prob.resolve()
 
-    def _set_solver(self, solver):
-        if solver == "cbc":
+    def _set_solver(self, time_limit):
+        if self.solver == "cbc":
             self.prob.setSolver(
                 pulp.PULP_CBC_CMD(
                     msg=0,
-                    maxSeconds=self.time_limit,
+                    maxSeconds=time_limit,
                     options=["startalg", "barrier", "crossover", "0"],
                 ))
-        elif solver == "cplex":
+        elif self.solver == "cplex":
             self.prob.setSolver(
                 pulp.CPLEX_CMD(
                     msg=0,
-                    timelimit=self.time_limit,
+                    timelimit=time_limit,
                     options=["set lpmethod 4", "set barrier crossover -1"],
                 ))
-        elif solver == "gurobi":
+        elif self.solver == "gurobi":
             gurobi_options = [
                 ("Method", 2),  # 2 = barrier
                 ("Crossover", 0),
             ]
             # Only specify time limit if given (o.w. errors)
-            if self.time_limit is not None:
+            if time_limit is not None:
                 gurobi_options.append((
                     "TimeLimit",
-                    self.time_limit,
+                    time_limit,
                 ))
             self.prob.setSolver(pulp.GUROBI(msg=0, options=gurobi_options))
 
-    def _get_total_cost_and_routes(self, relax: bool):
+    def get_total_cost_and_routes(self, relax: bool):
         best_routes = []
         for r in self.routes:
             val = pulp.value(self.y[r.graph["name"]])
@@ -210,6 +215,7 @@ class MasterSolvePulp(MasterProblemBase):
             self.dropped_nodes = [
                 v for v in self.drop if pulp.value(self.drop[v]) > 0.5
             ]
+        self.prob.resolve()
         total_cost = self.prob.objective.value()
         if not relax and self.drop_penalty and len(self.dropped_nodes) > 0:
             logger.info("dropped nodes : %s" % self.dropped_nodes)

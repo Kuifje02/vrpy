@@ -92,7 +92,7 @@ class VehicleRoutingProblem:
         self._pricing_strategy = None
         self._exact = None
         self._cspy = None
-        self._dive = False
+        self._dive = None
         self._start_time = None
         self._greedy = None
         # parameters for column generation stopping criteria
@@ -201,19 +201,18 @@ class VehicleRoutingProblem:
 
         if dive:
             self._dive = True
+            self._more_routes = True
             # Initialization
             self._column_generation()
+            self._best_value, self._best_routes_as_graphs = \
+                    self.masterproblem.get_total_cost_and_routes(relax=True)
         else:
             # Solve as MIP
-            # FIXME issue #23
-            try:
-                self._best_value, self._best_routes_as_graphs = self.masterproblem.solve(
-                    relax=False)
-            except Exception:
-                self._best_value, self._best_routes_as_graphs = (
-                    self._lower_bound[-1],
-                    self.routes,
-                )
+            _, _ = self.masterproblem.solve(
+                relax=False, time_limit=self._get_time_remaining())
+            self._best_value, self._best_routes_as_graphs = \
+                    self.masterproblem.get_total_cost_and_routes(relax=False)
+
         # Get dropped nodes
         if self.drop_penalty:
             self._dropped_nodes = self.masterproblem.dropped_nodes
@@ -235,15 +234,13 @@ class VehicleRoutingProblem:
     def _column_generation(self):
         while self._more_routes:
             # Generate good columns
-            stop = self._find_columns()
+            self._find_columns()
             # Stop if time limit is passed
             if self._get_time_remaining() and self._get_time_remaining() <= 5:
                 logger.info("time up !")
                 break
             # Stop if no improvement limit is passed
             if self._no_improvement > 1000:
-                break
-            if self._dive and stop:
                 break
 
     def _pre_solve(self):
@@ -270,7 +267,7 @@ class VehicleRoutingProblem:
         if self.load_capacity and not self.pickup_delivery:
             self._get_num_stops_upper_bound(self._max_capacity)
 
-    def _initialize(self, solver):
+    def _initialize(self, solver):  #
         """Initialization with feasible solution."""
         if self._initial_routes:
             # Initial solution is given as input
@@ -281,24 +278,21 @@ class VehicleRoutingProblem:
         # Initial routes are converted to digraphs
         self._convert_initial_routes_to_digraphs()
         # Init master problem
-        self.masterproblem = MasterSolvePulp(self.G,
-                                             self._routes_with_node,
-                                             self._routes,
-                                             self.drop_penalty,
-                                             self.num_vehicles,
-                                             self.periodic,
-                                             self._get_time_remaining(),
-                                             solver=solver)
+        self.masterproblem = MasterSolvePulp(self.G, self._routes_with_node,
+                                             self._routes, self.drop_penalty,
+                                             self.num_vehicles, self.periodic,
+                                             solver)
 
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
 
         # Solve restricted relaxed master problem
         if self._dive:
-            relaxed_cost, stop_diving = self.masterproblem.solve_and_dive(
-                relax=True)
+            duals, relaxed_cost = self.masterproblem.solve_and_dive(
+                time_limit=self._get_time_remaining())
         else:
-            duals, relaxed_cost = self.masterproblem.solve(relax=True)
+            duals, relaxed_cost = self.masterproblem.solve(
+                relax=True, time_limit=self._get_time_remaining())
         logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
         # One subproblem per vehicle type
@@ -310,6 +304,12 @@ class VehicleRoutingProblem:
                     not self.pickup_delivery):
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
+                # TODO: needs checking as there must be a better way
+                # Update master problem only with new routes
+                if self._more_routes:
+                    for r in (r for r in self.routes
+                              if r.graph["name"] not in self.masterproblem.y):
+                        self.masterproblem.update(r)
 
             # Continue searching for columns
             self._more_routes = False
@@ -375,8 +375,6 @@ class VehicleRoutingProblem:
             self._no_improvement = 0
         self._lower_bound.append(relaxed_cost)
         # Add column (new route) to the master problem
-
-        return stop_diving if self._dive else False
 
     def _get_time_remaining(self):
         """
