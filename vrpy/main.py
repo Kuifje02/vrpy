@@ -736,6 +736,8 @@ class VehicleRoutingProblem:
             # If Sink has outgoing edges
             if len(list(self.G.successors("Sink"))) > 0:
                 raise NetworkXError("Sink must have no outgoing edges.")
+        # Roundtrips should always be possible
+        # Missing edges are added with a high cost
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
                 if v not in self.G.successors("Source"):

@@ -246,9 +246,4 @@ class RoundTrip:
     def run(self):
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
-                # If edges do not exist, create them with a high cost
-                if ("Source", v) not in self.G.edges():
-                    self.G.add_edge("Source", v, cost=[1e10])
-                if (v, "Sink") not in self.G.edges():
-                    self.G.add_edge(v, "Sink", cost=[1e10])
                 self.round_trips.append(["Source", v, "Sink"])
