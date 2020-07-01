@@ -1,5 +1,5 @@
 ---
-title: 'VRPy: A Python package for solving a range of vehicle routing problems'
+title: 'VRPy: A Python package for solving a range of vehicle routing problems with a column generation approach'
 tags:
   - Python
   - Vehicle Routing Problems
@@ -44,7 +44,7 @@ Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever s
 
 For each of these variants, it is possible to i/ set initial routes for the search (if one already has a solution at hand and wishes to improve it) ii/ lock routes (if part of the solution is imposed and must not be optimized) iii/ drop nodes (ignore a customer at the cost of a penalty).
 
-``vrpy`` is built upon the well known *NetworkX* library [@hagberg2008exploring] and thus benefits of a user friendly API.
+``vrpy`` is built upon the well known *NetworkX* library [@hagberg2008exploring] and thus benefits from a user friendly API.
 
 # Mathematical background
 
