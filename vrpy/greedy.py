@@ -41,6 +41,8 @@ class Greedy:
             self._time = 0
             self._run_forward()
             self._update_routes()
+            if self._current_path == ["Source", "Sink"]:
+                break
 
     def _run_forward(self):
         """
