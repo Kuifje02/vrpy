@@ -83,6 +83,8 @@ cd tests
 pytest benchmarks/
 ```
 
+Note that running the benchmarks requires [pandas](https://pypi.org/project/pandas/).
+
 ## Bugs
 
 Please report any bugs that you find [here](https://github.com/Kuifje02/vrpy/issues). Or, even better, fork the repository on [GitHub](https://github.com/Kuifje02/vrpy) and create a pull request. Please read the guidelines (CONTRIBUTING.md) before contributing. Any contributions are welcome.
