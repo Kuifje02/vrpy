@@ -208,7 +208,7 @@ class VehicleRoutingProblem:
                 self._best_value,
                 self._best_routes_as_graphs,
             ) = self.masterproblem.get_total_cost_and_routes(relax=True)
-        else:
+        elif len(self.G.nodes()) > 2:
             # Solve as MIP
             _, _ = self.masterproblem.solve(
                 relax=False, time_limit=self._get_time_remaining()
@@ -621,6 +621,10 @@ class VehicleRoutingProblem:
                 for (i, j) in edges:
                     for k in range(self._vehicle_types):
                         self.G.edges[i, j]["cost"][k] = 0
+
+        # If all vertices are locked, do not generate columns
+        if len(self.G.nodes()) == 2:
+            self._more_routes = False
 
     def _add_fixed_costs(self):
         """Adds fixed cost on each outgoing edge from Source."""
