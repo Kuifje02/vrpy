@@ -9,7 +9,7 @@ class TestsSolomon:
         """
         Solomon instance c101, 25 first nodes only including depot
         """
-        self.data = DataSet(path="../examples/benchmarks/data/",
+        self.data = DataSet(path="examples/benchmarks/data/",
                             instance_name="c101.txt",
                             n_vertices=25)
         self.G = self.data.G

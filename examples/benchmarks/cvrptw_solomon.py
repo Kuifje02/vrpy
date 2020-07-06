@@ -7,6 +7,7 @@ from networkx import DiGraph
 sys.path.append("../../")
 sys.path.append("../../../cspy")
 from vrpy.main import VehicleRoutingProblem
+from examples.benchmarks.report import CsvTableVRP
 
 import logging
 
@@ -98,6 +99,12 @@ class DataSet:
                                             cost=self.distance(u, v),
                                             time=self.distance(u, v))
 
+        # initialise the table class object
+        self.table = CsvTableVRP(instance_name=instance_name,
+                                 path=path,
+                                 subproblem_type=self.G.graph["name"],
+                                 instance_type="solomon")
+
     def distance(self, u, v):
         """2D Euclidian distance between two nodes.
 
@@ -112,17 +119,16 @@ class DataSet:
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
         return sqrt(delta_x**2 + delta_y**2)
 
-    def solve(
-        self,
-        initial_routes=None,
-        num_stops=None,
-        cspy=False,
-        exact=False,
-        pricing_strategy="BestEdges1",
-        time_limit=None,
-        solver="cbc",
-        dive=False,
-    ):
+    def solve(self,
+              initial_routes=None,
+              num_stops=None,
+              cspy=False,
+              exact=False,
+              pricing_strategy="BestEdges1",
+              time_limit=None,
+              solver="cbc",
+              dive=False,
+              greedy=False):  #la til greedy = False
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -136,11 +142,19 @@ class DataSet:
             load_capacity=self.max_load,
             time_windows=True,
         )
-        prob.solve(initial_routes=initial_routes,
-                   cspy=cspy,
-                   exact=exact,
-                   pricing_strategy=pricing_strategy,
-                   time_limit=time_limit,
-                   solver=solver,
-                   dive=dive)
+
+        self.table.get_data_from_VRP_instance(
+            prob=prob,
+            initial_routes=initial_routes,
+            cspy=cspy,
+            exact=exact,
+            time_limit=time_limit,
+            pricing_strategy=pricing_strategy,
+            dive=dive,
+            greedy=greedy,
+            subproblem_type=self.G.graph["subproblem"])
+        """ self.table.write_to_file(
+            path=
+            "/mnt/c/Users/Halvardo/Documents/code/vrpy/examples/benchmarks/") """
+
         self.best_value, self.best_routes = prob.best_value, prob.best_routes

@@ -6,12 +6,11 @@ from examples.benchmarks.cvrp_augerat import DataSet
 
 
 class TestsAugerat:
-
     def setup(self):
         """
         Augerat instance P-n16-k8.vrp
         """
-        self.data = DataSet(path="../examples/benchmarks/data/",
+        self.data = DataSet(path="examples/benchmarks/data/",
                             instance_name="P-n16-k8.vrp")
         self.G = self.data.G
 

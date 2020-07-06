@@ -6,12 +6,11 @@ from examples.benchmarks.mdvrp_cordeau import DataSet
 
 
 class TestsCordeau:
-
     def setup(self):
         """
         Cordeau instance p01, 8 vertices only.
         """
-        self.data = DataSet(path="../examples/benchmarks/data/",
+        self.data = DataSet(path="examples/benchmarks/data/",
                             instance_name="p01",
                             n_vertices=8)
         self.G = self.data.G

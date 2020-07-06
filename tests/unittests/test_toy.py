@@ -2,12 +2,11 @@ import sys
 from networkx import DiGraph
 from pytest import raises
 
-sys.path.append("../../vrpy/")
+sys.path.append("../vrpy/")
 from vrpy import VehicleRoutingProblem
 
 
 class TestsToy:
-
     def setup(self):
         """
         Creates a toy graph.
