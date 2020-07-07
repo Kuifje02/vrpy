@@ -1,0 +1,3 @@
+Instance,Pricing strategy,Subproblem type,Dived,Runtime,Integrality gap,Optimality gap,Optimal
+P-n16-k8.vrp,BestPaths,lp,False,9.322150945663452,2.0408164329677505,3.4482758620689653,False
+P-n16-k8.vrp,BestPaths,lp,False,9.02340054512024,2.0408164329677505,3.4482758620689653,False

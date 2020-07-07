@@ -1,14 +1,13 @@
 import sys
-import numpy as np
 from math import sqrt
+
 from pandas import read_csv
 from networkx import DiGraph
+import numpy as np
 
 sys.path.append("../../")
-sys.path.append("../../../cspy")
 from vrpy.main import VehicleRoutingProblem
-from examples.benchmarks.report import CsvTableVRP
-
+from examples.benchmarks.run.csv_table_vrpy import CsvTableVRPy
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class SolomonNode:
     """Stores attributes of a node of Solomon's instances."""
+
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[1]).item()
@@ -41,6 +41,7 @@ class DataSet:
             Only first n_vertices are read.
             Defaults to None.
     """
+
     def __init__(self, path, instance_name, n_vertices=None):
 
         # Read vehicle capacity
@@ -100,10 +101,10 @@ class DataSet:
                                             time=self.distance(u, v))
 
         # initialise the table class object
-        self.table = CsvTableVRP(instance_name=instance_name,
-                                 path=path,
-                                 subproblem_type=self.G.graph["name"],
-                                 instance_type="solomon")
+        self.table = CsvTableVRPy(instance_name=instance_name,
+                                  path=path,
+                                  subproblem_type=self.G.graph["name"],
+                                  instance_type="solomon")
 
     def distance(self, u, v):
         """2D Euclidian distance between two nodes.
@@ -143,7 +144,7 @@ class DataSet:
             time_windows=True,
         )
 
-        self.table.get_data_from_VRP_instance(
+        self.table.get_data_from_VRPy_instance(
             prob=prob,
             initial_routes=initial_routes,
             cspy=cspy,
