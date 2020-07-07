@@ -13,6 +13,21 @@ logger = logging.getLogger(__name__)
 
 
 class CsvTableBase:
+    """
+    Base class for CSVTable.
+    Args: 
+        path (string): Path to instance data
+        instance_name (string): Name of the test instance
+        comp_time (float): Computation time
+        upper_bound(float): Integer optimal value
+        lower_bound(float): Relaxed optimal value
+        integrality_gap(float): Integer relaxed discrepency
+        pricing_strategy(string): Heuristic strategy
+        subproblem_type(string): Subproblem type
+        dive (bool): Diving heuristic 
+    Methods: 
+        Write to file: Creates a results folder in the current directory and writes the relevant data to a file specified by instance name.
+    """
     def __init__(self,
                  path=None,
                  instance_name=None,
