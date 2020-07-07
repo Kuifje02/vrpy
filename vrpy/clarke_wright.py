@@ -11,7 +11,6 @@ class ClarkeWright:
         duration (int, optional) : Maximum duration per route. Defaults to None.
         num_stops (int, optional) : Maximum number of stops per route. Defaults to None.
     """
-
     def __init__(
         self,
         G,
@@ -31,8 +30,16 @@ class ClarkeWright:
         self._processed_nodes = []
 
         self.alpha = alpha
-        self.beta = beta
-        self.gamma = gamma
+        # FOR MORE SOPHISTICATED VERSIONS OF CLARKE WRIGHT:
+        # self.beta = beta
+        # self.gamma = gamma
+        # self._average_demand = sum(
+        #    [
+        #        self.G.nodes[v]["demand"]
+        #        for v in self.G.nodes()
+        #        if self.G.nodes[v]["demand"] > 0
+        #    ]
+        # ) / len([v for v in self.G.nodes() if self.G.nodes[v]["demand"] > 0])
 
         if isinstance(load_capacity, list):
             self.load_capacity = load_capacity[0]
@@ -54,9 +61,8 @@ class ClarkeWright:
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
                 # Create round trip
-                round_trip_cost = (
-                    self.G.edges["Source", v]["cost"] + self.G.edges[v, "Sink"]["cost"]
-                )
+                round_trip_cost = (self.G.edges["Source", v]["cost"] +
+                                   self.G.edges[v, "Sink"]["cost"])
                 route = DiGraph(cost=round_trip_cost)
                 add_path(route, ["Source", v, "Sink"])
                 self._route[v] = route
@@ -64,11 +70,9 @@ class ClarkeWright:
                 if self.load_capacity:
                     route.graph["load"] = self.G.nodes[v]["demand"]
                 if self.duration:
-                    route.graph["time"] = (
-                        self.G.nodes[v]["service_time"]
-                        + self.G.edges["Source", v]["time"]
-                        + self.G.edges[v, "Sink"]["time"]
-                    )
+                    route.graph["time"] = (self.G.nodes[v]["service_time"] +
+                                           self.G.edges["Source", v]["time"] +
+                                           self.G.edges[v, "Sink"]["time"])
 
     def _update_routes(self):
         """Stores best routes as list of nodes."""
@@ -82,16 +86,22 @@ class ClarkeWright:
         for (i, j) in self.G.edges():
             if i != "Source" and j != "Sink":
                 self._savings[(i, j)] = (
-                    self.G.edges[i, "Sink"]["cost"]
-                    + self.G.edges["Source", j]["cost"]
-                    - self.alpha * self.G.edges[i, j]["cost"]
-                    + self.beta
-                    * abs(
-                        self.G.edges["Source", i]["cost"]
-                        - self.G.edges[j, "Sink"]["cost"]
-                    )
+                    self.G.edges[i, "Sink"]["cost"] +
+                    self.G.edges["Source", j]["cost"] -
+                    self.alpha * self.G.edges[i, j]["cost"]
+                    # FOR MORE SOPHISTICATED VERSIONS OF CLARKE WRIGHT:
+                    # + self.beta
+                    # * abs(
+                    #    self.G.edges["Source", i]["cost"]
+                    #    - self.G.edges[j, "Sink"]["cost"]
+                    # )
+                    # + self.gamma
+                    # * (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"])
+                    # / self._average_demand
                 )
-        self._ordered_edges = sorted(self._savings, key=self._savings.get, reverse=True)
+        self._ordered_edges = sorted(self._savings,
+                                     key=self._savings.get,
+                                     reverse=True)
 
     def _merge_route(self, existing_node, new_node, depot):
         """
@@ -109,10 +119,9 @@ class ClarkeWright:
             route.remove_edge(existing_node, "Sink")
             # Update route cost
             self._route[existing_node].graph["cost"] += (
-                self.G.edges[existing_node, new_node]["cost"]
-                + self.G.edges[new_node, "Sink"]["cost"]
-                - self.G.edges[existing_node, "Sink"]["cost"]
-            )
+                self.G.edges[existing_node, new_node]["cost"] +
+                self.G.edges[new_node, "Sink"]["cost"] -
+                self.G.edges[existing_node, "Sink"]["cost"])
 
         # Insert new_node between Source and existing_node
         if depot == "Source":
@@ -120,22 +129,21 @@ class ClarkeWright:
             route.remove_edge("Source", existing_node)
             # Update route cost
             self._route[existing_node].graph["cost"] += (
-                self.G.edges[new_node, existing_node]["cost"]
-                + self.G.edges["Source", new_node]["cost"]
-                - self.G.edges["Source", existing_node]["cost"]
-            )
+                self.G.edges[new_node, existing_node]["cost"] +
+                self.G.edges["Source", new_node]["cost"] -
+                self.G.edges["Source", existing_node]["cost"])
 
         # Update route load
         if self.load_capacity:
-            self._route[existing_node].graph["load"] += self.G.nodes[new_node]["demand"]
+            self._route[existing_node].graph["load"] += self.G.nodes[new_node][
+                "demand"]
         # Update route duration
         if self.duration:
             self._route[existing_node].graph["time"] += (
-                self.G.edges[existing_node, new_node]["time"]
-                + self.G.edges[new_node, "Sink"]["time"]
-                + self.G.nodes[new_node]["service_time"]
-                - self.G.edges[existing_node, "Sink"]["time"]
-            )
+                self.G.edges[existing_node, new_node]["time"] +
+                self.G.edges[new_node, "Sink"]["time"] +
+                self.G.nodes[new_node]["service_time"] -
+                self.G.edges[existing_node, "Sink"]["time"])
         # Update processed vertices
         self._processed_nodes.append(new_node)
         if existing_node not in self._processed_nodes:
@@ -152,22 +160,18 @@ class ClarkeWright:
             return False
         # test capacity constraints
         if self.load_capacity:
-            if (
-                route.graph["load"] + self.G.nodes[new_node]["demand"]
-                > self.load_capacity
-            ):
+            if (route.graph["load"] + self.G.nodes[new_node]["demand"] >
+                    self.load_capacity):
                 return False
         # test duration constraints
         if self.duration:
             # this code assumes the times to go from the Source and to the Sink are equal
-            if (
-                route.graph["time"]
-                + self.G.edges[existing_node, new_node]["time"]
-                + self.G.edges[new_node, "Sink"]["time"]
-                + self.G.nodes[new_node]["service_time"]
-                - self.G.edges[existing_node, "Sink"]["time"]
-                > self.duration
-            ):
+            if (route.graph["time"] +
+                    self.G.edges[existing_node, new_node]["time"] +
+                    self.G.edges[new_node, "Sink"]["time"] +
+                    self.G.nodes[new_node]["service_time"] -
+                    self.G.edges[existing_node, "Sink"]["time"] >
+                    self.duration):
                 return False
         # test stop constraints
         if self.num_stops:
@@ -187,21 +191,18 @@ class ClarkeWright:
                b) or node j is adjacent to the Sink (i is inserted in route[j]).
         """
         merged = False
-        if (
-            j not in self._processed_nodes  # 1
-            and self._constraints_met(i, j)  # 2
-            and i in self._route[i].predecessors("Sink")  # 3b
-        ):
+        if (j not in self._processed_nodes  # 1
+                and self._constraints_met(i, j)  # 2
+                and i in self._route[i].predecessors("Sink")  # 3b
+            ):
             self._merge_route(i, j, "Sink")
             merged = True
 
-        if (
-            not merged
-            and (j, i) in self.G.edges()
-            and i not in self._processed_nodes  # 1
-            and self._constraints_met(j, i)  # 2
-            and j in self._route[j].successors("Source")  # 3a
-        ):
+        if (not merged and j in self.G.predecessors(i)
+                and i not in self._processed_nodes  # 1
+                and self._constraints_met(j, i)  # 2
+                and j in self._route[j].successors("Source")  # 3a
+            ):
             self._merge_route(j, i, "Source")
 
     def _format_cost(self):
@@ -226,7 +227,6 @@ class RoundTrip:
     Args:
         G (DiGraph): Graph on which round trips are computed.
     """
-
     def __init__(self, G):
         self.G = G
         self.round_trips = []
@@ -234,9 +234,4 @@ class RoundTrip:
     def run(self):
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
-                # If edges do not exist, create them with a high cost
-                if ("Source", v) not in self.G.edges():
-                    self.G.add_edge("Source", v, cost=1e10)
-                if (v, "Sink") not in self.G.edges():
-                    self.G.add_edge(v, "Sink", cost=1e10)
                 self.round_trips.append(["Source", v, "Sink"])

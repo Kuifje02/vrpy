@@ -203,14 +203,18 @@ class VehicleRoutingProblem:
             self._more_routes = True
             # Initialization
             self._column_generation()
-            self._best_value, self._best_routes_as_graphs = \
-                    self.masterproblem.get_total_cost_and_routes(relax=True)
-        else:
+            (
+                self._best_value,
+                self._best_routes_as_graphs,
+            ) = self.masterproblem.get_total_cost_and_routes(relax=True)
+        elif len(self.G.nodes()) > 2:
             # Solve as MIP
             _, _ = self.masterproblem.solve(
                 relax=False, time_limit=self._get_time_remaining())
-            self._best_value, self._best_routes_as_graphs = \
-                    self.masterproblem.get_total_cost_and_routes(relax=False)
+            (
+                self._best_value,
+                self._best_routes_as_graphs,
+            ) = self.masterproblem.get_total_cost_and_routes(relax=False)
 
         # Get dropped nodes
         if self.drop_penalty:
@@ -257,6 +261,8 @@ class VehicleRoutingProblem:
         self._update_dummy_attributes()
         # Check options consistency
         self._check_consistency()
+        # Check feasibility
+        self._check_feasibility()
         # Lock preassigned routes
         if self._preassignments:
             self._lock()
@@ -277,10 +283,15 @@ class VehicleRoutingProblem:
         # Initial routes are converted to digraphs
         self._convert_initial_routes_to_digraphs()
         # Init master problem
-        self.masterproblem = MasterSolvePulp(self.G, self._routes_with_node,
-                                             self._routes, self.drop_penalty,
-                                             self.num_vehicles, self.periodic,
-                                             solver)
+        self.masterproblem = MasterSolvePulp(
+            self.G,
+            self._routes_with_node,
+            self._routes,
+            self.drop_penalty,
+            self.num_vehicles,
+            self.periodic,
+            solver,
+        )
 
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
@@ -372,8 +383,7 @@ class VehicleRoutingProblem:
             self._no_improvement += 1
         else:
             self._no_improvement = 0
-        if not self._dive:
-            self._lower_bound.append(relaxed_cost)
+        self._lower_bound.append(relaxed_cost)
         # Add column (new route) to the master problem
 
     def _get_time_remaining(self):
@@ -602,6 +612,10 @@ class VehicleRoutingProblem:
                     for k in range(self._vehicle_types):
                         self.G.edges[i, j]["cost"][k] = 0
 
+        # If all vertices are locked, do not generate columns
+        if len(self.G.nodes()) == 2:
+            self._more_routes = False
+
     def _add_fixed_costs(self):
         """Adds fixed cost on each outgoing edge from Source."""
         for v in self.G.successors("Source"):
@@ -710,6 +724,16 @@ class VehicleRoutingProblem:
             # If Sink has outgoing edges
             if len(list(self.G.successors("Sink"))) > 0:
                 raise NetworkXError("Sink must have no outgoing edges.")
+        # Roundtrips should always be possible
+        # Missing edges are added with a high cost
+        for v in self.G.nodes():
+            if v not in ["Source", "Sink"]:
+                if v not in self.G.successors("Source"):
+                    logger.warning("Source not connected to %s" % v)
+                    self.G.add_edge("Source", v, cost=1e10)
+                if v not in self.G.predecessors("Sink"):
+                    logger.warning("%s not connected to Sink" % v)
+                    self.G.add_edge(v, "Sink", cost=1e10)
         # If graph is disconnected
         if not has_path(self.G, "Source", "Sink"):
             raise NetworkXError("Source and Sink are not connected.")
@@ -822,6 +846,26 @@ class VehicleRoutingProblem:
             if not request:
                 raise KeyError(
                     "pickup_delivery option expects at least one request.")
+
+    def _check_feasibility(self):
+        """Checks basic problem feasibility."""
+        if self.load_capacity:
+            for v in self.G.nodes():
+                if self.G.nodes[v]["demand"] > max(self.load_capacity):
+                    raise ValueError(
+                        "Demand %s at node %s larger than max capacity %s." %
+                        (self.G.nodes[v]["demand"], v, max(
+                            self.load_capacity)))
+        if self.duration:
+            for v in self.G.nodes():
+                if v not in ["Source", "Sink"]:
+                    round_trip_duration = (self.G.nodes[v]["service_time"] +
+                                           self.G.edges["Source", v]["time"] +
+                                           self.G.edges[v, "Sink"]["time"])
+                    if round_trip_duration > self.duration:
+                        raise ValueError(
+                            "Node %s not reachable: duration of path [Source,%s,Sink], %s, is larger than max duration %s."
+                            % (v, v, round_trip_duration, self.duration))
 
     def _best_routes_as_node_lists(self):
         """Converts route as DiGraph to route as node list."""

@@ -14,7 +14,6 @@ class MasterSolvePulp(MasterProblemBase):
 
     Inherits problem parameters from MasterProblemBase
     """
-
     def __init__(self, *args):
         super(MasterSolvePulp, self).__init__(*args)
         # create problem
@@ -74,8 +73,8 @@ class MasterSolvePulp(MasterProblemBase):
             # All non-integer variables not already fixed in this or any
             # iteration of the diving heuristic
             vars_to_fix = [
-                var for var in non_integer_vars
-                if var.name not in self._tabu_list and var.name not in tabu_list
+                var for var in non_integer_vars if
+                var.name not in self._tabu_list and var.name not in tabu_list
             ]
             if vars_to_fix:
                 # If non-integer variables not already fixed and
@@ -107,8 +106,8 @@ class MasterSolvePulp(MasterProblemBase):
                 # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
                 if not (relax.status != 1):
                     self.prob.extend(constrs)
-                logger.debug("fixed %s with previous value %s", var_to_fix.name,
-                             value_previous)
+                logger.debug("fixed %s with previous value %s",
+                             var_to_fix.name, value_previous)
             else:
                 break
         self._tabu_list.extend(tabu_list)  # Update global tabu list
@@ -136,9 +135,9 @@ class MasterSolvePulp(MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"] and
-                    "depot_from" not in self.G.nodes[node] and
-                    "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"]
+                    and "depot_from" not in self.G.nodes[node]
+                    and "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 if not relax:
                     duals[node] = self.prob.constraints[constr_name].pi
@@ -269,9 +268,9 @@ class MasterSolvePulp(MasterProblemBase):
         (as well as a penalty is the cost function).
         """
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"] and
-                    "depot_from" not in self.G.nodes[node] and
-                    "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"]
+                    and "depot_from" not in self.G.nodes[node]
+                    and "depot_to" not in self.G.nodes[node]):
                 # Set RHS
                 if self.periodic:
                     right_hand_term = self.G.nodes[node]["frequency"]
@@ -288,13 +287,13 @@ class MasterSolvePulp(MasterProblemBase):
             lowBound=0,
             upBound=1,
             cat=pulp.LpInteger,
-            e=(pulp.lpSum(self.set_covering_constrs[r]
-                          for r in route.nodes()
+            e=(pulp.lpSum(self.set_covering_constrs[r] for r in route.nodes()
                           if r not in ["Source", "Sink"]) +
                pulp.lpSum(self.vehicle_bound_constrs[k]
                           for k in range(len(self.num_vehicles))
                           if route.graph["vehicle_type"] == k) +
-               route.graph["cost"] * self.objective))
+               route.graph["cost"] * self.objective),
+        )
 
     def _add_vehicle_dummy_variables(self):
         for key in range(len(self.num_vehicles)):
@@ -304,7 +303,8 @@ class MasterSolvePulp(MasterProblemBase):
                 upBound=None,
                 cat=pulp.LpContinuous,
                 e=((-1) * self.vehicle_bound_constrs[key] +
-                   1e10 * self.objective))
+                   1e10 * self.objective),
+            )
 
     def _add_drop_variables(self):
         """
@@ -319,7 +319,8 @@ class MasterSolvePulp(MasterProblemBase):
                     upBound=1,
                     cat=pulp.LpInteger,
                     e=(self.drop_penalty * self.objective +
-                       self.set_covering_constrs[node]))
+                       self.set_covering_constrs[node]),
+                )
 
     def _add_artificial_variables(self):
         """Continuous variable used for finding initial feasible solution."""
@@ -330,7 +331,9 @@ class MasterSolvePulp(MasterProblemBase):
                     lowBound=0,
                     upBound=None,
                     cat=pulp.LpInteger,
-                    e=(1e10 * self.objective + self.set_covering_constrs[node]))
+                    e=(1e10 * self.objective +
+                       self.set_covering_constrs[node]),
+                )
 
     def _add_bound_vehicles(self):
         """Adds empty constraints and sets the right hand side"""

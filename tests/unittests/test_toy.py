@@ -2,7 +2,7 @@ import sys
 from networkx import DiGraph
 from pytest import raises
 
-sys.path.append("../vrpy/")
+sys.path.append("../../vrpy/")
 from vrpy import VehicleRoutingProblem
 
 
@@ -182,6 +182,18 @@ class TestsToy:
         prob = VehicleRoutingProblem(self.G, num_stops=4)
         prob.solve(preassignments=routes)
         assert prob.best_value == 75
+
+    def test_complete_lock(self):
+        routes = [
+            ["Source", 1, "Sink"],
+            ["Source", 2, "Sink"],
+            ["Source", 3, "Sink"],
+            ["Source", 4, "Sink"],
+            ["Source", 5, "Sink"],
+        ]
+        prob = VehicleRoutingProblem(self.G)
+        prob.solve(preassignments=routes)
+        assert prob.best_value == 100
 
     def test_extend_preassignment(self):
         routes = [[2, 3]]

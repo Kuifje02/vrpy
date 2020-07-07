@@ -208,6 +208,25 @@ Complete program
     prob.solve()
     print(prob.best_routes)
     print(prob.best_value)
+	
+Periodic CVRP
+*************
+
+For scheduling routes over a time period, one can define a frequency for each customer. For example, if over a planning period of two days,
+customer :math:`2` must be visited twice, and the other customers only once:
+
+.. code:: python
+   
+   >>> prob.periodic = 2 
+   >>> G.nodes[2]["frequency"] = 2
+   >>> prob.solve()
+   >>> prob.best_routes
+   {1: ['Source', 1, 2, 'Sink'], 2: ['Source', 4, 5, 'Sink'], 3: ['Source', 2, 3, 'Sink']}
+   >>> prob.schedule
+   {0: [1, 2], 1: [3]}
+	
+We can see that customer :math:`2` is visited on both days of the planning period (routes :math:`1` and :math:`3`), and that it is not visited more
+than once per day.
 
 .. _hfvrp:
 

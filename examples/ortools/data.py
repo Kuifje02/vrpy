@@ -445,7 +445,7 @@ TIME_WINDOWS_LOWER = {
 }
 
 TIME_WINDOWS_UPPER = {
-    # 0: 0,
+    0: 25,
     1: 12,
     2: 15,
     3: 18,
@@ -462,7 +462,7 @@ TIME_WINDOWS_UPPER = {
     14: 8,
     15: 15,
     16: 15,
-    # 17: 25,
+    17: 25,
 }
 
 PICKUPS_DELIVERIES = {

@@ -75,3 +75,17 @@ def test_mixed_fleet_consistency():
             G, mixed_fleet=True, load_capacity=[2, 4], fixed_cost=[4]
         )
         prob.solve()
+
+
+def test_feasibility_check():
+    """Tests feasibility checks."""
+    G = DiGraph()
+    G.add_edge("Source", 1, cost=1, time=1)
+    G.add_edge(1, "Sink", cost=1, time=1)
+    G.nodes[1]["demand"] = 2
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(G, load_capacity=1)
+        prob.solve()
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(G, duration=1)
+        prob.solve()
