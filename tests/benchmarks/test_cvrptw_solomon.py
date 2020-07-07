@@ -5,11 +5,12 @@ from examples.benchmarks.cvrptw_solomon import DataSet
 
 
 class TestsSolomon:
+
     def setup(self):
         """
         Solomon instance c101, 25 first nodes only including depot
         """
-        self.data = DataSet(path="examples/benchmarks/data/",
+        self.data = DataSet(path="examples/benchmarks/data/cvrptw/",
                             instance_name="c101.txt",
                             n_vertices=25)
         self.G = self.data.G

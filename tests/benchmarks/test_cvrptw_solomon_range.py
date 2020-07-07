@@ -18,10 +18,11 @@ def n(request):
 
 
 class TestsSolomon:
+
     def test_subproblem(self, n):
         # benchmark result
         # e.g., in Feillet et al. (2004)
-        self.data = DataSet(path="../examples/benchmarks/data/",
+        self.data = DataSet(path="examples/benchmarks/data/cvrptw/",
                             instance_name="c101.txt",
                             n_vertices=n)
         self.G = self.data.G
