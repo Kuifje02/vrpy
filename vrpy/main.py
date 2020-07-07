@@ -298,7 +298,7 @@ class VehicleRoutingProblem:
 
         # Solve restricted relaxed master problem
         if self._dive:
-            duals, relaxed_cost = self.masterproblem.solve_and_dive(
+            duals, _ = self.masterproblem.solve_and_dive(
                 time_limit=self._get_time_remaining())
         else:
             duals, relaxed_cost = self.masterproblem.solve(
