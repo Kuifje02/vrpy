@@ -2,7 +2,7 @@ import csv
 import sys
 import os
 import time
-from .CSVTableBase import CsvTableBase  #fix
+from .CSVTableBase import CsvTableBase
 
 sys.path.append("../../")
 # sys.path.append("../../../cspy")
@@ -15,15 +15,12 @@ logger = logging.getLogger(__name__)
 
 class CsvTableVRP(CsvTableBase):
     def __init__(self, *args, **kwargs):
-        #self super thingy
         super().__init__(*args, **kwargs)
 
     def write_to_file(self, path='report'):
         super().write_to_file(path)
 
     def _find_optimal(self):
-        #se på filen jeg skal parse
-        #solomon har ikke noe å parse, kanskje ta den optimale verdien som input
         if self.instance_type == "augerat":
             with open(self.path + self.instance_name, 'r') as fp:
                 fp.readline(),
@@ -35,7 +32,6 @@ class CsvTableVRP(CsvTableBase):
 
         if self.instance_type == "cordeau":
             self.best_known_solution = None
-            #sjekk om det finnes en
 
     def get_data_from_VRP_instance(self,
                                    prob=None,
@@ -61,7 +57,7 @@ class CsvTableVRP(CsvTableBase):
 
         self.comp_time = time2 - time1
         self.upper_bound = prob.best_value
-        self.lower_bound = prob._lower_bound[-1]  #bør lower bound = lowerbound
+        self.lower_bound = prob._lower_bound[-1]
         self.integrality_gap = (self.upper_bound -
                                 self.lower_bound) / self.lower_bound * 100
 
@@ -72,28 +68,3 @@ class CsvTableVRP(CsvTableBase):
         else:
             self.optimality_gap = "Unknown"
             self.optimal = "Unknown"
-            #ok å definere som string?
-
-
-#oppgaver
-#with csv open file
-#if file exists, add row
-#else name first row and add second row
-#addrow
-
-#spm kode
-#hvordan sjekker jeg
-
-#spm opp
-#hva er mest generelt av å passe inn et problem instance eller å passe inn alle parametrene?
-
-# skal denne skrives automatisk når koden kjøres fra terminalen?
-# den kan kalles i alle testene når testene er kjørt!
-
-#skal jeg skaffe data i den nye funksjonen eller ikke?
-
-# take test, run in terminal, get response
-# instance_name
-# inbetween thing
-
-#finn et format å lagre informasjonen på """
