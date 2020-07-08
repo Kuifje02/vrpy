@@ -3,8 +3,6 @@ import sys
 import os
 import time
 
-sys.path.append("../../")
-# sys.path.append("../../../cspy")
 from vrpy.main import VehicleRoutingProblem
 
 import logging
@@ -28,7 +26,6 @@ class CsvTableBase:
     Methods:
         Write to file: Creates a results folder in the current directory and writes the relevant data to a file specified by instance name.
     """
-
     def __init__(self,
                  path=None,
                  instance_name=None,
@@ -44,7 +41,8 @@ class CsvTableBase:
                  dive=None,
                  best_known_solution=None):
         self.path = path
-        self.instance_name = instance_name
+        self.instance_name = instance_name if not instance_name.endswith(
+            '.csv') else instance_name[:-4]
         self.instance_type = instance_type
 
         self.best_known_solution = best_known_solution

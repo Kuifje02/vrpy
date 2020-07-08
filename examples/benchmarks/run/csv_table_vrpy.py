@@ -4,7 +4,6 @@ from .csv_table_base import CsvTableBase
 
 
 class CsvTableVRPy(CsvTableBase):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -54,7 +53,7 @@ class CsvTableVRPy(CsvTableBase):
 
         if not self.best_known_solution is None:
             self.optimality_gap = (self.upper_bound - self.best_known_solution
-                                  ) / self.best_known_solution * 100
+                                   ) / self.best_known_solution * 100
             self.optimal = (self.optimality_gap == 0)
         else:
             self.optimality_gap = "Unknown"

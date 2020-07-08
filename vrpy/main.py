@@ -2,13 +2,13 @@ from networkx import DiGraph, shortest_path, NetworkXError, has_path
 import logging
 from time import time
 
-from vrpy.greedy import Greedy
-from vrpy.master_solve_pulp import MasterSolvePulp
-from vrpy.subproblem_lp import SubProblemLP
-from vrpy.subproblem_cspy import SubProblemCSPY
-from vrpy.subproblem_greedy import SubProblemGreedy
-from vrpy.clarke_wright import ClarkeWright, RoundTrip
-from vrpy.schedule import Schedule
+from .greedy import Greedy
+from .master_solve_pulp import MasterSolvePulp
+from .subproblem_lp import SubProblemLP
+from .subproblem_cspy import SubProblemCSPY
+from .subproblem_greedy import SubProblemGreedy
+from .clarke_wright import ClarkeWright, RoundTrip
+from .schedule import Schedule
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -245,6 +245,8 @@ class VehicleRoutingProblem:
             # Stop if no improvement limit is passed
             if self._no_improvement > 1000:
                 break
+            """ if self._iteration == 0 and self._greedy:
+                break """
 
     def _pre_solve(self):
         """Some pre-processing."""
@@ -298,12 +300,13 @@ class VehicleRoutingProblem:
 
         # Solve restricted relaxed master problem
         if self._dive:
-            duals, _ = self.masterproblem.solve_and_dive(
+            duals, relaxed_cost = self.masterproblem.solve_and_dive(
                 time_limit=self._get_time_remaining())
         else:
             duals, relaxed_cost = self.masterproblem.solve(
                 relax=True, time_limit=self._get_time_remaining())
-        logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
+        if not self._dive:
+            logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
@@ -383,7 +386,8 @@ class VehicleRoutingProblem:
             self._no_improvement += 1
         else:
             self._no_improvement = 0
-        self._lower_bound.append(relaxed_cost)
+        if not self._dive:
+            self._lower_bound.append(relaxed_cost)
         # Add column (new route) to the master problem
 
     def _get_time_remaining(self):

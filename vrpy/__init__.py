@@ -1,3 +1,2 @@
 """vrpy modules."""
-
-from vrpy.main import VehicleRoutingProblem
+from .main import VehicleRoutingProblem

@@ -3,7 +3,7 @@ import logging
 from networkx import shortest_path
 import pulp
 
-from vrpy.masterproblem import MasterProblemBase
+from .masterproblem import MasterProblemBase
 
 logger = logging.getLogger(__name__)
 
