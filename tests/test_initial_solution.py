@@ -1,7 +1,5 @@
 from networkx import DiGraph, shortest_path
-import sys
 
-sys.path.append("../../vrpy/")
 from vrpy.clarke_wright import ClarkeWright, RoundTrip
 from vrpy.greedy import Greedy
 
@@ -13,7 +11,6 @@ class TestsInitialSolution:
         - Clarke & Wright;
         - Greedy.
     """
-
     def setup(self):
         self.G = DiGraph()
         self.G.add_edge("Source", 1, cost=10, time=1)
@@ -27,7 +24,8 @@ class TestsInitialSolution:
         self.G.nodes[1]["demand"] = 1
         self.G.nodes[2]["demand"] = 2
         self.G.nodes[3]["demand"] = 3
-        self.G.nodes["Sink"]["demand"] = self.G.nodes["Sink"]["service_time"] = 0
+        self.G.nodes["Sink"]["demand"] = self.G.nodes["Sink"][
+            "service_time"] = 0
         self.G.nodes[1]["service_time"] = 1
         self.G.nodes[2]["service_time"] = 1
         self.G.nodes[3]["service_time"] = 0

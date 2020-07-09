@@ -3,7 +3,7 @@ import logging
 from networkx import shortest_path
 import pulp
 
-from vrpy.masterproblem import MasterProblemBase
+from .masterproblem import MasterProblemBase
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +32,12 @@ class MasterSolvePulp(MasterProblemBase):
         self.drop_penalty_constrs = {}
         # Diving attributes
         self._tabu_list = []
+        self._depth = None
+        self._max_depth = None
+
         self._formulate()
 
     def solve(self, relax, time_limit):
-        # self.prob.writeLP("master.lp")
         self._set_solver(time_limit)
         self._solve(relax)
         logger.debug("master problem")
@@ -63,21 +65,24 @@ class MasterSolvePulp(MasterProblemBase):
         """
         self._set_solver(time_limit)
         self._solve(relax=True)
-        depth = 0
+
+        # Init global diving parameters
+        if self._depth is None and self._max_depth is None:
+            self._depth = 0
+            self._max_depth = max_depth
+
         tabu_list = []
         relax = self.prob.deepcopy()
         constrs = {}
-        while depth <= max_depth and len(tabu_list) < max_discrepancy:
+        while self._depth <= self._max_depth and len(
+                tabu_list) < max_discrepancy:
             non_integer_vars = list(
-                var
-                for var in relax.variables()
-                if abs(var.varValue - round(var.varValue)) != 0
-            )
+                var for var in relax.variables()
+                if abs(var.varValue - round(var.varValue)) != 0)
             # All non-integer variables not already fixed in this or any
             # iteration of the diving heuristic
             vars_to_fix = [
-                var
-                for var in non_integer_vars
+                var for var in non_integer_vars
                 if var.name not in self._tabu_list and var.name not in tabu_list
             ]
             if vars_to_fix:
@@ -85,32 +90,33 @@ class MasterSolvePulp(MasterProblemBase):
                 # max_discrepancy not violated
 
                 var_to_fix = min(
-                    vars_to_fix, key=lambda x: abs(x.varValue - round(x.varValue))
-                )
+                    vars_to_fix,
+                    key=lambda x: abs(x.varValue - round(x.varValue)))
                 value_to_fix = 1
                 value_previous = var_to_fix.varValue
 
                 name_le = "fix_{}_LE".format(var_to_fix.name)
                 name_ge = "fix_{}_GE".format(var_to_fix.name)
-                constrs[name_le] = pulp.LpConstraint(
-                    var_to_fix, pulp.LpConstraintLE, name=name_le, rhs=value_to_fix
-                )
-                constrs[name_ge] = pulp.LpConstraint(
-                    var_to_fix, pulp.LpConstraintGE, name=name_ge, rhs=value_to_fix
-                )
+                constrs[name_le] = pulp.LpConstraint(var_to_fix,
+                                                     pulp.LpConstraintLE,
+                                                     name=name_le,
+                                                     rhs=value_to_fix)
+                constrs[name_ge] = pulp.LpConstraint(var_to_fix,
+                                                     pulp.LpConstraintGE,
+                                                     name=name_ge,
+                                                     rhs=value_to_fix)
 
                 relax += constrs[name_le]  # add <= constraint
                 relax += constrs[name_ge]  # add >= constraint
                 relax.resolve()
                 tabu_list.append(var_to_fix.name)
-                depth += 1
+                self._depth += 1
                 # if not optimal status code from :
                 # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
                 if not (relax.status != 1):
                     self.prob.extend(constrs)
-                logger.debug(
-                    "fixed %s with previous value %s", var_to_fix.name, value_previous
-                )
+                logger.debug("fixed %s with previous value %s", var_to_fix.name,
+                             value_previous)
             else:
                 break
         self._tabu_list.extend(tabu_list)  # Update global tabu list
@@ -138,11 +144,9 @@ class MasterSolvePulp(MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (
-                node not in ["Source", "Sink"]
-                and "depot_from" not in self.G.nodes[node]
-                and "depot_to" not in self.G.nodes[node]
-            ):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 if not relax:
                     duals[node] = self.prob.constraints[constr_name].pi
@@ -154,12 +158,10 @@ class MasterSolvePulp(MasterProblemBase):
             for k in range(len(self.num_vehicles)):
                 if not relax:
                     duals["upper_bound_vehicles"][k] = self.prob.constraints[
-                        "upper_bound_vehicles_%s" % k
-                    ].pi
+                        "upper_bound_vehicles_%s" % k].pi
                 else:
                     duals["upper_bound_vehicles"][k] = relax.constraints[
-                        "upper_bound_vehicles_%s" % k
-                    ].pi
+                        "upper_bound_vehicles_%s" % k].pi
         return duals
 
     # Private methods to solve and output #
@@ -185,16 +187,14 @@ class MasterSolvePulp(MasterProblemBase):
                     msg=0,
                     maxSeconds=time_limit,
                     options=["startalg", "barrier", "crossover", "0"],
-                )
-            )
+                ))
         elif self.solver == "cplex":
             self.prob.setSolver(
                 pulp.CPLEX_CMD(
                     msg=0,
                     timelimit=time_limit,
                     options=["set lpmethod 4", "set barrier crossover -1"],
-                )
-            )
+                ))
         elif self.solver == "gurobi":
             gurobi_options = [
                 ("Method", 2),  # 2 = barrier
@@ -202,7 +202,10 @@ class MasterSolvePulp(MasterProblemBase):
             ]
             # Only specify time limit if given (o.w. errors)
             if time_limit is not None:
-                gurobi_options.append(("TimeLimit", time_limit,))
+                gurobi_options.append((
+                    "TimeLimit",
+                    time_limit,
+                ))
             self.prob.setSolver(pulp.GUROBI(msg=0, options=gurobi_options))
 
     def get_total_cost_and_routes(self, relax: bool):
@@ -210,14 +213,11 @@ class MasterSolvePulp(MasterProblemBase):
         for r in self.routes:
             val = pulp.value(self.y[r.graph["name"]])
             if val is not None and val > 0:
-                logger.debug(
-                    "%s cost %s load %s"
-                    % (
-                        shortest_path(r, "Source", "Sink"),
-                        r.graph["cost"],
-                        sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
-                    )
-                )
+                logger.debug("%s cost %s load %s" % (
+                    shortest_path(r, "Source", "Sink"),
+                    r.graph["cost"],
+                    sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
+                ))
                 best_routes.append(r)
         if self.drop_penalty:
             self.dropped_nodes = [
@@ -277,11 +277,9 @@ class MasterSolvePulp(MasterProblemBase):
         (as well as a penalty is the cost function).
         """
         for node in self.G.nodes():
-            if (
-                node not in ["Source", "Sink"]
-                and "depot_from" not in self.G.nodes[node]
-                and "depot_to" not in self.G.nodes[node]
-            ):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 # Set RHS
                 if self.periodic:
                     right_hand_term = self.G.nodes[node]["frequency"]
@@ -289,8 +287,8 @@ class MasterSolvePulp(MasterProblemBase):
                     right_hand_term = 1
                 # Save set covering constraints
                 self.set_covering_constrs[node] = pulp.LpConstraintVar(
-                    "visit_node_%s" % node, pulp.LpConstraintGE, right_hand_term
-                )
+                    "visit_node_%s" % node, pulp.LpConstraintGE,
+                    right_hand_term)
 
     def _add_route_selection_variable(self, route):
         self.y[route.graph["name"]] = pulp.LpVariable(
@@ -298,19 +296,13 @@ class MasterSolvePulp(MasterProblemBase):
             lowBound=0,
             upBound=1,
             cat=pulp.LpInteger,
-            e=(
-                pulp.lpSum(
-                    self.set_covering_constrs[r]
-                    for r in route.nodes()
-                    if r not in ["Source", "Sink"]
-                )
-                + pulp.lpSum(
-                    self.vehicle_bound_constrs[k]
-                    for k in range(len(self.num_vehicles))
-                    if route.graph["vehicle_type"] == k
-                )
-                + route.graph["cost"] * self.objective
-            ),
+            e=(pulp.lpSum(self.set_covering_constrs[r]
+                          for r in route.nodes()
+                          if r not in ["Source", "Sink"]) +
+               pulp.lpSum(self.vehicle_bound_constrs[k]
+                          for k in range(len(self.num_vehicles))
+                          if route.graph["vehicle_type"] == k) +
+               route.graph["cost"] * self.objective),
         )
 
     def _add_vehicle_dummy_variables(self):
@@ -320,7 +312,8 @@ class MasterSolvePulp(MasterProblemBase):
                 lowBound=0,
                 upBound=None,
                 cat=pulp.LpContinuous,
-                e=((-1) * self.vehicle_bound_constrs[key] + 1e10 * self.objective),
+                e=((-1) * self.vehicle_bound_constrs[key] +
+                   1e10 * self.objective),
             )
 
     def _add_drop_variables(self):
@@ -335,10 +328,8 @@ class MasterSolvePulp(MasterProblemBase):
                     lowBound=0,
                     upBound=1,
                     cat=pulp.LpInteger,
-                    e=(
-                        self.drop_penalty * self.objective
-                        + self.set_covering_constrs[node]
-                    ),
+                    e=(self.drop_penalty * self.objective +
+                       self.set_covering_constrs[node]),
                 )
 
     def _add_artificial_variables(self):
@@ -357,6 +348,5 @@ class MasterSolvePulp(MasterProblemBase):
         """Adds empty constraints and sets the right hand side"""
         for k in range(len(self.num_vehicles)):
             self.vehicle_bound_constrs[k] = pulp.LpConstraintVar(
-                "upper_bound_vehicles_%s" % k, pulp.LpConstraintLE, self.num_vehicles[k]
-            )
-
+                "upper_bound_vehicles_%s" % k, pulp.LpConstraintLE,
+                self.num_vehicles[k])
