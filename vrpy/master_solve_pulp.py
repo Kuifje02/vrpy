@@ -14,6 +14,7 @@ class MasterSolvePulp(MasterProblemBase):
 
     Inherits problem parameters from MasterProblemBase
     """
+
     def __init__(self, *args):
         super(MasterSolvePulp, self).__init__(*args)
         # create problem
@@ -31,10 +32,12 @@ class MasterSolvePulp(MasterProblemBase):
         self.drop_penalty_constrs = {}
         # Diving attributes
         self._tabu_list = []
+        self._depth = None
+        self._max_depth = None
+
         self._formulate()
 
     def solve(self, relax, time_limit):
-        # self.prob.writeLP("master.lp")
         self._set_solver(time_limit)
         self._solve(relax)
         logger.debug("master problem")
@@ -62,19 +65,25 @@ class MasterSolvePulp(MasterProblemBase):
         """
         self._set_solver(time_limit)
         self._solve(relax=True)
-        depth = 0
+
+        # Init global diving parameters
+        if self._depth is None and self._max_depth is None:
+            self._depth = 0
+            self._max_depth = max_depth
+
         tabu_list = []
         relax = self.prob.deepcopy()
         constrs = {}
-        while depth <= max_depth and len(tabu_list) < max_discrepancy:
+        while self._depth <= self._max_depth and len(
+                tabu_list) < max_discrepancy:
             non_integer_vars = list(
                 var for var in relax.variables()
                 if abs(var.varValue - round(var.varValue)) != 0)
             # All non-integer variables not already fixed in this or any
             # iteration of the diving heuristic
             vars_to_fix = [
-                var for var in non_integer_vars if
-                var.name not in self._tabu_list and var.name not in tabu_list
+                var for var in non_integer_vars
+                if var.name not in self._tabu_list and var.name not in tabu_list
             ]
             if vars_to_fix:
                 # If non-integer variables not already fixed and
@@ -101,13 +110,13 @@ class MasterSolvePulp(MasterProblemBase):
                 relax += constrs[name_ge]  # add >= constraint
                 relax.resolve()
                 tabu_list.append(var_to_fix.name)
-                depth += 1
+                self._depth += 1
                 # if not optimal status code from :
                 # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
                 if not (relax.status != 1):
                     self.prob.extend(constrs)
-                logger.debug("fixed %s with previous value %s",
-                             var_to_fix.name, value_previous)
+                logger.debug("fixed %s with previous value %s", var_to_fix.name,
+                             value_previous)
             else:
                 break
         self._tabu_list.extend(tabu_list)  # Update global tabu list
@@ -135,9 +144,9 @@ class MasterSolvePulp(MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"]
-                    and "depot_from" not in self.G.nodes[node]
-                    and "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 if not relax:
                     duals[node] = self.prob.constraints[constr_name].pi
@@ -268,9 +277,9 @@ class MasterSolvePulp(MasterProblemBase):
         (as well as a penalty is the cost function).
         """
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"]
-                    and "depot_from" not in self.G.nodes[node]
-                    and "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 # Set RHS
                 if self.periodic:
                     right_hand_term = self.G.nodes[node]["frequency"]
@@ -287,7 +296,8 @@ class MasterSolvePulp(MasterProblemBase):
             lowBound=0,
             upBound=1,
             cat=pulp.LpInteger,
-            e=(pulp.lpSum(self.set_covering_constrs[r] for r in route.nodes()
+            e=(pulp.lpSum(self.set_covering_constrs[r]
+                          for r in route.nodes()
                           if r not in ["Source", "Sink"]) +
                pulp.lpSum(self.vehicle_bound_constrs[k]
                           for k in range(len(self.num_vehicles))
@@ -331,8 +341,7 @@ class MasterSolvePulp(MasterProblemBase):
                     lowBound=0,
                     upBound=None,
                     cat=pulp.LpInteger,
-                    e=(1e10 * self.objective +
-                       self.set_covering_constrs[node]),
+                    e=(1e10 * self.objective + self.set_covering_constrs[node]),
                 )
 
     def _add_bound_vehicles(self):
