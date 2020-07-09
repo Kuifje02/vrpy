@@ -85,7 +85,7 @@ python3 -m pytest benchmarks/
 
 Note that running the benchmarks requires [pandas](https://pypi.org/project/pandas/).
 
-For more information and to run more instances, see [run](benchmarks/run.md).
+To more information and to run more instances, see [run](benchmarks/run.md).
 
 ## Bugs
 
