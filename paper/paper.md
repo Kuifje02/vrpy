@@ -84,7 +84,7 @@ Performance-wise, ``vrpy`` ambitions to be competitive with ``OR-Tools`` eventua
 | :--------------------------------------------------: |
 |         *Figure 1: CVRP Performance profile*         |
 
-We do not claim to outperform ``OR-Tools``, but aim to have results of the same order of magnitude as the package evolves, as there is still much room for improvement (see Section *Future Work* below). On the other hand, we are confident that the user friendly and intuitive API will help students, researchers and more generally the operational research community solve VRP problems of small to medium size, perhaps more easily than with the existing software.
+We do not claim to outperform ``OR-Tools``, but aim to have results of the same order of magnitude as the package evolves, as there is still much room for improvement (see Section *Future Work* below). On the other hand, we are confident that the user friendly and intuitive API will help students, researchers and more generally the operational research community solve instances of vehicle routing problems of small to medium size, perhaps more easily than with the existing software.
 
 ``py-ga-VRPTW`` is another library that is available but as mentioned by its authors, it is more of an experimental project and its performances are rather poor. In particular, we were not able to find feasible solutions for Solomon's instances [@solomon1987algorithms] and therefore cannot compare the two libraries. Also note that ``py-ga-VRPTW`` is designed to solve the VRPTW only, that is, the VRP with time windows.
 
