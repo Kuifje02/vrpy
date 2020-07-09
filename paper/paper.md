@@ -78,7 +78,7 @@ print(prob.best_routes)
 
 Although the VRP is a classical optimization problem, to our knowledge there is only one dedicated package in the Python ecosystem that is able to solve such a range of VRP variants: the excellent ``OR-Tools`` (Google) routing library [@ortools], released for the first time in 2014. To be precise, the core algorithms are implemented in C++, but the library provides a wrapper in Python. Popular and efficient, it is a reference for ``vrpy``, both in terms of features and performance. The current version of ``vrpy`` is able to handle the same variants as OR-Tools (mentioned in the previous section).
 
-Performance-wise, ``vrpy`` ambitions to be competitive with ``OR-Tools`` eventually, at least in terms of solution quality. For the moment, benchmarks (available in the repository) for the CVRP on the set of Augerat instances [@augerat1995approche]) show promising results: in the performance profile in Figure 1 below, one can see that nearly the same number of instances are solved within 10 seconds with the same relative error with respect to the best known solution (42\% for ``vrpy``, 44\% for ``OR-Tools``).
+Performance-wise, ``vrpy`` ambitions to be competitive with ``OR-Tools`` eventually, at least in terms of solution quality. For the moment, benchmarks (available in the repository) for the CVRP on the set of Augerat instances ([@augerat1995approche]) show promising results: in the performance profile in Figure 1 below, one can see that nearly the same number of instances are solved within 10 seconds with the same relative error with respect to the best known solution (42\% for ``vrpy``, 44\% for ``OR-Tools``).
 
 | ![Performance profile](cvrp_performance_profile.png) |
 | :--------------------------------------------------: |
@@ -86,7 +86,7 @@ Performance-wise, ``vrpy`` ambitions to be competitive with ``OR-Tools`` eventua
 
 We do not claim to outperform ``OR-Tools``, but aim to have results of the same order of magnitude in time, as there is still much room for improvement (see Section *Future Work* below). On the other hand, we are confident that the user friendly and intuitive API will help students, researchers and more generally the operational research community solve VRP problems of small to medium size, perhaps more easily than with the existing software.
 
-``py-ga-VRPTW`` is another library that is available but as mentioned by its authors, it is more of an experimental project and performances are rather poor. In particular, we were not able to find feasible solutions for Solomon's instances [@solomon1987algorithms] and therefore cannot compare the two libraries. Also note that ``py-ga-VRPTW`` is designed to solve the VRPTW only, that is, the VRP with time windows.
+``py-ga-VRPTW`` is another library that is available but as mentioned by its authors, it is more of an experimental project and its performances are rather poor. In particular, we were not able to find feasible solutions for Solomon's instances [@solomon1987algorithms] and therefore cannot compare the two libraries. Also note that ``py-ga-VRPTW`` is designed to solve the VRPTW only, that is, the VRP with time windows.
 
 
 # Mathematical background
@@ -99,7 +99,7 @@ We do not claim to outperform ``OR-Tools``, but aim to have results of the same 
 
 The master problem is a set partitioning linear formulation and is solved with the open source solver Clp from COIN-OR [@johnjforrest_2020_clp], while the subproblem is a shortest elementary path problem with *resource constraints*. It is solved with the help of the  ``cspy`` library [@cspy] which is specifically designed for such problems.
 
-This column generation procedure is very generic, as for each of the featuring VRP variants, the master problem is identical and partitions the customers into subsets (routes). It is the subproblem (or pricing problem) that differs from one variant to another. More specifically, each variant has its unique set of *resources* which must remain in a given interval. For example, for the CVRP, a resource representing the vehicle's load is carried along the path and must not exceed the vehicle capacity; for the CVRP with time windows, two extra resources must be considered: the first one for time, and the second one for time window feasibility. The reader may refer to [@augerat1995approche] for more details on each of these variants and how they are delt within the framework of column generation.
+This column generation procedure is very generic, as for each of the featuring VRP variants, the master problem is identical and partitions the customers into subsets (routes). It is the subproblem (or pricing problem) that differs from one variant to another. More specifically, each variant has its unique set of *resources* which must remain in a given interval. For example, for the CVRP, a resource representing the vehicle's load is carried along the path and must not exceed the vehicle capacity; for the CVRP with time windows, two extra resources must be considered: the first one for time, and the second one for time window feasibility. The reader may refer to [@augerat1995approche] for more details on each of these variants and how they are delt with within the framework of column generation.
 
 Note that ``vrpy`` does not necessarily return an optimal solution. Indeed, once the pricing problems fails to find
 a route with negative marginal cost, the master problem is solved as a MIP. This *price-and-branch* strategy does not guarantee optimality. Note however that it
@@ -112,7 +112,7 @@ For more advanced users, there are different pricing strategies (approaches for 
 
 # Future Work
 
-There are many ways ``vrpy`` could be improved. To boost the run times, specific heuristics for each variant could be implemented, e.g., Solomon's insertion algorithm [@solomon1987algorithms] for the VRPTW. Second, the pricing problem is solved with ``cspy``, which is quite recent (2019) and is still being fine tuned.  Also, currently, stabilization issues are delt with a basic interior point based strategy which could be improved [@pessoa2018automation]. Last but not least, there are many cutting strategies in the literature [@costa2019exact] that have not been implemented and which have proven to significantly reduce run times for such problems.
+There are many ways ``vrpy`` could be improved. To boost the run times, specific heuristics for each variant could be implemented, e.g., Solomon's insertion algorithm [@solomon1987algorithms] for the VRPTW. Second, the pricing problem is solved with ``cspy``, which is quite recent (2019) and is still being fine tuned.  Also, currently, stabilization issues are delt with a basic interior point based strategy which could be enhanced [@pessoa2018automation]. Last but not least, there are many cutting strategies in the literature [@costa2019exact] that have not been implemented and which have proven to significantly reduce run times for such problems.
 
 # Acknowledgements
 
