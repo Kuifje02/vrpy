@@ -58,13 +58,19 @@ class CsvTableBase:
         self.optimality_gap = optimality_gap
         self.optimal = optimal
 
-    def write_to_file(self, path=""):
-        cdir = os.path.dirname(__file__)
-        total_path = cdir + "/results"
+    def write_to_file(self, path_to=None):
+        if path_to == None:
+            cdir = os.path.dirname(__file__)
+            total_path = cdir + "/results"
+        elif not os.path.exists(path_to):
+            print("Path does not exist")
+        else:
+            total_path = path_to + "results"
 
         try:
             os.makedirs(total_path)
         except:
+            print("okay")
             pass
 
         os.chdir(total_path)
@@ -77,6 +83,7 @@ class CsvTableBase:
             mode = 'w'
 
         with open(self.instance_name + ".csv", mode, newline='') as csv_file:
+            print("write to file")
             writer = csv.DictWriter(csv_file,
                                     fieldnames=[
                                         "Instance", "Pricing strategy",

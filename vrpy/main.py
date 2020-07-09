@@ -110,18 +110,20 @@ class VehicleRoutingProblem:
         # Check if given inputs are consistent
         self._check_vrp()
 
-    def solve(
-        self,
-        initial_routes=None,
-        preassignments=None,
-        pricing_strategy="BestEdges1",
-        cspy=True,
-        exact=True,
-        time_limit=None,
-        solver="cbc",
-        dive=False,
-        greedy=False,
-    ):
+        # Runtime for latest solve call
+        self.comp_time = None
+
+    def solve(self,
+              initial_routes=None,
+              preassignments=None,
+              pricing_strategy="BestEdges1",
+              cspy=True,
+              exact=True,
+              time_limit=None,
+              solver="cbc",
+              dive=False,
+              greedy=False,
+              compute_runtime=False):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -165,10 +167,16 @@ class VehicleRoutingProblem:
                 True if randomized greedy algorithm is used to generate extra columns.
                 Only valid for capacity constraints, time constraints, num stops constraints.
                 Defaults to False.
+            compute_runtime (bool, optional):
+                True if solve runtime is to be returned
+                Defaults to False. 
 
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
+        # compute run time
+        if compute_runtime:
+            starttime = time()
 
         # set solving attributes
         self._more_routes = True
@@ -233,6 +241,11 @@ class VehicleRoutingProblem:
             )
             schedule.solve(self._get_time_remaining())
             self._schedule = schedule.routes_per_day
+
+        #sets the comp_time
+        if compute_runtime:
+            endtime = time()
+            self.comp_time = endtime - starttime
 
     def _column_generation(self):
         while self._more_routes:
