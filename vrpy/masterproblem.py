@@ -11,18 +11,8 @@ class MasterProblemBase:
         relax (bool, optional): True if variables are continuous. Defaults to True.
     """
 
-    def __init__(
-        self,
-        G,
-        routes_with_node,
-        routes,
-        drop_penalty,
-        num_vehicles,
-        periodic,
-        solver,
-        time_limit,
-        relax,
-    ):
+    def __init__(self, G, routes_with_node, routes, drop_penalty, num_vehicles,
+                 periodic, solver):
         self.G = G
         self.routes_with_node = routes_with_node
         self.routes = routes
@@ -30,6 +20,3 @@ class MasterProblemBase:
         self.num_vehicles = num_vehicles
         self.periodic = periodic
         self.solver = solver
-        self.time_limit = time_limit
-        self.relax = relax
-        self._tabu_list = []

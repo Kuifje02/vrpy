@@ -59,7 +59,10 @@ class DataSet:
                     self.max_load = int(line.split()[2])
         fp.close()
         # Create network and store name + capacity
-        self.G = DiGraph(name=instance_name[:-4], vehicle_capacity=self.max_load,)
+        self.G = DiGraph(
+            name=instance_name[:-4],
+            vehicle_capacity=self.max_load,
+        )
 
         # Read nodes from txt file
         if instance_name[5] == "-":
@@ -67,7 +70,10 @@ class DataSet:
         else:
             n_vertices = int(instance_name[3:6])
         df_augerat = read_csv(
-            path + instance_name, sep="\t", skiprows=6, nrows=n_vertices,
+            path + instance_name,
+            sep="\t",
+            skiprows=6,
+            nrows=n_vertices,
         )
         # Scan each line of the file and add nodes to the network
         for line in df_augerat.itertuples():
@@ -96,7 +102,9 @@ class DataSet:
                 for v in self.G.nodes():
                     if v != "Source":
                         if u != v:
-                            self.G.add_edge(u, v, cost=round(self.distance(u, v), 1))
+                            self.G.add_edge(u,
+                                            v,
+                                            cost=round(self.distance(u, v), 1))
 
         # relabel
         before = [v for v in self.G.nodes() if v not in ["Source", "Sink"]]
@@ -116,4 +124,34 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return round(sqrt(delta_x ** 2 + delta_y ** 2), 0)
+        return round(sqrt(delta_x**2 + delta_y**2), 0)
+
+    def solve(self,
+              initial_routes=None,
+              cspy=False,
+              num_stops=None,
+              exact=True,
+              time_limit=None,
+              pricing_strategy="BestPaths",
+              dive=False,
+              greedy=False):
+        """Instantiates instance as VRP and solves."""
+        if cspy:
+            self.G.graph["subproblem"] = "cspy"
+        else:
+            self.G.graph["subproblem"] = "lp"
+        print(self.G.graph["name"], self.G.graph["subproblem"])
+        print("===========")
+        prob = VehicleRoutingProblem(
+            self.G,
+            load_capacity=self.max_load,
+            num_stops=num_stops,
+        )
+        prob.solve(initial_routes=initial_routes,
+                   cspy=cspy,
+                   exact=exact,
+                   time_limit=time_limit,
+                   pricing_strategy=pricing_strategy,
+                   dive=dive,
+                   greedy=greedy)
+        self.best_value, self.best_routes = prob.best_value, prob.best_routes

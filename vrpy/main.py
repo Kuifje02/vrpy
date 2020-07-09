@@ -81,11 +81,32 @@ class VehicleRoutingProblem:
         self.distribution_collection = distribution_collection
         self.drop_penalty = drop_penalty
         self.fixed_cost = fixed_cost
-        self.num_vehicles = num_vehicles
+        self.num_vehicles = num_vehicles if num_vehicles is not None else []
         self.periodic = periodic
         self.mixed_fleet = mixed_fleet
+        # Parameters for solving
+        self.masterproblem = None
+        self.routes = []
+        self._solver = None
+        self._time_limit = None
+        self._pricing_strategy = None
+        self._exact = None
+        self._cspy = None
+        self._dive = None
+        self._start_time = None
+        self._greedy = None
+        # parameters for column generation stopping criteria
+        self._more_routes = None
+        self._iteration = 0
+        self._no_improvement = 0
+        self._lower_bound = []
+        # Parameters for initial solution
         self._initial_routes = []
         self._preassignments = []
+        # Parameters for final solution
+        self._best_value = None
+        self._best_routes = []
+        self._best_routes_as_graphs = []
 
         # Check if given inputs are consistent
         self._check_vrp()
@@ -149,7 +170,9 @@ class VehicleRoutingProblem:
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
-        # Solving attributes
+
+        # set solving attributes
+        self._more_routes = True
         self._solver = solver
         self._time_limit = time_limit
         self._pricing_strategy = pricing_strategy
@@ -164,49 +187,40 @@ class VehicleRoutingProblem:
             self._initial_routes = initial_routes
 
         # If only one type of vehicle, some formatting is done
-        if self.mixed_fleet == False:
+        if not self.mixed_fleet:
             self._format()
 
         # Pre-processing
         self._pre_solve()
 
         # Initialization
-        self._initialize()
+        self._initialize(solver)
 
         # Column generation
         self._column_generation()
 
         if dive:
             self._dive = True
+            self._more_routes = True
             # Initialization
             self._column_generation()
-        else:
+            (
+                self._best_value,
+                self._best_routes_as_graphs,
+            ) = self.masterproblem.get_total_cost_and_routes(relax=True)
+        elif len(self.G.nodes()) > 2:
             # Solve as MIP
-            # FIXME issue #23
-            try:
-                masterproblem_mip = MasterSolvePulp(
-                    self.G,
-                    self._routes_with_node,
-                    self._routes,
-                    self.drop_penalty,
-                    self.num_vehicles,
-                    self.periodic,
-                    self._solver,
-                    self._get_time_remaining(),
-                    relax=False,
-                )
-                (
-                    self._best_value,
-                    self._best_routes_as_graphs,
-                ) = masterproblem_mip.solve()
-            except Exception:
-                self._best_value, self._best_routes_as_graphs = (
-                    self._lower_bound[-1],
-                    self.routes,
-                )
+            _, _ = self.masterproblem.solve(
+                relax=False, time_limit=self._get_time_remaining()
+            )
+            (
+                self._best_value,
+                self._best_routes_as_graphs,
+            ) = self.masterproblem.get_total_cost_and_routes(relax=False)
+
         # Get dropped nodes
         if self.drop_penalty:
-            self._dropped_nodes = masterproblem_mip.dropped_nodes
+            self._dropped_nodes = self.masterproblem.dropped_nodes
         # Convert best routes into lists of nodes
         self._best_routes_as_node_lists()
         # Schedule routes over time span if Periodic CVRP
@@ -217,7 +231,7 @@ class VehicleRoutingProblem:
                 self.best_routes,
                 self.best_routes_type,
                 self.num_vehicles,
-                self._solver,
+                solver,
             )
             schedule.solve(self._get_time_remaining())
             self._schedule = schedule.routes_per_day
@@ -225,15 +239,13 @@ class VehicleRoutingProblem:
     def _column_generation(self):
         while self._more_routes:
             # Generate good columns
-            stop = self._find_columns()
+            self._find_columns()
             # Stop if time limit is passed
             if self._get_time_remaining() and self._get_time_remaining() <= 5:
                 logger.info("time up !")
                 break
             # Stop if no improvement limit is passed
             if self._no_improvement > 1000:
-                break
-            if self._dive and stop:
                 break
 
     def _pre_solve(self):
@@ -251,6 +263,8 @@ class VehicleRoutingProblem:
         self._update_dummy_attributes()
         # Check options consistency
         self._check_consistency()
+        # Check feasibility
+        self._check_feasibility()
         # Lock preassigned routes
         if self._preassignments:
             self._lock()
@@ -260,7 +274,7 @@ class VehicleRoutingProblem:
         if self.load_capacity and not self.pickup_delivery:
             self._get_num_stops_upper_bound(self._max_capacity)
 
-    def _initialize(self):
+    def _initialize(self, solver):  #
         """Initialization with feasible solution."""
         if self._initial_routes:
             # Initial solution is given as input
@@ -270,32 +284,29 @@ class VehicleRoutingProblem:
             self._get_initial_solution()
         # Initial routes are converted to digraphs
         self._convert_initial_routes_to_digraphs()
-        # Initialize parameters for stopping criteria
-        self._more_routes = True
-        self._iteration = 0
-        self._no_improvement = 0
-        self._lower_bound = []
-
-    # @profile
-    def _find_columns(self):
-        "Solves masterproblem and pricing problem."
-
-        # Solve restricted relaxed master problem
-        masterproblem = MasterSolvePulp(
+        # Init master problem
+        self.masterproblem = MasterSolvePulp(
             self.G,
             self._routes_with_node,
             self._routes,
             self.drop_penalty,
             self.num_vehicles,
             self.periodic,
-            self._solver,
-            self._get_time_remaining(),
-            relax=True,
+            solver,
         )
+
+    def _find_columns(self):
+        "Solves masterproblem and pricing problem."
+
+        # Solve restricted relaxed master problem
         if self._dive:
-            relaxed_cost, stop_diving = masterproblem.solve_and_dive()
+            duals, relaxed_cost = self.masterproblem.solve_and_dive(
+                time_limit=self._get_time_remaining()
+            )
         else:
-            duals, relaxed_cost = masterproblem.solve()
+            duals, relaxed_cost = self.masterproblem.solve(
+                relax=True, time_limit=self._get_time_remaining()
+            )
         logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
         # One subproblem per vehicle type
@@ -310,6 +321,15 @@ class VehicleRoutingProblem:
             ):
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
+                # TODO: needs checking as there must be a better way
+                # Update master problem only with new routes
+                if self._more_routes:
+                    for r in (
+                        r
+                        for r in self.routes
+                        if r.graph["name"] not in self.masterproblem.y
+                    ):
+                        self.masterproblem.update(r)
 
             # Continue searching for columns
             self._more_routes = False
@@ -356,6 +376,8 @@ class VehicleRoutingProblem:
                     self._get_time_remaining(),
                     # exact=False,
                 )
+            if self._more_routes:
+                self.masterproblem.update(self.routes[-1])
 
         # Keep track of convergence rate and update stopping criteria parameters
         self._iteration += 1
@@ -364,22 +386,7 @@ class VehicleRoutingProblem:
         else:
             self._no_improvement = 0
         self._lower_bound.append(relaxed_cost)
-
-        return stop_diving if self._dive else False
-
-    def _solve_and_dive(self):
-        masterproblem = MasterSolvePulp(
-            self.G,
-            self._routes_with_node,
-            self._routes,
-            self.drop_penalty,
-            self.num_vehicles,
-            self.periodic,
-            self._solver,
-            self._get_time_remaining(),
-            relax=True,
-        )
-        return masterproblem.solve_and_dive()
+        # Add column (new route) to the master problem
 
     def _get_time_remaining(self):
         """
@@ -615,6 +622,10 @@ class VehicleRoutingProblem:
                     for k in range(self._vehicle_types):
                         self.G.edges[i, j]["cost"][k] = 0
 
+        # If all vertices are locked, do not generate columns
+        if len(self.G.nodes()) == 2:
+            self._more_routes = False
+
     def _add_fixed_costs(self):
         """Adds fixed cost on each outgoing edge from Source."""
         for v in self.G.successors("Source"):
@@ -729,6 +740,16 @@ class VehicleRoutingProblem:
             # If Sink has outgoing edges
             if len(list(self.G.successors("Sink"))) > 0:
                 raise NetworkXError("Sink must have no outgoing edges.")
+        # Roundtrips should always be possible
+        # Missing edges are added with a high cost
+        for v in self.G.nodes():
+            if v not in ["Source", "Sink"]:
+                if v not in self.G.successors("Source"):
+                    logger.warning("Source not connected to %s" % v)
+                    self.G.add_edge("Source", v, cost=1e10)
+                if v not in self.G.predecessors("Sink"):
+                    logger.warning("%s not connected to Sink" % v)
+                    self.G.add_edge(v, "Sink", cost=1e10)
         # If graph is disconnected
         if not has_path(self.G, "Source", "Sink"):
             raise NetworkXError("Source and Sink are not connected.")
@@ -838,6 +859,29 @@ class VehicleRoutingProblem:
                     break
             if not request:
                 raise KeyError("pickup_delivery option expects at least one request.")
+
+    def _check_feasibility(self):
+        """Checks basic problem feasibility."""
+        if self.load_capacity:
+            for v in self.G.nodes():
+                if self.G.nodes[v]["demand"] > max(self.load_capacity):
+                    raise ValueError(
+                        "Demand %s at node %s larger than max capacity %s."
+                        % (self.G.nodes[v]["demand"], v, max(self.load_capacity))
+                    )
+        if self.duration:
+            for v in self.G.nodes():
+                if v not in ["Source", "Sink"]:
+                    round_trip_duration = (
+                        self.G.nodes[v]["service_time"]
+                        + self.G.edges["Source", v]["time"]
+                        + self.G.edges[v, "Sink"]["time"]
+                    )
+                    if round_trip_duration > self.duration:
+                        raise ValueError(
+                            "Node %s not reachable: duration of path [Source,%s,Sink], %s, is larger than max duration %s."
+                            % (v, v, round_trip_duration, self.duration)
+                        )
 
     def _best_routes_as_node_lists(self):
         """Converts route as DiGraph to route as node list."""

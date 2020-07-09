@@ -164,6 +164,18 @@ class TestsToy:
         prob.solve(preassignments=routes)
         assert prob.best_value == 75
 
+    def test_complete_lock(self):
+        routes = [
+            ["Source", 1, "Sink"],
+            ["Source", 2, "Sink"],
+            ["Source", 3, "Sink"],
+            ["Source", 4, "Sink"],
+            ["Source", 5, "Sink"],
+        ]
+        prob = VehicleRoutingProblem(self.G)
+        prob.solve(preassignments=routes)
+        assert prob.best_value == 100
+
     def test_extend_preassignment(self):
         routes = [[2, 3]]
         prob = VehicleRoutingProblem(self.G, num_stops=4)
@@ -241,9 +253,15 @@ class TestsToy:
         prob.solve(cspy=False, time_limit=0.01)
         assert prob.best_value == 70
 
-
-"""
     def test_dive(self):
-        # TODO
-        pass
-"""
+        for (i, j) in self.G.edges():
+            self.G.edges[i, j]["cost"] = 2 * [self.G.edges[i, j]["cost"]]
+        prob = VehicleRoutingProblem(
+            self.G,
+            load_capacity=[10, 15],
+            fixed_cost=[10, 0],
+            num_vehicles=[5, 1],
+            mixed_fleet=True,
+        )
+        prob.solve(dive=True)
+        assert prob.best_value == 80

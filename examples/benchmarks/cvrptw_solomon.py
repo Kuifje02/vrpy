@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 class SolomonNode:
     """Stores attributes of a node of Solomon's instances."""
-
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[1]).item()
@@ -41,7 +40,6 @@ class DataSet:
             Only first n_vertices are read.
             Defaults to None.
     """
-
     def __init__(self, path, instance_name, n_vertices=None):
 
         # Read vehicle capacity
@@ -95,9 +93,10 @@ class DataSet:
                 for v in self.G.nodes():
                     if v != "Source":
                         if u != v:
-                            self.G.add_edge(
-                                u, v, cost=self.distance(u, v), time=self.distance(u, v)
-                            )
+                            self.G.add_edge(u,
+                                            v,
+                                            cost=self.distance(u, v),
+                                            time=self.distance(u, v))
 
     def distance(self, u, v):
         """2D Euclidian distance between two nodes.
@@ -111,7 +110,7 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x ** 2 + delta_y ** 2)
+        return sqrt(delta_x**2 + delta_y**2)
 
     def solve(
         self,
@@ -119,9 +118,10 @@ class DataSet:
         num_stops=None,
         cspy=False,
         exact=False,
-        pricing_strategy="PrunePaths",
+        pricing_strategy="BestEdges1",
         time_limit=None,
         solver="cbc",
+        dive=False,
     ):
         """Instantiates instance as VRP and solves."""
         if cspy:
@@ -131,14 +131,16 @@ class DataSet:
         print(self.G.graph["name"], self.G.graph["subproblem"])
         print("===========")
         prob = VehicleRoutingProblem(
-            self.G, num_stops=num_stops, load_capacity=self.max_load, time_windows=True,
+            self.G,
+            num_stops=num_stops,
+            load_capacity=self.max_load,
+            time_windows=True,
         )
-        prob.solve(
-            initial_routes=initial_routes,
-            cspy=cspy,
-            exact=exact,
-            pricing_strategy=pricing_strategy,
-            time_limit=time_limit,
-            solver=solver,
-        )
+        prob.solve(initial_routes=initial_routes,
+                   cspy=cspy,
+                   exact=exact,
+                   pricing_strategy=pricing_strategy,
+                   time_limit=time_limit,
+                   solver=solver,
+                   dive=dive)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes

@@ -31,8 +31,16 @@ class ClarkeWright:
         self._processed_nodes = []
 
         self.alpha = alpha
-        self.beta = beta
-        self.gamma = gamma
+        # FOR MORE SOPHISTICATED VERSIONS OF CLARKE WRIGHT:
+        # self.beta = beta
+        # self.gamma = gamma
+        # self._average_demand = sum(
+        #    [
+        #        self.G.nodes[v]["demand"]
+        #        for v in self.G.nodes()
+        #        if self.G.nodes[v]["demand"] > 0
+        #    ]
+        # ) / len([v for v in self.G.nodes() if self.G.nodes[v]["demand"] > 0])
 
         if isinstance(load_capacity, list):
             self.load_capacity = load_capacity[0]
@@ -85,11 +93,15 @@ class ClarkeWright:
                     self.G.edges[i, "Sink"]["cost"]
                     + self.G.edges["Source", j]["cost"]
                     - self.alpha * self.G.edges[i, j]["cost"]
-                    + self.beta
-                    * abs(
-                        self.G.edges["Source", i]["cost"]
-                        - self.G.edges[j, "Sink"]["cost"]
-                    )
+                    # FOR MORE SOPHISTICATED VERSIONS OF CLARKE WRIGHT:
+                    # + self.beta
+                    # * abs(
+                    #    self.G.edges["Source", i]["cost"]
+                    #    - self.G.edges[j, "Sink"]["cost"]
+                    # )
+                    # + self.gamma
+                    # * (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"])
+                    # / self._average_demand
                 )
         self._ordered_edges = sorted(self._savings, key=self._savings.get, reverse=True)
 
@@ -197,7 +209,7 @@ class ClarkeWright:
 
         if (
             not merged
-            and (j, i) in self.G.edges()
+            and j in self.G.predecessors(i)
             and i not in self._processed_nodes  # 1
             and self._constraints_met(j, i)  # 2
             and j in self._route[j].successors("Source")  # 3a
@@ -234,9 +246,4 @@ class RoundTrip:
     def run(self):
         for v in self.G.nodes():
             if v not in ["Source", "Sink"]:
-                # If edges do not exist, create them with a high cost
-                if ("Source", v) not in self.G.edges():
-                    self.G.add_edge("Source", v, cost=1e10)
-                if (v, "Sink") not in self.G.edges():
-                    self.G.add_edge(v, "Sink", cost=1e10)
                 self.round_trips.append(["Source", v, "Sink"])
