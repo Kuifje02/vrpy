@@ -8,7 +8,7 @@ from networkx import DiGraph, add_path
 # sys.path.append("../../cspy")
 
 from cspy import BiDirectional, GreedyElim  # Tabu
-from vrpy.subproblem import SubProblemBase
+from .subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)
 

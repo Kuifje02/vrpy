@@ -2,7 +2,6 @@ import sys
 from networkx import DiGraph
 from pytest import raises
 
-sys.path.append("../../vrpy/")
 from vrpy import VehicleRoutingProblem
 
 

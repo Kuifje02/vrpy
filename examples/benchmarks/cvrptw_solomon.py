@@ -5,7 +5,6 @@ from pandas import read_csv
 from networkx import DiGraph
 import numpy as np
 
-sys.path.append("../../")
 from vrpy.main import VehicleRoutingProblem
 from examples.benchmarks.run.csv_table_vrpy import CsvTableVRPy
 import logging
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 class SolomonNode:
     """Stores attributes of a node of Solomon's instances."""
-
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[1]).item()
@@ -41,7 +39,6 @@ class DataSet:
             Only first n_vertices are read.
             Defaults to None.
     """
-
     def __init__(self, path, instance_name, n_vertices=None):
 
         # Read vehicle capacity

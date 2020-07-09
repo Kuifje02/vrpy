@@ -3,8 +3,6 @@ import sys
 import os
 import time
 
-sys.path.append("../../")
-# sys.path.append("../../../cspy")
 from vrpy.main import VehicleRoutingProblem
 
 import logging
@@ -28,7 +26,6 @@ class CsvTableBase:
     Methods:
         Write to file: Creates a results folder in the current directory and writes the relevant data to a file specified by instance name.
     """
-
     def __init__(self,
                  path=None,
                  instance_name=None,
@@ -44,7 +41,8 @@ class CsvTableBase:
                  dive=None,
                  best_known_solution=None):
         self.path = path
-        self.instance_name = instance_name
+        self.instance_name = instance_name if not instance_name.endswith(
+            '.csv') else instance_name[:-4]
         self.instance_type = instance_type
 
         self.best_known_solution = best_known_solution
@@ -60,13 +58,19 @@ class CsvTableBase:
         self.optimality_gap = optimality_gap
         self.optimal = optimal
 
-    def write_to_file(self, path=""):
-        cdir = os.path.dirname(__file__)
-        total_path = cdir + "/results"
+    def write_to_file(self, path_to=None):
+        if path_to == None:
+            cdir = os.path.dirname(__file__)
+            total_path = cdir + "/results"
+        elif not os.path.exists(path_to):
+            print("Path does not exist")
+        else:
+            total_path = path_to + "results"
 
         try:
             os.makedirs(total_path)
         except:
+            print("okay")
             pass
 
         os.chdir(total_path)
@@ -79,6 +83,7 @@ class CsvTableBase:
             mode = 'w'
 
         with open(self.instance_name + ".csv", mode, newline='') as csv_file:
+            print("write to file")
             writer = csv.DictWriter(csv_file,
                                     fieldnames=[
                                         "Instance", "Pricing strategy",

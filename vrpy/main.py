@@ -2,13 +2,13 @@ from networkx import DiGraph, shortest_path, NetworkXError, has_path
 import logging
 from time import time
 
-from vrpy.greedy import Greedy
-from vrpy.master_solve_pulp import MasterSolvePulp
-from vrpy.subproblem_lp import SubProblemLP
-from vrpy.subproblem_cspy import SubProblemCSPY
-from vrpy.subproblem_greedy import SubProblemGreedy
-from vrpy.clarke_wright import ClarkeWright, RoundTrip
-from vrpy.schedule import Schedule
+from .greedy import Greedy
+from .master_solve_pulp import MasterSolvePulp
+from .subproblem_lp import SubProblemLP
+from .subproblem_cspy import SubProblemCSPY
+from .subproblem_greedy import SubProblemGreedy
+from .clarke_wright import ClarkeWright, RoundTrip
+from .schedule import Schedule
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -110,18 +110,20 @@ class VehicleRoutingProblem:
         # Check if given inputs are consistent
         self._check_vrp()
 
-    def solve(
-        self,
-        initial_routes=None,
-        preassignments=None,
-        pricing_strategy="BestEdges1",
-        cspy=True,
-        exact=True,
-        time_limit=None,
-        solver="cbc",
-        dive=False,
-        greedy=False,
-    ):
+        # Runtime for latest solve call
+        self.comp_time = None
+
+    def solve(self,
+              initial_routes=None,
+              preassignments=None,
+              pricing_strategy="BestEdges1",
+              cspy=True,
+              exact=True,
+              time_limit=None,
+              solver="cbc",
+              dive=False,
+              greedy=False,
+              compute_runtime=False):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -165,10 +167,16 @@ class VehicleRoutingProblem:
                 True if randomized greedy algorithm is used to generate extra columns.
                 Only valid for capacity constraints, time constraints, num stops constraints.
                 Defaults to False.
+            compute_runtime (bool, optional):
+                True if solve runtime is to be returned
+                Defaults to False. 
 
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
+        # compute run time
+        if compute_runtime:
+            starttime = time()
 
         # set solving attributes
         self._more_routes = True
@@ -234,6 +242,11 @@ class VehicleRoutingProblem:
             schedule.solve(self._get_time_remaining())
             self._schedule = schedule.routes_per_day
 
+        #sets the comp_time
+        if compute_runtime:
+            endtime = time()
+            self.comp_time = endtime - starttime
+
     def _column_generation(self):
         while self._more_routes:
             # Generate good columns
@@ -245,6 +258,8 @@ class VehicleRoutingProblem:
             # Stop if no improvement limit is passed
             if self._no_improvement > 1000:
                 break
+            """ if self._iteration == 0 and self._greedy:
+                break """
 
     def _pre_solve(self):
         """Some pre-processing."""
@@ -303,7 +318,8 @@ class VehicleRoutingProblem:
         else:
             duals, relaxed_cost = self.masterproblem.solve(
                 relax=True, time_limit=self._get_time_remaining())
-        logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
+        if not self._dive:
+            logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
@@ -383,7 +399,8 @@ class VehicleRoutingProblem:
             self._no_improvement += 1
         else:
             self._no_improvement = 0
-        self._lower_bound.append(relaxed_cost)
+        if not self._dive:
+            self._lower_bound.append(relaxed_cost)
         # Add column (new route) to the master problem
 
     def _get_time_remaining(self):

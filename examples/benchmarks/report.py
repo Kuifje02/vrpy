@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class CsvTableVRP(CsvTableBase):
+    """
+    CsvTable class for the vehicle routing problem
+    
+    Computes the table data from a problem instance
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

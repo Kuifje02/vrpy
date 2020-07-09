@@ -2,13 +2,13 @@ from math import sqrt
 from networkx import relabel_nodes, DiGraph
 import numpy as np
 from pandas import read_csv
+
 from vrpy.main import VehicleRoutingProblem
 from examples.benchmarks.run.csv_table_vrpy import CsvTableVRPy
 
 
 class AugeratNodePosition:
     """Stores coordinates of a node of Augerat's instances (set P)."""
-
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[0]).item()
@@ -22,7 +22,6 @@ class AugeratNodePosition:
 
 class AugeratNodeDemand:
     """Stores attributes of a node of Augerat's instances (set P)."""
-
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[0]).item()
@@ -39,7 +38,6 @@ class DataSet:
         path (str) : Path to data folder.
         instance_name (str) : Name of instance to read.
     """
-
     def __init__(self, path, instance_name):
 
         # Read vehicle capacity

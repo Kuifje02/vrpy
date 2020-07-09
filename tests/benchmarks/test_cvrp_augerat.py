@@ -2,7 +2,6 @@ from examples.benchmarks.cvrp_augerat import DataSet
 
 
 class TestsAugerat:
-
     def setup(self):
         """
         Augerat instance P-n16-k8.vrp
