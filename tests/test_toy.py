@@ -279,7 +279,7 @@ class TestsToy:
         start = time()
         prob.solve(cspy=False, time_limit=0.01)
         comp_time = time() - start
-        assert comp_time < 0.01 + 0.05  # time_limit + time for mip
+        assert comp_time < 0.01 + 0.1  # time_limit + time for mip
         assert prob.best_value == 70
 
     def test_dive(self):
