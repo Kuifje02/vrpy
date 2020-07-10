@@ -3,7 +3,7 @@ from networkx import DiGraph, add_path
 
 # from os import sys
 # sys.path.append("../")
-from vrpy.subproblem import SubProblemBase
+from .subproblem import SubProblemBase
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,6 @@ class SubProblemGreedy(SubProblemBase):
 
     Inherits problem parameters from `SubproblemBase`
     """
-
     def __init__(self, *args):
         # Pass arguments to base
         super(SubProblemGreedy, self).__init__(*args)
@@ -68,7 +67,8 @@ class SubProblemGreedy(SubProblemBase):
         # Store the successors reduced cost that meet constraints
         for v in self.sub_G.successors(self._last_node):
             if self._constraints_met(v, forward=True):
-                out_going_costs[v] = self.sub_G.edges[self._last_node, v]["weight"]
+                out_going_costs[v] = self.sub_G.edges[self._last_node,
+                                                      v]["weight"]
         if out_going_costs == {}:
             logger.debug("path cannot be extended")
             self._new_node = None
@@ -104,7 +104,8 @@ class SubProblemGreedy(SubProblemBase):
         # Store the reduced costs of the predecessors that meet constraints
         for v in self.sub_G.predecessors(self._last_node):
             if self._constraints_met(v, forward=False):
-                incoming_costs[v] = self.sub_G.edges[v, self._last_node]["weight"]
+                incoming_costs[v] = self.sub_G.edges[v,
+                                                     self._last_node]["weight"]
         if not incoming_costs:
             logger.debug("path cannot be extended")
             self._new_node = None
@@ -122,10 +123,10 @@ class SubProblemGreedy(SubProblemBase):
             self._stops += 1
             self._load += self.sub_G.nodes[self._new_node]["demand"]
             if forward:
-                self._weight += self.sub_G.edges[self._last_node, self._new_node][
-                    "weight"
-                ]
-                self._time += self.sub_G.edges[self._last_node, self._new_node]["time"]
+                self._weight += self.sub_G.edges[self._last_node,
+                                                 self._new_node]["weight"]
+                self._time += self.sub_G.edges[self._last_node,
+                                               self._new_node]["time"]
                 self._current_path.append(self._new_node)
                 if self._stops == self.num_stops and self._new_node != "Sink":
                     # Finish path
@@ -137,10 +138,10 @@ class SubProblemGreedy(SubProblemBase):
                 elif self._new_node == "Sink":
                     return False
             else:
-                self._weight += self.sub_G.edges[self._new_node, self._last_node][
-                    "weight"
-                ]
-                self._time += self.sub_G.edges[self._new_node, self._last_node]["time"]
+                self._weight += self.sub_G.edges[self._new_node,
+                                                 self._last_node]["weight"]
+                self._time += self.sub_G.edges[self._new_node,
+                                               self._last_node]["time"]
                 self._current_path.insert(0, self._new_node)
                 if self._stops == self.num_stops and self._new_node != "Source":
                     # Finish path
@@ -175,23 +176,17 @@ class SubProblemGreedy(SubProblemBase):
 
     def _check_capacity(self, v):
         """Checks capacity constraint."""
-        return (
-            self._load + self.sub_G.nodes[v]["demand"]
-            <= self.load_capacity[self.vehicle_type]
-        )
+        return (self._load + self.sub_G.nodes[v]["demand"] <=
+                self.load_capacity[self.vehicle_type])
 
     def _check_duration(self, v, forward):
         """Checks time constraint."""
         if forward:
-            return (
-                self._time + self.sub_G.edges[self._last_node, v]["time"]
-                <= self.duration
-            )
+            return (self._time + self.sub_G.edges[self._last_node, v]["time"]
+                    <= self.duration)
         else:
-            return (
-                self._time + self.sub_G.edges[v, self._last_node]["time"]
-                <= self.duration
-            )
+            return (self._time + self.sub_G.edges[v, self._last_node]["time"]
+                    <= self.duration)
 
     """
     NOT IMPLEMENTED YET

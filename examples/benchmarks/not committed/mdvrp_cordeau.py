@@ -3,7 +3,7 @@ from networkx import DiGraph, draw_networkx_edges, draw_networkx_nodes
 import numpy as np
 from pandas import read_csv
 import sys
-# import matplotlib.pyplot
+import matplotlib.pyplot
 
 sys.path.append("../../")
 sys.path.append("../../../cspy")
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class CordeauNode:
     """Stores coordinates of a node of Cordeau's instances."""
+
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[0]).item()
@@ -37,6 +38,7 @@ class DataSet:
             Only first n_vertices are read.
             Defaults to None.
     """
+
     def __init__(self, path, instance_name, n_vertices=None):
 
         # Read vehicle capacity
@@ -53,10 +55,7 @@ class DataSet:
         fp.close()
 
         # Create network and store name + capacity
-        self.G = DiGraph(
-            name=instance_name,
-            vehicle_capacity=self.max_load,
-        )
+        self.G = DiGraph(name=instance_name, vehicle_capacity=self.max_load,)
 
         # Read nodes from file
         df_cordeau = read_csv(path + instance_name, sep="\t", skiprows=4)
@@ -65,17 +64,13 @@ class DataSet:
             values = line[1].split()
             node = CordeauNode(values)
             if node.name <= self.n_vertices:
-                self.G.add_node(node.name,
-                                x=node.x,
-                                y=node.y,
-                                demand=node.demand,
-                                customer=True)
+                self.G.add_node(
+                    node.name, x=node.x, y=node.y, demand=node.demand, customer=True
+                )
             if node.name > self.n_customers:
-                self.G.add_node(node.name,
-                                x=node.x,
-                                y=node.y,
-                                demand=node.demand,
-                                depot_from=True)
+                self.G.add_node(
+                    node.name, x=node.x, y=node.y, demand=node.demand, depot_from=True
+                )
                 self.G.add_node(
                     str(node.name) + "_",
                     x=node.x,
@@ -93,23 +88,17 @@ class DataSet:
             if "customer" in self.G.nodes[u]:
                 for v in self.G.nodes():
                     if "customer" in self.G.nodes[v] and u != v:
-                        self.G.add_edge(u,
-                                        v,
-                                        cost=round(self.distance(u, v), 1))
+                        self.G.add_edge(u, v, cost=round(self.distance(u, v), 1))
             if "depot_to" in self.G.nodes[u]:
                 self.G.add_edge(u, "Sink", cost=0)
                 for v in self.G.nodes():
                     if "customer" in self.G.nodes[v]:
-                        self.G.add_edge(v,
-                                        u,
-                                        cost=round(self.distance(v, u), 1))
+                        self.G.add_edge(v, u, cost=round(self.distance(v, u), 1))
             if "depot_from" in self.G.nodes[u]:
                 self.G.add_edge("Source", u, cost=0)
                 for v in self.G.nodes():
                     if "customer" in self.G.nodes[v]:
-                        self.G.add_edge(u,
-                                        v,
-                                        cost=round(self.distance(u, v), 1))
+                        self.G.add_edge(u, v, cost=round(self.distance(u, v), 1))
 
     def distance(self, u, v):
         """2D Euclidian distance between two nodes.
@@ -123,9 +112,9 @@ class DataSet:
         """
         delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
         delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x**2 + delta_y**2)
+        return sqrt(delta_x ** 2 + delta_y ** 2)
 
-    def solve(self, initial_routes=None, cspy=False, dive=False):
+    def solve(self, initial_routes=None, cspy=False):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -133,11 +122,8 @@ class DataSet:
             self.G.graph["subproblem"] = "lp"
         print(self.G.graph["name"], self.G.graph["subproblem"])
         print("===========")
-        prob = VehicleRoutingProblem(
-            self.G,
-            load_capacity=self.max_load,
-        )
-        prob.solve(initial_routes=initial_routes, cspy=cspy, dive=dive)
+        prob = VehicleRoutingProblem(self.G, load_capacity=self.max_load,)
+        prob.solve(initial_routes=initial_routes, cspy=cspy)
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
 
     def plot_solution(self):
@@ -149,24 +135,17 @@ class DataSet:
 
         # Draw customers
         draw_networkx_nodes(
-            self.G,
-            pos,
-            node_size=10,
+            self.G, pos, node_size=10,
         )
         # Hide Source and Sink
         draw_networkx_nodes(
-            self.G,
-            pos,
-            nodelist=["Source", "Sink"],
-            node_size=0,
+            self.G, pos, nodelist=["Source", "Sink"], node_size=0,
         )
         # Draw depots
         draw_networkx_nodes(
             self.G,
             pos,
-            nodelist=[
-                v for v in self.G.nodes() if "customer" not in self.G.nodes[v]
-            ],
+            nodelist=[v for v in self.G.nodes() if "customer" not in self.G.nodes[v]],
             node_size=30,
             node_color="r",
         )

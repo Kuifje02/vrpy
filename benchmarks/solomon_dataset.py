@@ -1,20 +1,15 @@
-import sys
-import numpy as np
-from math import sqrt
+import os
+
 from pandas import read_csv
 from networkx import DiGraph
+import numpy as np
 
-sys.path.append("../../")
-sys.path.append("../../../cspy")
-from vrpy.main import VehicleRoutingProblem
-
-import logging
-
-logger = logging.getLogger(__name__)
+from benchmarks.utils.distance import distance
 
 
 class SolomonNode:
     """Stores attributes of a node of Solomon's instances."""
+
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[1]).item()
@@ -30,7 +25,7 @@ class SolomonNode:
         self.service_time = np.uint32(values[7]).item()
 
 
-class DataSet:
+class SolomonDataSet:
     """Reads a Solomon instance and stores the network as DiGraph.
 
     Args:
@@ -40,10 +35,16 @@ class DataSet:
             Only first n_vertices are read.
             Defaults to None.
     """
-    def __init__(self, path, instance_name, n_vertices=None):
 
+    def __init__(self, path, instance_name, n_vertices=None):
+        self.G: DiGraph = None
+        self.max_load: int = None
+
+        self._load(path, instance_name, n_vertices)
+
+    def _load(self, path, instance_name, n_vertices=None):
         # Read vehicle capacity
-        with open(path + instance_name) as fp:
+        with open(os.path.join(path, instance_name)) as fp:
             for i, line in enumerate(fp):
                 if i == 4:
                     self.max_load = int(line.split()[1])
@@ -57,7 +58,7 @@ class DataSet:
 
         # Read nodes from txt file
         df_solomon = read_csv(
-            path + instance_name,
+            os.path.join(path, instance_name),
             sep="\s+",
             skip_blank_lines=True,
             skiprows=7,
@@ -95,52 +96,5 @@ class DataSet:
                         if u != v:
                             self.G.add_edge(u,
                                             v,
-                                            cost=self.distance(u, v),
-                                            time=self.distance(u, v))
-
-    def distance(self, u, v):
-        """2D Euclidian distance between two nodes.
-
-        Args:
-            u (Node) : tail node.
-            v (Node) : head node.
-
-        Returns:
-            float : Euclidian distance between u and v
-        """
-        delta_x = self.G.nodes[u]["x"] - self.G.nodes[v]["x"]
-        delta_y = self.G.nodes[u]["y"] - self.G.nodes[v]["y"]
-        return sqrt(delta_x**2 + delta_y**2)
-
-    def solve(
-        self,
-        initial_routes=None,
-        num_stops=None,
-        cspy=False,
-        exact=False,
-        pricing_strategy="BestEdges1",
-        time_limit=None,
-        solver="cbc",
-        dive=False,
-    ):
-        """Instantiates instance as VRP and solves."""
-        if cspy:
-            self.G.graph["subproblem"] = "cspy"
-        else:
-            self.G.graph["subproblem"] = "lp"
-        print(self.G.graph["name"], self.G.graph["subproblem"])
-        print("===========")
-        prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=num_stops,
-            load_capacity=self.max_load,
-            time_windows=True,
-        )
-        prob.solve(initial_routes=initial_routes,
-                   cspy=cspy,
-                   exact=exact,
-                   pricing_strategy=pricing_strategy,
-                   time_limit=time_limit,
-                   solver=solver,
-                   dive=dive)
-        self.best_value, self.best_routes = prob.best_value, prob.best_routes
+                                            cost=distance(self.G, u, v),
+                                            time=distance(self.G, u, v))
