@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from pandas import read_csv
 from networkx import DiGraph
@@ -29,24 +29,25 @@ class SolomonDataSet:
     """Reads a Solomon instance and stores the network as DiGraph.
 
     Args:
-        path (str) : Path to data folder.
+        path (pathlib.Path) : Path to data folder.
         instance_name (str) : Name of Solomon instance to read.
         n_vertices (int, optional):
             Only first n_vertices are read.
             Defaults to None.
     """
 
-    def __init__(self, path, instance_name, n_vertices=None):
+    def __init__(self, path: Path, instance_name: str, n_vertices=None):
         self.G: DiGraph = None
         self.max_load: int = None
         # TODO load best_known_solution somewhere
         self.best_known_solution: int = None
 
+        path = Path(path)
         self._load(path, instance_name, n_vertices)
 
     def _load(self, path, instance_name, n_vertices=None):
         # Read vehicle capacity
-        with open(os.path.join(path, instance_name)) as fp:
+        with open(path / instance_name) as fp:
             for i, line in enumerate(fp):
                 if i == 4:
                     self.max_load = int(line.split()[1])
@@ -60,7 +61,7 @@ class SolomonDataSet:
 
         # Read nodes from txt file
         df_solomon = read_csv(
-            os.path.join(path, instance_name),
+            path / instance_name,
             sep="\s+",
             skip_blank_lines=True,
             skiprows=7,

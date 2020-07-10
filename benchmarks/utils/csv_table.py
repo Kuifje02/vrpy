@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from csv import DictWriter
 from logging import getLogger
 
@@ -94,14 +94,15 @@ class CsvTable:
         Write to file: Creates a results folder in the current directory
         and writes the relevant data to a file specified by instance name.
         """
+        output_folder = Path(output_folder)
         # Create folder if it doesn't already exist
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
+        if not output_folder.exists():
+            output_folder.mkdir()
 
         # Append to file if it already exists
-        output_file_path = os.path.join(output_folder,
-                                        self.instance_type + ".csv")
-        if os.path.isfile(output_file_path):
+        file_name = self.instance_type + ".csv"
+        output_file_path = output_folder / file_name
+        if output_file_path.is_file():
             mode = 'a'
         else:
             mode = 'w'

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from networkx import relabel_nodes, DiGraph
 import numpy as np
@@ -42,18 +42,19 @@ class AugeratDataSet:
         instance_name (str) : Name of instance to read.
     """
 
-    def __init__(self, path, instance_name):
+    def __init__(self, path: Path, instance_name):
         self.G: DiGraph = None
         self.best_known_solution: int = None
         self.best_value: float = None
         self.max_load: int = None
 
+        path = Path(path)
         self._load(path, instance_name)
 
     def _load(self, path, instance_name):
         """Load Augerat instance into a DiGraph"""
         # Read vehicle capacity
-        with open(os.path.join(path, instance_name)) as fp:
+        with open(path / instance_name) as fp:
             for i, line in enumerate(fp):
                 if i == 1:
                     best = line.split()[-1][:-1]
@@ -73,7 +74,7 @@ class AugeratDataSet:
         else:
             n_vertices = int(instance_name[3:6])
         df_augerat = read_csv(
-            os.path.join(path, instance_name),
+            path / instance_name,
             sep="\t",
             skiprows=6,
             nrows=n_vertices,
@@ -89,7 +90,7 @@ class AugeratDataSet:
 
         # Read demand from txt file
         df_demand = read_csv(
-            os.path.join(path, instance_name),
+            path / instance_name,
             sep="\t",
             skiprows=range(7 + n_vertices),
             nrows=n_vertices,

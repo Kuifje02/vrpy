@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-import os
 from time import time
 import argparse
 from itertools import product
 from logging import getLogger
 from multiprocessing import Pool, cpu_count
+from pathlib import Path
+from typing import List, Dict, Union
 
 from networkx import relabel_nodes, DiGraph
 
@@ -61,14 +62,14 @@ parser.add_argument('--exploration',
 args = parser.parse_args()
 
 # Set vars from arguments
-INPUT_FOLDER = args.INPUT_FOLDER
-INSTANCE_TYPES = args.INSTANCE_TYPES
-TIME_LIMIT = args.TIME_LIMIT
-SERIES = args.SERIES
-CPU_COUNT = cpu_count() if not args.CPU_COUNT else args.CPU_COUNT
-PERFORMANCE = args.PERFORMANCE
+INPUT_FOLDER: Path = Path(args.INPUT_FOLDER)
+INSTANCE_TYPES: List[str] = args.INSTANCE_TYPES
+TIME_LIMIT: int = args.TIME_LIMIT
+SERIES: bool = args.SERIES
+CPU_COUNT: int = cpu_count() if not args.CPU_COUNT else args.CPU_COUNT
+PERFORMANCE: bool = args.PERFORMANCE
 # Perfomance set up
-PERFORMANCE_SOLVER_PARAMS = {
+PERFORMANCE_SOLVER_PARAMS: Dict[str, Dict[str, Union[bool, str]]] = {
     'cvrp': {
         'dive': False,
         'greedy': True,
@@ -85,39 +86,33 @@ PERFORMANCE_SOLVER_PARAMS = {
 
 
 def run_series():
-    """
-    Iterates through all problem instances and creates csv table
+    """Iterates through all problem instances and creates csv table
     in a new folder `benchmarks/results/` in series
     """
-
     for instance_type in INSTANCE_TYPES:
-        path_to_instance_type = os.path.join(INPUT_FOLDER, instance_type)
-        for root, _, files in os.walk(path_to_instance_type):
-            for f in files:
-                path_to_instance = os.path.join(root, f)
-                if PERFORMANCE:
-                    _run_single_problem(
-                        path_to_instance,
-                        **PERFORMANCE_SOLVER_PARAMS[instance_type])
-                else:
-                    for dive in [True, False]:
-                        for cspy in [True, False]:
-                            for pricing_strategy in [
-                                    "BestPaths", "BestEdges1", "BestEdges2",
-                                    "Exact"
-                            ]:
-                                for greedy in [True, False]:
-                                    _run_single_problem(path_to_instance, dive,
-                                                        greedy, cspy,
-                                                        pricing_strategy)
+        path_to_instance_type = INPUT_FOLDER / instance_type
+        for path_to_instance in path_to_instance_type.glob("*"):
+            if PERFORMANCE:
+                _run_single_problem(path_to_instance,
+                                    **PERFORMANCE_SOLVER_PARAMS[instance_type])
+            else:
+                for dive in [True, False]:
+                    for cspy in [True, False]:
+                        for pricing_strategy in [
+                                "BestPaths", "BestEdges1", "BestEdges2", "Exact"
+                        ]:
+                            for greedy in [True, False]:
+                                _run_single_problem(path_to_instance, dive,
+                                                    greedy, cspy,
+                                                    pricing_strategy)
 
 
 def run_parallel():
-
+    """Iterates through the instances using in parallel using CPU_COUNT.
+    """
     all_files = list([
-        os.path.join(root, f) for instance_type in INSTANCE_TYPES
-        for root, _, files in os.walk(os.path.join(INPUT_FOLDER, instance_type))
-        for f in files
+        path_to_instance for instance_type in INSTANCE_TYPES
+        for path_to_instance in Path(INPUT_FOLDER / instance_type).glob("*")
     ])
 
     if PERFORMANCE:
@@ -142,28 +137,28 @@ def run_parallel():
 
 def _parallel_wrapper(input_tuple):
     if PERFORMANCE:
-        _, instance_type, _ = _split_path_to_instance(input_tuple)
+        path_to_instance = input_tuple
+        instance_type = path_to_instance.parent.stem
         _run_single_problem(input_tuple,
                             **PERFORMANCE_SOLVER_PARAMS[instance_type])
     else:
         _run_single_problem(*input_tuple)
 
 
-def _run_single_problem(path_to_instance,
-                        dive=None,
-                        greedy=None,
-                        cspy=None,
-                        pricing_strategy=None):
-    instance_folder, instance_type, instance_name = _split_path_to_instance(
-        path_to_instance)
+def _run_single_problem(path_to_instance: Path,
+                        dive: bool = None,
+                        greedy: bool = None,
+                        cspy: bool = None,
+                        pricing_strategy: str = None):
+    instance_folder = path_to_instance.parent
+    instance_type = path_to_instance.parent.stem
+    instance_name = path_to_instance.name
     logger.info("Solving instance %s", instance_name)
     # Load data
     if instance_type == "cvrp":
-        data = AugeratDataSet(path=os.path.normpath(instance_folder),
-                              instance_name=instance_name)
+        data = AugeratDataSet(path=instance_folder, instance_name=instance_name)
     elif instance_type == "cvrptw":
-        data = SolomonDataSet(path=os.path.normpath(instance_folder),
-                              instance_name=instance_name)
+        data = SolomonDataSet(path=instance_folder, instance_name=instance_name)
     # Solve problem
     prob = VehicleRoutingProblem(data.G,
                                  load_capacity=data.max_load,
@@ -180,16 +175,6 @@ def _run_single_problem(path_to_instance,
                      best_known_solution=data.best_known_solution,
                      instance_type=instance_type)
     table.from_vrpy_instance(prob)
-
-
-def _split_path_to_instance(path_to_instance):
-    """From a given full path to an instance, split into
-    root folder, parent folder, file name
-    e.g. benchmarks/cvrp, cvrp, P-50-k7.vrp
-    """
-    instance_folder, instance_name = os.path.split(path_to_instance)
-    instance_type = os.path.basename(instance_folder)
-    return instance_folder, instance_type, instance_name
 
 
 def main():
