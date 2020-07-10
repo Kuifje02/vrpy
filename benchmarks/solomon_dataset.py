@@ -39,6 +39,8 @@ class SolomonDataSet:
     def __init__(self, path, instance_name, n_vertices=None):
         self.G: DiGraph = None
         self.max_load: int = None
+        # TODO load best_known_solution somewhere
+        self.best_known_solution: int = None
 
         self._load(path, instance_name, n_vertices)
 

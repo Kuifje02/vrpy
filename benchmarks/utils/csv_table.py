@@ -36,24 +36,25 @@ class CsvTable:
                  pricing_strategy=None,
                  subproblem_type=None,
                  dive=None,
+                 greedy=None,
+                 iterations=None,
                  best_known_solution=None):
         self.path = path
         self.instance_name = instance_name if not instance_name.endswith(
             '.csv') else instance_name[:-4]
         self.instance_type = instance_type
-
-        self.best_known_solution = best_known_solution
-
-        self.dive = dive
-        self.pricing_strategy = pricing_strategy
-        self.subproblem_type = subproblem_type
-
         self.comp_time = comp_time
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
         self.integrality_gap = integrality_gap
         self.optimality_gap = optimality_gap
         self.optimal = optimal
+        self.pricing_strategy = pricing_strategy
+        self.subproblem_type = subproblem_type
+        self.dive = dive
+        self.greedy = greedy
+        self.iterations = iterations
+        self.best_known_solution = best_known_solution
 
     def from_vrpy_instance(self,
                            prob,
@@ -61,14 +62,22 @@ class CsvTable:
         """
         Create csv table using a `vrpy.VehicleRoutingProblem` instance
         """
+        # Extract releavant attributes (most are private)
         self.dive = prob._dive
+        self.greedy = prob._greedy
         self.pricing_strategy = prob._pricing_strategy
+        self.iterations = prob._iteration
         self.subproblem_type = "cspy" if prob._cspy else "lp"
+
         self.upper_bound = prob.best_value
         self.lower_bound = prob._lower_bound[-1]
+
         # Calculate gaps
-        self.integrality_gap = (self.upper_bound -
-                                self.lower_bound) / self.lower_bound * 100
+        if self.iterations > 1:
+            self.integrality_gap = (self.upper_bound -
+                                    self.lower_bound) / self.lower_bound * 100
+        else:
+            self.integrality_gap = "Not-valid"
 
         if self.best_known_solution is not None:
             self.optimality_gap = (self.upper_bound - self.best_known_solution
@@ -101,7 +110,8 @@ class CsvTable:
             writer = DictWriter(csv_file,
                                 fieldnames=[
                                     "Instance", "Pricing strategy",
-                                    "Subproblem type", "Dived", "Runtime",
+                                    "Subproblem type", "Dived", "Greedy",
+                                    "Runtime", "# of iterations",
                                     "Integrality gap", "Optimality gap",
                                     "Optimal"
                                 ])
@@ -112,10 +122,16 @@ class CsvTable:
                 "Pricing strategy": self.pricing_strategy,
                 "Subproblem type": self.subproblem_type,
                 "Dived": self.dive,
+                "Greedy": self.greedy,
                 "Runtime": self.comp_time,
+                "# of iterations": self.iterations,
                 "Integrality gap": self.integrality_gap,
                 "Optimality gap": self.optimality_gap,
                 "Optimal": self.optimal
             })
         logger.info("Results saved to %s", output_file_path)
         csv_file.close()
+
+    def get_df(self):
+        """TODO: write function to get dataframe with only the stuff we want to
+        compare with other solvers. i.e. drop the pricing_strategy, ... """

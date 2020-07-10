@@ -77,15 +77,15 @@ python3 -m pytest tests/
 
 ### Benchmarks
 
-To test on some benchmarks instances (Solomon and Augerat) do
+To run some non-regression tests on some benchmarks instances (Solomon and Augerat) do
 
 ```sh
 python3 -m pytest benchmarks/
 ```
 
-Note that running the benchmarks requires [pandas](https://pypi.org/project/pandas/).
+Note that running the benchmarks requires [pandas](https://pypi.org/project/pandas/) and that it takes a while.
 
-For more information and to run more instances, see [run](benchmarks/run.md).
+For more information and to run more instances, see the [benchmarks](benchmarks/README.md).
 
 ## Bugs
 
