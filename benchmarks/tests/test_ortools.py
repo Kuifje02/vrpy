@@ -8,10 +8,9 @@ from networkx import (
 from numpy import matrix
 import sys
 
-sys.path.append("../../vrpy/")
-sys.path.append("../../vrpy/examples/")
+sys.path.append("../vrpy/")
 from vrpy import VehicleRoutingProblem
-from ortools.data import (
+from examples.ortools.data import (
     DISTANCES,
     TRAVEL_TIMES,
     TIME_WINDOWS_LOWER,
