@@ -1,7 +1,7 @@
 import logging
 from time import time
 
-from networkx import DiGraph, shortest_path, NetworkXError, has_path
+from networkx import DiGraph, shortest_path
 
 from vrpy.greedy import Greedy
 from vrpy.master_solve_pulp import MasterSolvePulp
@@ -10,6 +10,8 @@ from vrpy.subproblem_cspy import SubProblemCSPY
 from vrpy.subproblem_greedy import SubProblemGreedy
 from vrpy.clarke_wright import ClarkeWright, RoundTrip
 from vrpy.schedule import Schedule
+from vrpy.checks import (check_arguments, check_consistency, check_feasibility,
+                         check_initial_routes, check_vrp)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -109,9 +111,8 @@ class VehicleRoutingProblem:
         self._best_value = None
         self._best_routes = []
         self._best_routes_as_graphs = []
-
         # Check if given inputs are consistent
-        self._check_vrp()
+        check_vrp(self.G)
 
         # Runtime for latest solve call
         self.comp_time = None
@@ -270,16 +271,29 @@ class VehicleRoutingProblem:
         else:
             self._vehicle_types = 1
         # Consistency checks
-        self._check_arguments()
+        check_arguments(num_stops=self.num_stops,
+                        load_capacity=self.load_capacity,
+                        duration=self.duration,
+                        pricing_strategy=self._pricing_strategy,
+                        mixed_fleet=self.mixed_fleet,
+                        fixed_cost=self.fixed_cost,
+                        G=self.G,
+                        vehicle_types=self._vehicle_types,
+                        num_vehicles=self.num_vehicles)
         # Setup fixed costs
         if self.fixed_cost:
             self._add_fixed_costs()
         # Setup default attributes if missing
         self._update_dummy_attributes()
         # Check options consistency
-        self._check_consistency()
+        check_consistency(cspy=self._cspy,
+                          pickup_delivery=self.pickup_delivery,
+                          pricing_strategy=self._pricing_strategy,
+                          G=self.G)
         # Check feasibility
-        self._check_feasibility()
+        check_feasibility(load_capacity=self.load_capacity,
+                          G=self.G,
+                          duration=self.duration)
         # Lock preassigned routes
         if self._preassignments:
             self._lock()
@@ -293,7 +307,7 @@ class VehicleRoutingProblem:
         """Initialization with feasible solution."""
         if self._initial_routes:
             # Initial solution is given as input
-            self._check_initial_routes()
+            check_initial_routes(initial_routes=self._initial_routes, G=self.G)
         else:
             # Initial solution is computed with Clarke & Wright (or round trips)
             self._get_initial_solution()
@@ -728,162 +742,6 @@ class VehicleRoutingProblem:
                 for u in self.G.predecessors("Sink"))
         # Keep a (deep) copy of the graph
         self._H = self.G.to_directed()
-
-    def _check_vrp(self):
-        """Checks if graph is well defined."""
-        # if G is not a DiGraph
-        if not isinstance(self.G, DiGraph):
-            raise TypeError(
-                "Input graph must be of type networkx.classes.digraph.DiGraph.")
-        for v in ["Source", "Sink"]:
-            # If Source or Sink is missing
-            if v not in self.G.nodes():
-                raise KeyError("Input graph requires Source and Sink nodes.")
-            # If Source has incoming edges
-            if len(list(self.G.predecessors("Source"))) > 0:
-                raise NetworkXError("Source must have no incoming edges.")
-            # If Sink has outgoing edges
-            if len(list(self.G.successors("Sink"))) > 0:
-                raise NetworkXError("Sink must have no outgoing edges.")
-        # Roundtrips should always be possible
-        # Missing edges are added with a high cost
-        for v in self.G.nodes():
-            if v not in ["Source", "Sink"]:
-                if v not in self.G.successors("Source"):
-                    logger.warning("Source not connected to %s" % v)
-                    self.G.add_edge("Source", v, cost=1e10)
-                if v not in self.G.predecessors("Sink"):
-                    logger.warning("%s not connected to Sink" % v)
-                    self.G.add_edge(v, "Sink", cost=1e10)
-        # If graph is disconnected
-        if not has_path(self.G, "Source", "Sink"):
-            raise NetworkXError("Source and Sink are not connected.")
-        # If cost is missing
-        for (i, j) in self.G.edges():
-            if "cost" not in self.G.edges[i, j]:
-                raise KeyError("Edge (%s,%s) requires cost attribute" % (i, j))
-
-    def _check_arguments(self):
-        """Checks if arguments are consistent."""
-        # If num_stops/load_capacity/duration are not integers
-        if self.num_stops and (not isinstance(self.num_stops, int) or
-                               self.num_stops <= 0):
-            raise TypeError("Maximum number of stops must be positive integer.")
-        if self.load_capacity:
-            for value in self.load_capacity:
-                if not isinstance(value, int) or value <= 0:
-                    raise TypeError("Load capacity must be positive integer.")
-        if self.duration and (not isinstance(self.duration, int) or
-                              self.duration < 0):
-            raise TypeError("Maximum duration must be positive integer.")
-        strategies = [
-            "Exact",
-            "BestEdges1",
-            "BestEdges2",
-            "BestPaths",
-        ]
-        if self._pricing_strategy not in strategies:
-            raise ValueError(
-                "Pricing strategy %s is not valid. Pick one among %s" %
-                (self._pricing_strategy, strategies))
-        if self.mixed_fleet:
-            if self.load_capacity and self.num_vehicles:
-                if not len(self.load_capacity) == len(self.num_vehicles):
-                    raise ValueError(
-                        "Input arguments load_capacity and num_vehicles must have same dimension."
-                    )
-            if self.load_capacity and self.fixed_cost:
-                if not len(self.load_capacity) == len(self.fixed_cost):
-                    raise ValueError(
-                        "Input arguments load_capacity and fixed_cost must have same dimension."
-                    )
-            if self.num_vehicles and self.fixed_cost:
-                if not len(self.num_vehicles) == len(self.fixed_cost):
-                    raise ValueError(
-                        "Input arguments num_vehicles and fixed_cost must have same dimension."
-                    )
-            for (i, j) in self.G.edges():
-                if not isinstance(self.G.edges[i, j]["cost"], list):
-                    raise TypeError(
-                        "Cost attribute for edge (%s,%s) should be of type list"
-                    )
-                if len(self.G.edges[i, j]["cost"]) != self._vehicle_types:
-                    raise ValueError(
-                        "Cost attribute for edge (%s,%s) has dimension %s, should have dimension %s."
-                        % (i, j, len(
-                            self.G.edges[i, j]["cost"]), self._vehicle_types))
-
-    def _check_initial_routes(self):
-        """
-        Checks if initial routes are consistent.
-        TO DO : check if it is entirely feasible depending on VRP type.
-        One way of doing it : run the subproblem by fixing variables corresponding to initial solution.
-        """
-        # Check if routes start at Sink and end at Node
-        for route in self._initial_routes:
-            if route[0] != "Source" or route[-1] != "Sink":
-                raise ValueError(
-                    "Route %s must start at Source and end at Sink" % route)
-        # Check if every node is in at least one route
-        for v in self.G.nodes():
-            if v not in ["Source", "Sink"]:
-                node_found = 0
-                for route in self._initial_routes:
-                    if v in route:
-                        node_found += 1
-                if node_found == 0:
-                    raise KeyError("Node %s missing from initial solution." % v)
-        # Check if edges from initial solution exist and have cost attribute
-        for route in self._initial_routes:
-            edges = list(zip(route[:-1], route[1:]))
-            for (i, j) in edges:
-                if (i, j) not in self.G.edges():
-                    raise KeyError(
-                        "Edge (%s,%s) in route %s missing in graph." %
-                        (i, j, route))
-                if "cost" not in self.G.edges[i, j]:
-                    raise KeyError("Edge (%s,%s) has no cost attribute." %
-                                   (i, j))
-
-    def _check_consistency(self):
-        """Raises errors if options are inconsistent with parameters."""
-        # pickup delivery requires cspy=False
-        if self._cspy and self.pickup_delivery:
-            raise NotImplementedError(
-                "pickup_delivery option requires cspy=False.")
-        # pickup delivery requires pricing_stragy="Exact"
-        if self.pickup_delivery and self._pricing_strategy != "Exact":
-            self._pricing_strategy = "Exact"
-            logger.warning("Pricing_strategy changed to 'Exact'.")
-        # pickup delivery expects at least one request
-        if self.pickup_delivery:
-            request = False
-            for v in self.G.nodes():
-                if "request" in self.G.nodes[v]:
-                    request = True
-                    break
-            if not request:
-                raise KeyError(
-                    "pickup_delivery option expects at least one request.")
-
-    def _check_feasibility(self):
-        """Checks basic problem feasibility."""
-        if self.load_capacity:
-            for v in self.G.nodes():
-                if self.G.nodes[v]["demand"] > max(self.load_capacity):
-                    raise ValueError(
-                        "Demand %s at node %s larger than max capacity %s." %
-                        (self.G.nodes[v]["demand"], v, max(self.load_capacity)))
-        if self.duration:
-            for v in self.G.nodes():
-                if v not in ["Source", "Sink"]:
-                    round_trip_duration = (self.G.nodes[v]["service_time"] +
-                                           self.G.edges["Source", v]["time"] +
-                                           self.G.edges[v, "Sink"]["time"])
-                    if round_trip_duration > self.duration:
-                        raise ValueError(
-                            "Node %s not reachable: duration of path [Source,%s,Sink], %s, is larger than max duration %s."
-                            % (v, v, round_trip_duration, self.duration))
 
     def _best_routes_as_node_lists(self):
         """Converts route as DiGraph to route as node list."""

@@ -129,7 +129,7 @@ def run_parallel():
             product(
                 all_files,
                 [True, False],  # dive
-                [True, False],  # greedy
+                [True],  # greedy
                 [True],  # cspy
                 ["BestPaths"]))
 
