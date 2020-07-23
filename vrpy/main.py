@@ -108,7 +108,7 @@ class VehicleRoutingProblem:
         self._best_routes = []
         self._best_routes_as_graphs = []
         # Check if given inputs are consistent
-        check_vrp(self)
+        check_vrp(self.G)
 
         # Runtime for latest solve call
         self.comp_time = None
@@ -268,16 +268,29 @@ class VehicleRoutingProblem:
         else:
             self._vehicle_types = 1
         # Consistency checks
-        check_arguments(self)
+        check_arguments(num_stops=self.num_stops,
+                        load_capacity=self.load_capacity,
+                        duration=self.duration,
+                        pricing_strategy=self._pricing_strategy,
+                        mixed_fleet=self.mixed_fleet,
+                        fixed_cost=self.fixed_cost,
+                        G=self.G,
+                        vehicle_types=self._vehicle_types,
+                        num_vehicles=self.num_vehicles)
         # Setup fixed costs
         if self.fixed_cost:
             self._add_fixed_costs()
         # Setup default attributes if missing
         self._update_dummy_attributes()
         # Check options consistency
-        check_consistency(self)
+        check_consistency(cspy=self._cspy,
+                          pickup_delivery=self.pickup_delivery,
+                          pricing_strategy=self._pricing_strategy,
+                          G=self.G)
         # Check feasibility
-        check_feasibility(self)
+        check_feasibility(load_capacity=self.load_capacity,
+                          G=self.G,
+                          duration=self.duration)
         # Lock preassigned routes
         if self._preassignments:
             self._lock()
@@ -291,7 +304,7 @@ class VehicleRoutingProblem:
         """Initialization with feasible solution."""
         if self._initial_routes:
             # Initial solution is given as input
-            check_initial_routes(self)
+            check_initial_routes(initial_routes=self._initial_routes, G=self.G)
         else:
             # Initial solution is computed with Clarke & Wright (or round trips)
             self._get_initial_solution()
