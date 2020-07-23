@@ -68,10 +68,9 @@ class Greedy:
         out_going_costs = {}
         # Store the successors cost that meet constraints
         for v in self.G.successors(self._last_node):
-            if self._constraints_met(v):
-                if v in self._unprocessed_nodes:
-                    out_going_costs[v] = self.G.edges[self._last_node,
-                                                      v]["cost"]
+            if self._constraints_met(v) and v in self._unprocessed_nodes:
+                out_going_costs[v] = self.G.edges[self._last_node,
+                                                  v]["cost"]
         if out_going_costs == {}:
             logger.debug("path cannot be extended")
             self._new_node = "Sink"
@@ -127,10 +126,7 @@ class Greedy:
     def _check_duration(self, v):
         """Checks duration constraint."""
         u = self._current_path[-1]
-        if v != "Sink":
-            return_time = self.G.edges[v, "Sink"]["time"]
-        else:
-            return_time = 0
+        return_time = self.G.edges[v, "Sink"]["time"] if v != "Sink" else 0
         return (self._time + self.G.nodes[v]["service_time"] +
                 self.G.edges[u, v]["time"] + return_time <= self.duration)
 

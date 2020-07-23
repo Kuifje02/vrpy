@@ -46,10 +46,10 @@ class SubProblemLP(SubProblemBase):
                     pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
             more_routes = True
             self._add_new_route()
-            return self.routes, more_routes
         else:
             more_routes = False
-            return self.routes, more_routes
+
+        return self.routes, more_routes
 
     def _add_new_route(self):
         route_id = len(self.routes) + 1

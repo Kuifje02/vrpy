@@ -115,10 +115,12 @@ def run_series():
 def run_parallel():
     """Iterates through the instances using in parallel using CPU_COUNT.
     """
-    all_files = list([
-        path_to_instance for instance_type in INSTANCE_TYPES
+    all_files = [
+        path_to_instance
+        for instance_type in INSTANCE_TYPES
         for path_to_instance in Path(INPUT_FOLDER / instance_type).glob("*")
-    ])
+    ]
+
 
     if PERFORMANCE:
         # Iterate through all files
