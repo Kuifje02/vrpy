@@ -100,11 +100,7 @@ class CsvTable:
         # Append to file if it already exists
         file_name = self.instance_type + ".csv"
         output_file_path = output_folder / file_name
-        if output_file_path.is_file():
-            mode = 'a'
-        else:
-            mode = 'w'
-
+        mode = 'a' if output_file_path.is_file() else 'w'
         with open(output_file_path, mode, newline='') as csv_file:
             writer = DictWriter(csv_file,
                                 fieldnames=[

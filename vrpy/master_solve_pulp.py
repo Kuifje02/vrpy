@@ -213,11 +213,15 @@ class MasterSolvePulp(MasterProblemBase):
         for r in self.routes:
             val = pulp.value(self.y[r.graph["name"]])
             if val is not None and val > 0:
-                logger.debug("%s cost %s load %s" % (
-                    shortest_path(r, "Source", "Sink"),
-                    r.graph["cost"],
-                    sum([self.G.nodes[v]["demand"] for v in r.nodes()]),
-                ))
+                logger.debug(
+                    "%s cost %s load %s"
+                    % (
+                        shortest_path(r, "Source", "Sink"),
+                        r.graph["cost"],
+                        sum(self.G.nodes[v]["demand"] for v in r.nodes()),
+                    )
+                )
+
                 best_routes.append(r)
         if self.drop_penalty:
             self.dropped_nodes = [
@@ -281,10 +285,7 @@ class MasterSolvePulp(MasterProblemBase):
                     "depot_from" not in self.G.nodes[node] and
                     "depot_to" not in self.G.nodes[node]):
                 # Set RHS
-                if self.periodic:
-                    right_hand_term = self.G.nodes[node]["frequency"]
-                else:
-                    right_hand_term = 1
+                right_hand_term = self.G.nodes[node]["frequency"] if self.periodic else 1
                 # Save set covering constraints
                 self.set_covering_constrs[node] = pulp.LpConstraintVar(
                     "visit_node_%s" % node, pulp.LpConstraintGE,

@@ -37,21 +37,30 @@ def check_arguments(num_stops: int = None,
         raise ValueError("Pricing strategy %s is not valid. Pick one among %s" %
                          (pricing_strategy, strategies))
     if mixed_fleet:
-        if load_capacity and num_vehicles:
-            if not len(load_capacity) == len(num_vehicles):
-                raise ValueError(
-                    "Input arguments load_capacity and num_vehicles must have same dimension."
-                )
-        if load_capacity and fixed_cost:
-            if not len(load_capacity) == len(fixed_cost):
-                raise ValueError(
-                    "Input arguments load_capacity and fixed_cost must have same dimension."
-                )
-        if num_vehicles and fixed_cost:
-            if not len(num_vehicles) == len(fixed_cost):
-                raise ValueError(
-                    "Input arguments num_vehicles and fixed_cost must have same dimension."
-                )
+        if (
+            load_capacity
+            and num_vehicles
+            and len(load_capacity) != len(num_vehicles)
+        ):
+            raise ValueError(
+                "Input arguments load_capacity and num_vehicles must have same dimension."
+            )
+        if (
+            load_capacity
+            and fixed_cost
+            and len(load_capacity) != len(fixed_cost)
+        ):
+            raise ValueError(
+                "Input arguments load_capacity and fixed_cost must have same dimension."
+            )
+        if (
+            num_vehicles
+            and fixed_cost
+            and len(num_vehicles) != len(fixed_cost)
+        ):
+            raise ValueError(
+                "Input arguments num_vehicles and fixed_cost must have same dimension."
+            )
         for (i, j) in G.edges():
             if not isinstance(G.edges[i, j]["cost"], list):
                 raise TypeError(
@@ -144,11 +153,7 @@ def check_consistency(cspy: bool = None,
         logger.warning("Pricing_strategy changed to 'Exact'.")
     # pickup delivery expects at least one request
     if pickup_delivery:
-        request = False
-        for v in G.nodes():
-            if "request" in G.nodes[v]:
-                request = True
-                break
+        request = any("request" in G.nodes[v] for v in G.nodes())
         if not request:
             raise KeyError(
                 "pickup_delivery option expects at least one request.")
