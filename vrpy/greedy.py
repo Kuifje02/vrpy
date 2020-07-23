@@ -1,6 +1,6 @@
-from networkx import DiGraph, add_path, shortest_path
-from random import choice
 import logging
+
+from networkx import add_path, shortest_path
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,7 @@ class Greedy:
         load_capacity (int, optional) : Maximum load per route. Defaults to None.
         num_stops (int, optional) : Maximum stops per route. Defaults to None.
     """
+
     def __init__(self, G, load_capacity=None, num_stops=None, duration=None):
         self.G = G.copy()
         self._format_cost()
@@ -31,6 +32,14 @@ class Greedy:
         self.duration = duration
 
         self._best_value = 0
+
+    @property
+    def best_value(self):
+        return self._best_value
+
+    @property
+    def best_routes(self):
+        return self._best_routes
 
     def run(self):
         """The forward search is run."""
@@ -70,8 +79,7 @@ class Greedy:
             self._new_node = "Sink"
         else:
             # Select best successor
-            self._new_node = sorted(out_going_costs,
-                                    key=out_going_costs.get)[0]
+            self._new_node = sorted(out_going_costs, key=out_going_costs.get)[0]
 
     def _constraints_met(self, v):
         """Checks if constraints are respected."""
@@ -99,8 +107,7 @@ class Greedy:
             # End path
             self._current_path.append("Sink")
             if self._new_node in self.G.predecessors("Sink"):
-                self._best_value += self.G.edges[self._new_node,
-                                                 "Sink"]["cost"]
+                self._best_value += self.G.edges[self._new_node, "Sink"]["cost"]
                 self._new_node = "Sink"
             else:
                 self._best_value += 1e10
@@ -134,11 +141,3 @@ class Greedy:
         for (i, j) in self.G.edges():
             if isinstance(self.G.edges[i, j]["cost"], list):
                 self.G.edges[i, j]["cost"] = self.G.edges[i, j]["cost"][0]
-
-    @property
-    def best_value(self):
-        return self._best_value
-
-    @property
-    def best_routes(self):
-        return self._best_routes

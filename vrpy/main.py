@@ -96,6 +96,7 @@ class VehicleRoutingProblem:
         self._dive = None
         self._start_time = None
         self._greedy = None
+        self._max_iter = None
         # parameters for column generation stopping criteria
         self._more_routes = None
         self._iteration = 0
@@ -125,6 +126,7 @@ class VehicleRoutingProblem:
               solver="cbc",
               dive=False,
               greedy=False,
+              max_iter=None,
               compute_runtime=False):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
@@ -189,6 +191,7 @@ class VehicleRoutingProblem:
         self._cspy = cspy
         self._dive = False
         self._greedy = greedy
+        self._max_iter = max_iter
         self._start_time = time()
         if preassignments:
             self._preassignments = preassignments
@@ -255,8 +258,9 @@ class VehicleRoutingProblem:
                           float) and self._get_time_remaining() == 0.0:
                 logger.info("time up !")
                 break
-            # Stop if no improvement limit is passed
-            if self._no_improvement > 1000:
+            # Stop if no improvement limit is passed or max iter exceeded
+            if self._no_improvement > 1000 or (
+                    self._max_iter and self._iteration >= self._max_iter):
                 break
 
     def _pre_solve(self):

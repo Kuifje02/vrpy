@@ -3,7 +3,7 @@
 benchmarks/data/cvrp/*
 !benchmarks/data/cvrp/A-n16*
 benchmarks/data/cvrtw/*
-!benchmarks/data/cvrtw/c101*
+!benchmarks/data/cvrtw/C101*
 benchmarks/results
 
 # Byte-compiled / optimized / DLL files

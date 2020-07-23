@@ -20,7 +20,7 @@ class TestsSolomon:
 
     def test_subproblem(self, n):
         data = SolomonDataSet(path="benchmarks/data/cvrptw/",
-                              instance_name="c101.txt",
+                              instance_name="C101.txt",
                               n_vertices=n)
         self.G = data.G
         self.prob = VehicleRoutingProblem(self.G,

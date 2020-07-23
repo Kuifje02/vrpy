@@ -2,8 +2,6 @@ from pathlib import Path
 from csv import DictWriter
 from logging import getLogger
 
-from vrpy import VehicleRoutingProblem
-
 logger = getLogger(__name__)
 
 

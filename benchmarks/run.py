@@ -34,6 +34,7 @@ parser.add_argument('--instance_types',
                     help='Type of instance to run: crvp, cvrptw.' +
                     ' Note same name as folder in data. Default: cvrp')
 parser.add_argument('--time_limit',
+                    '-t',
                     type=int,
                     default=10,
                     dest="TIME_LIMIT",
@@ -73,14 +74,15 @@ PERFORMANCE_SOLVER_PARAMS: Dict[str, Dict[str, Union[bool, str]]] = {
     'cvrp': {
         'dive': False,
         'greedy': True,
-        'cspy': False,
+        'cspy': True,
         'pricing_strategy': 'BestEdges1'
     },
     'cvrptw': {
         'dive': False,
         'greedy': True,
-        'cspy': True,
-        'pricing_strategy': 'BestEdges1'
+        'cspy': False,
+        'pricing_strategy': 'BestEdges1',
+        'max_iter': 0
     }
 }
 
@@ -102,9 +104,12 @@ def run_series():
                                 "BestPaths", "BestEdges1", "BestEdges2", "Exact"
                         ]:
                             for greedy in [True, False]:
-                                _run_single_problem(path_to_instance, dive,
-                                                    greedy, cspy,
-                                                    pricing_strategy)
+                                _run_single_problem(
+                                    path_to_instance,
+                                    dive=dive,
+                                    greedy=greedy,
+                                    cspy=cspy,
+                                    pricing_strategy=pricing_strategy)
 
 
 def run_parallel():
@@ -123,10 +128,10 @@ def run_parallel():
         iterate_over = list(
             product(
                 all_files,
-                [False],  # dive
+                [True, False],  # dive
                 [True, False],  # greedy
-                [False, True],  # cspy
-                ["BestPaths", "BestEdges1", "BestEdges2", "Exact"]))
+                [True],  # cspy
+                ["BestPaths"]))
 
     pool = Pool(processes=CPU_COUNT)
     with pool:
@@ -139,17 +144,18 @@ def _parallel_wrapper(input_tuple):
     if PERFORMANCE:
         path_to_instance = input_tuple
         instance_type = path_to_instance.parent.stem
-        _run_single_problem(input_tuple,
+        _run_single_problem(path_to_instance,
                             **PERFORMANCE_SOLVER_PARAMS[instance_type])
     else:
-        _run_single_problem(*input_tuple)
+        kwargs = dict(
+            zip([
+                "path_to_instance", "dive", "greedy", "cspy", "pricing_strategy"
+            ], input_tuple))
+        _run_single_problem(**kwargs)
 
 
-def _run_single_problem(path_to_instance: Path,
-                        dive: bool = None,
-                        greedy: bool = None,
-                        cspy: bool = None,
-                        pricing_strategy: str = None):
+def _run_single_problem(path_to_instance: Path, **kwargs):
+    'Run single problem with solver arguments as in kwargs'
     instance_folder = path_to_instance.parent
     instance_type = path_to_instance.parent.stem
     instance_name = path_to_instance.name
@@ -163,15 +169,10 @@ def _run_single_problem(path_to_instance: Path,
     prob = VehicleRoutingProblem(data.G,
                                  load_capacity=data.max_load,
                                  time_windows=bool(instance_type == "cvrptw"))
-    start = time()
-    prob.solve(dive=dive,
-               cspy=cspy,
-               greedy=greedy,
-               time_limit=TIME_LIMIT,
-               pricing_strategy=pricing_strategy)
+    prob.solve(**kwargs, compute_runtime=True)
     # Output results
     table = CsvTable(instance_name=instance_name,
-                     comp_time=time() - start,
+                     comp_time=prob.comp_time,
                      best_known_solution=data.best_known_solution,
                      instance_type=instance_type)
     table.from_vrpy_instance(prob)

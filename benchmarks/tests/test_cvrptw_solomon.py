@@ -10,7 +10,7 @@ class TestsSolomon:
         Solomon instance c101, 25 first nodes only including depot
         """
         data = SolomonDataSet(path="benchmarks/data/cvrptw/",
-                              instance_name="c101.txt",
+                              instance_name="C101.txt",
                               n_vertices=25)
         self.G = data.G
         self.n_vertices = 25
