@@ -30,7 +30,7 @@ class TestsSolomon:
         }
 
     def test_setup_instance_name(self):
-        assert self.G.graph["name"] == "c101." + str(self.n_vertices)
+        assert self.G.graph["name"] == "C101." + str(self.n_vertices)
 
     def test_setup_vehicle_capacity(self):
         assert self.G.graph["vehicle_capacity"] == 200

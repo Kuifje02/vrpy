@@ -1,7 +1,5 @@
 import logging
 
-from networkx import add_path, shortest_path
-
 logger = logging.getLogger(__name__)
 
 
