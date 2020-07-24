@@ -3,7 +3,8 @@ import logging
 from networkx import shortest_path
 import pulp
 
-from .masterproblem import MasterProblemBase
+from vrpy.masterproblem import MasterProblemBase
+from vrpy.pricing_heuristics import PricingHeuristics
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +32,7 @@ class MasterSolvePulp(MasterProblemBase):
         self.vehicle_bound_constrs = {}
         self.drop_penalty_constrs = {}
         # Diving attributes
-        self._tabu_list = []
-        self._depth = None
-        self._max_depth = None
+        self.pricing_heuristics = PricingHeuristics()
 
         self._formulate()
 
@@ -55,78 +54,12 @@ class MasterSolvePulp(MasterProblemBase):
 
         return duals, self.prob.objective.value()
 
-    def solve_and_dive(self, time_limit, max_depth=3, max_discrepancy=1):
-        """
-        Implements diving algorithm with Limited Discrepancy Search
-        Parameters as suggested by the authors. This only fixes one column.
-        `Sadykov et al. (2019)`_.
-
-        .. _Sadykov et al. (2019): https://pubsonline.informs.org/doi/abs/10.1287/ijoc.2018.0822
-        """
+    def solve_and_dive(self, time_limit):
         self._set_solver(time_limit)
         self._solve(relax=True)
-
-        # Init global diving parameters
-        if self._depth is None and self._max_depth is None:
-            self._depth = 0
-            self._max_depth = max_depth
-
-        tabu_list = []
-        relax = self.prob.deepcopy()
-        constrs = {}
-        while self._depth <= self._max_depth and len(
-                tabu_list) < max_discrepancy:
-            non_integer_vars = list(
-                var for var in relax.variables()
-                if abs(var.varValue - round(var.varValue)) != 0)
-            # All non-integer variables not already fixed in this or any
-            # iteration of the diving heuristic
-            vars_to_fix = [
-                var for var in non_integer_vars
-                if var.name not in self._tabu_list and var.name not in tabu_list
-            ]
-            if vars_to_fix:
-                # If non-integer variables not already fixed and
-                # max_discrepancy not violated
-
-                var_to_fix = min(
-                    vars_to_fix,
-                    key=lambda x: abs(x.varValue - round(x.varValue)))
-                value_to_fix = 1
-                value_previous = var_to_fix.varValue
-
-                name_le = "fix_{}_LE".format(var_to_fix.name)
-                name_ge = "fix_{}_GE".format(var_to_fix.name)
-                constrs[name_le] = pulp.LpConstraint(var_to_fix,
-                                                     pulp.LpConstraintLE,
-                                                     name=name_le,
-                                                     rhs=value_to_fix)
-                constrs[name_ge] = pulp.LpConstraint(var_to_fix,
-                                                     pulp.LpConstraintGE,
-                                                     name=name_ge,
-                                                     rhs=value_to_fix)
-
-                relax += constrs[name_le]  # add <= constraint
-                relax += constrs[name_ge]  # add >= constraint
-                relax.resolve()
-                tabu_list.append(var_to_fix.name)
-                self._depth += 1
-                # if not optimal status code from :
-                # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
-                if not (relax.status != 1):
-                    self.prob.extend(constrs)
-                logger.debug("fixed %s with previous value %s", var_to_fix.name,
-                             value_previous)
-            else:
-                break
-        self._tabu_list.extend(tabu_list)  # Update global tabu list
-        # To avoid resolving the problem again, use the local `relax` lp
-        if not relax.status != 1:
-            return self.get_duals(relax), relax.objective.value()
-        # Otherwise solve the master problem again and use that
-        else:
-            self.prob.resolve()
-            return self.get_duals(), self.prob.objective.value()
+        self.pricing_heuristics.run_dive(self.prob)
+        self.prob.resolve()
+        return self.get_duals(), self.prob.objective.value()
 
     def update(self, new_route):
         """Add new column.
@@ -213,14 +146,11 @@ class MasterSolvePulp(MasterProblemBase):
         for r in self.routes:
             val = pulp.value(self.y[r.graph["name"]])
             if val is not None and val > 0:
-                logger.debug(
-                    "%s cost %s load %s"
-                    % (
-                        shortest_path(r, "Source", "Sink"),
-                        r.graph["cost"],
-                        sum(self.G.nodes[v]["demand"] for v in r.nodes()),
-                    )
-                )
+                logger.debug("%s cost %s load %s" % (
+                    shortest_path(r, "Source", "Sink"),
+                    r.graph["cost"],
+                    sum(self.G.nodes[v]["demand"] for v in r.nodes()),
+                ))
 
                 best_routes.append(r)
         if self.drop_penalty:
@@ -285,7 +215,8 @@ class MasterSolvePulp(MasterProblemBase):
                     "depot_from" not in self.G.nodes[node] and
                     "depot_to" not in self.G.nodes[node]):
                 # Set RHS
-                right_hand_term = self.G.nodes[node]["frequency"] if self.periodic else 1
+                right_hand_term = self.G.nodes[node][
+                    "frequency"] if self.periodic else 1
                 # Save set covering constraints
                 self.set_covering_constrs[node] = pulp.LpConstraintVar(
                     "visit_node_%s" % node, pulp.LpConstraintGE,

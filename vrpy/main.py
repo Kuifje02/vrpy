@@ -415,7 +415,6 @@ class VehicleRoutingProblem:
             self._no_improvement = 0
         if not self._dive:
             self._lower_bound.append(relaxed_cost)
-        # Add column (new route) to the master problem
 
     def _get_time_remaining(self, mip: bool = False):
         """
@@ -762,7 +761,8 @@ class VehicleRoutingProblem:
                 best_cost = 1e10
                 for k in range(self._vehicle_types):
                     # If different vehicles, the cheapest feasible one is accounted for
-                    cost = sum(self._H.edges[i, j]["cost"][k] for (i, j) in edges)
+                    cost = sum(
+                        self._H.edges[i, j]["cost"][k] for (i, j) in edges)
                     load = sum(self._H.nodes[i]["demand"] for i in route)
                     if cost < best_cost:
                         if self.load_capacity:
@@ -825,7 +825,8 @@ class VehicleRoutingProblem:
             edges = list(
                 zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
             k = self._best_routes_vehicle_type[route]
-            cost[route] = sum(self._H.edges[i, j]["cost"][k] for (i, j) in edges)
+            cost[route] = sum(
+                self._H.edges[i, j]["cost"][k] for (i, j) in edges)
         return cost
 
     @property
@@ -836,7 +837,8 @@ class VehicleRoutingProblem:
                 self.pickup_delivery):
             return load
         for route in self.best_routes:
-            load[route] = sum(self._H.nodes[v]["demand"] for v in self.best_routes[route])
+            load[route] = sum(
+                self._H.nodes[v]["demand"] for v in self.best_routes[route])
         return load
 
     @property
@@ -872,11 +874,11 @@ class VehicleRoutingProblem:
             edges = list(
                 zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
             # Travel times
-            duration[route] = sum(self._H.edges[i, j]["time"] for (i, j) in edges)
+            duration[route] = sum(
+                self._H.edges[i, j]["time"] for (i, j) in edges)
             # Service times
-            duration[route] += sum(
-                self._H.nodes[v]["service_time"] for v in self.best_routes[route]
-            )
+            duration[route] += sum(self._H.nodes[v]["service_time"]
+                                   for v in self.best_routes[route])
 
         return duration
 
