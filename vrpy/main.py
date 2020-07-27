@@ -10,6 +10,7 @@ from .subproblem_greedy import SubProblemGreedy
 from .clarke_wright import ClarkeWright, RoundTrip
 from .schedule import Schedule
 from .check import check_arguments, check_consistency, check_feasibility, check_initial_routes, check_vrp
+#from .hyper_price_selection import halvardo_hyper
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -112,6 +113,8 @@ class VehicleRoutingProblem:
 
         # Runtime for latest solve call
         self.comp_time = None
+
+        # Initialise the HyperHeuristic solver
 
     def solve(self,
               initial_routes=None,
@@ -300,7 +303,7 @@ class VehicleRoutingProblem:
         if self.load_capacity and not self.pickup_delivery:
             self._get_num_stops_upper_bound(self._max_capacity)
 
-    def _initialize(self, solver):  #
+    def _initialize(self, solver):
         """Initialization with feasible solution."""
         if self._initial_routes:
             # Initial solution is given as input
@@ -324,6 +327,9 @@ class VehicleRoutingProblem:
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
 
+        #REFACTOR:
+        #gjør dette sammen med den andre utviklingen.
+
         # Solve restricted relaxed master problem
         if self._dive:
             duals, relaxed_cost = self.masterproblem.solve_and_dive(
@@ -333,6 +339,16 @@ class VehicleRoutingProblem:
                 relax=True, time_limit=self._get_time_remaining())
         if not self._dive:
             logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
+
+        # Set the new objective value
+        # it should accept the first move, sjekk om noe eksternt kan hjelpe oss vs internt
+        # .move_acceptance(new_objective_value)
+        # Forslag på rekkefølge:
+        # move_acceptance
+        # update_parameters
+        # pick_heuristic
+
+        #Hvordan ta hensyn til subproblem per vehicle type?
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
@@ -353,6 +369,10 @@ class VehicleRoutingProblem:
             # Continue searching for columns
             self._more_routes = False
 
+            # find heuristic here
+            # way to initialise it?
+            #
+
             if not self._more_routes and self._pricing_strategy == "BestPaths":
                 for k_shortest_paths in [3, 5, 7, 9]:
                     subproblem = self._def_subproblem(
@@ -361,6 +381,8 @@ class VehicleRoutingProblem:
                         "BestPaths",
                         k_shortest_paths,
                     )
+
+                    # se her!
                     self.routes, self._more_routes = subproblem.solve(
                         self._get_time_remaining())
                     if self._more_routes:
@@ -405,6 +427,8 @@ class VehicleRoutingProblem:
                 )
             if self._more_routes:
                 self.masterproblem.update(self.routes[-1])
+
+            #
 
         # Keep track of convergence rate and update stopping criteria parameters
         self._iteration += 1
@@ -575,6 +599,32 @@ class VehicleRoutingProblem:
                 else:
                     self._routes_with_node[v] = [G]
 
+    def knapsack(self, weights, capacity):
+        """
+            Binary knapsack solver with identical profits of weight 1.
+            Args:
+                weights (list) : list of integers
+                capacity (int) : maximum capacity
+            Returns:
+                (int) : maximum number of objects
+            """
+        n = len(weights)
+        # sol : [items, remaining capacity]
+        sol = [[0] * (capacity + 1) for i in range(n)]
+        added = [[False] * (capacity + 1) for i in range(n)]
+        for i in range(n):
+            for j in range(capacity + 1):
+                if weights[i] > j:
+                    sol[i][j] = sol[i - 1][j]
+                else:
+                    sol_add = 1 + sol[i - 1][j - weights[i]]
+                    if sol_add > sol[i - 1][j]:
+                        sol[i][j] = sol_add
+                        added[i][j] = True
+                    else:
+                        sol[i][j] = sol[i - 1][j]
+        return sol[n - 1][capacity]
+
     def _get_num_stops_upper_bound(self, max_capacity):
         """
         Finds upper bound on number of stops, from here :
@@ -583,39 +633,19 @@ class VehicleRoutingProblem:
         A knapsack problem is solved to maximize the number of
         visits, subject to capacity constraints.
         """
-        def knapsack(weights, capacity):
-            """
-            Binary knapsack solver with identical profits of weight 1.
-            Args:
-                weights (list) : list of integers
-                capacity (int) : maximum capacity
-            Returns:
-                (int) : maximum number of objects
-            """
-            n = len(weights)
-            # sol : [items, remaining capacity]
-            sol = [[0] * (capacity + 1) for i in range(n)]
-            added = [[False] * (capacity + 1) for i in range(n)]
-            for i in range(n):
-                for j in range(capacity + 1):
-                    if weights[i] > j:
-                        sol[i][j] = sol[i - 1][j]
-                    else:
-                        sol_add = 1 + sol[i - 1][j - weights[i]]
-                        if sol_add > sol[i - 1][j]:
-                            sol[i][j] = sol_add
-                            added[i][j] = True
-                        else:
-                            sol[i][j] = sol[i - 1][j]
-            return sol[n - 1][capacity]
+
+        #REFACTOR
+        #plassér knapsackfunksjonen utenfor og kall
+        #kan gjøre knapsack enklere
 
         # Maximize sum of vertices such that sum of demands respect capacity constraints
         demands = [int(self.G.nodes[v]["demand"]) for v in self.G.nodes()]
         # Solve the knapsack problem
-        max_num_stops = knapsack(demands, max_capacity)
+        max_num_stops = self.knapsack(demands, max_capacity)
         if self.distribution_collection:
             collect = [int(self.G.nodes[v]["collect"]) for v in self.G.nodes()]
-            max_num_stops = min(max_num_stops, knapsack(collect, max_capacity))
+            max_num_stops = min(max_num_stops,
+                                self.knapsack(collect, max_capacity))
         # Update num_stops attribute
         if self.num_stops:
             self.num_stops = min(max_num_stops, self.num_stops)
@@ -658,6 +688,11 @@ class VehicleRoutingProblem:
            - Removes useless edges from graph
            - Strengthens time windows
         """
+
+        #REFACTOR:
+        # Lag to nye funksjoner og kall
+        #
+
         infeasible_arcs = []
         if isinstance(self.load_capacity, list):
             self._max_capacity = max(self.load_capacity)
@@ -698,6 +733,9 @@ class VehicleRoutingProblem:
         self.G.remove_edges_from(infeasible_arcs)
 
     def _update_dummy_attributes(self):
+        #REFACTOR:
+        # Hva er vitsen med å dele opp funksjonen?
+        # Ide: lag mindre funksjoner og kall de herfra
         """Adds dummy attributes on nodes and edges if missing."""
         # Set attr = 0 if missing
         for v in self.G.nodes():
