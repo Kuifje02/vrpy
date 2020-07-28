@@ -10,7 +10,7 @@ from .subproblem_greedy import SubProblemGreedy
 from .clarke_wright import ClarkeWright, RoundTrip
 from .schedule import Schedule
 from .check import check_arguments, check_consistency, check_feasibility, check_initial_routes, check_vrp
-#from .hyper_price_selection import halvardo_hyper
+from .hyperheuristic import HyperHeuristic
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -57,21 +57,20 @@ class VehicleRoutingProblem:
             True if heterogeneous fleet.
             Defaluts to False.
     """
-    def __init__(
-        self,
-        G,
-        num_stops=None,
-        load_capacity=None,
-        duration=None,
-        time_windows=False,
-        pickup_delivery=False,
-        distribution_collection=False,
-        drop_penalty=None,
-        fixed_cost=0,
-        num_vehicles=None,
-        periodic=None,
-        mixed_fleet=False,
-    ):
+    def __init__(self,
+                 G,
+                 num_stops=None,
+                 load_capacity=None,
+                 duration=None,
+                 time_windows=False,
+                 pickup_delivery=False,
+                 distribution_collection=False,
+                 drop_penalty=None,
+                 fixed_cost=0,
+                 num_vehicles=None,
+                 periodic=None,
+                 mixed_fleet=False,
+                 use_hyper_heuristic=True):
         self.G = G
         # VRP options/constraints
         self.num_stops = num_stops
@@ -87,6 +86,7 @@ class VehicleRoutingProblem:
         self.mixed_fleet = mixed_fleet
         # Parameters for solving
         self.masterproblem = None
+
         self.routes = []
         self._solver = None
         self._time_limit = None
@@ -114,7 +114,9 @@ class VehicleRoutingProblem:
         # Runtime for latest solve call
         self.comp_time = None
 
-        # Initialise the HyperHeuristic solver
+        # Initialise the HyperHeuristic solver, for pricing strategies
+        self.hyper_heuristic = HyperHeuristic(poolsize=4)
+        self.use_hyper_heuristic = use_hyper_heuristic
 
     def solve(self,
               initial_routes=None,
@@ -126,7 +128,8 @@ class VehicleRoutingProblem:
               solver="cbc",
               dive=False,
               greedy=False,
-              compute_runtime=False):
+              compute_runtime=False,
+              use_hyper_heuristic=True):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -173,10 +176,16 @@ class VehicleRoutingProblem:
             compute_runtime (bool, optional):
                 True if solve runtime is to be returned
                 Defaults to False. 
+            use_hyper_heuristic (bool, optional):
+                True if hyper_heuristic is to be employed
+                Defaults to True 
 
         Returns:
             float: Optimal solution of MIP based on generated columns
         """
+
+        self.use_hyper_heuristic = use_hyper_heuristic
+
         # compute run time
         if compute_runtime:
             starttime = time()
@@ -324,11 +333,65 @@ class VehicleRoutingProblem:
             solver,
         )
 
+    def _solve_subproblem_with_heuristic(self,
+                                         pricing_strategy=None,
+                                         vehicle=None,
+                                         duals=None):
+
+        if not self._more_routes and self._pricing_strategy == "BestPaths":
+            for k_shortest_paths in [3, 5, 7, 9]:
+                subproblem = self._def_subproblem(
+                    duals,
+                    vehicle,
+                    "BestPaths",
+                    k_shortest_paths,
+                )
+
+                self.routes, self._more_routes = subproblem.solve(
+                    self._get_time_remaining())
+                if self._more_routes:
+                    break
+
+        if not self._more_routes and self._pricing_strategy == "BestEdges1":
+            for alpha in [0.3, 0.5, 0.7, 0.9]:
+                subproblem = self._def_subproblem(
+                    duals,
+                    vehicle,
+                    "BestEdges1",
+                    alpha,
+                )
+                self.routes, self._more_routes = subproblem.solve(
+                    self._get_time_remaining(),
+                    # exact=False,
+                )
+                if self._more_routes:
+                    break
+
+        if not self._more_routes and self._pricing_strategy == "BestEdges2":
+            for ratio in [0.1, 0.2, 0.3]:
+                subproblem = self._def_subproblem(
+                    duals,
+                    vehicle,
+                    "BestEdges2",
+                    ratio,
+                )
+                self.routes, self._more_routes = subproblem.solve(
+                    self._get_time_remaining(),
+                    # exact=False,
+                )
+                if self._more_routes:
+                    break
+
+        # If no column was found heuristically, solve subproblem exactly
+        if not self._more_routes or self._pricing_strategy == "Exact":
+            subproblem = self._def_subproblem(duals, vehicle)
+            self.routes, self._more_routes = subproblem.solve(
+                self._get_time_remaining(),
+                # exact=False,
+            )
+
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
-
-        #REFACTOR:
-        #gjør dette sammen med den andre utviklingen.
 
         # Solve restricted relaxed master problem
         if self._dive:
@@ -340,15 +403,22 @@ class VehicleRoutingProblem:
         if not self._dive:
             logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
-        # Set the new objective value
-        # it should accept the first move, sjekk om noe eksternt kan hjelpe oss vs internt
-        # .move_acceptance(new_objective_value)
-        # Forslag på rekkefølge:
-        # move_acceptance
-        # update_parameters
-        # pick_heuristic
+        #initialise
+        if self.use_hyper_heuristic:
+            if self.hyper_heuristic.initialisation:
+                self.hyper_heuristic.set_current_objective(relaxed_cost)
+                pricing_strategy = "BestPaths1"
+                update = True
+                self.hyper_heuristic.initialisation = False
+            else:
+                update = self.hyper_heuristic.move_acceptance(
+                    new_objective_value=relaxed_cost)
 
-        #Hvordan ta hensyn til subproblem per vehicle type?
+                self.hyper_heuristic.update_parameters()
+
+                pricing_strategy = self.hyper_heuristic.pick_heurestic()
+        else:
+            pricing_strategy = self._pricing_strategy
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
@@ -369,66 +439,14 @@ class VehicleRoutingProblem:
             # Continue searching for columns
             self._more_routes = False
 
-            # find heuristic here
-            # way to initialise it?
-            #
+            self._solve_subproblem_with_heuristic(
+                pricing_strategy=pricing_strategy,
+                vehicle=vehicle,
+                duals=duals)
 
-            if not self._more_routes and self._pricing_strategy == "BestPaths":
-                for k_shortest_paths in [3, 5, 7, 9]:
-                    subproblem = self._def_subproblem(
-                        duals,
-                        vehicle,
-                        "BestPaths",
-                        k_shortest_paths,
-                    )
-
-                    # se her!
-                    self.routes, self._more_routes = subproblem.solve(
-                        self._get_time_remaining())
-                    if self._more_routes:
-                        break
-
-            if not self._more_routes and self._pricing_strategy == "BestEdges1":
-                for alpha in [0.3, 0.5, 0.7, 0.9]:
-                    subproblem = self._def_subproblem(
-                        duals,
-                        vehicle,
-                        "BestEdges1",
-                        alpha,
-                    )
-                    self.routes, self._more_routes = subproblem.solve(
-                        self._get_time_remaining(),
-                        # exact=False,
-                    )
-                    if self._more_routes:
-                        break
-
-            if not self._more_routes and self._pricing_strategy == "BestEdges2":
-                for ratio in [0.1, 0.2, 0.3]:
-                    subproblem = self._def_subproblem(
-                        duals,
-                        vehicle,
-                        "BestEdges2",
-                        ratio,
-                    )
-                    self.routes, self._more_routes = subproblem.solve(
-                        self._get_time_remaining(),
-                        # exact=False,
-                    )
-                    if self._more_routes:
-                        break
-
-            # If no column was found heuristically, solve subproblem exactly
-            if not self._more_routes or self._pricing_strategy == "Exact":
-                subproblem = self._def_subproblem(duals, vehicle)
-                self.routes, self._more_routes = subproblem.solve(
-                    self._get_time_remaining(),
-                    # exact=False,
-                )
-            if self._more_routes:
-                self.masterproblem.update(self.routes[-1])
-
-            #
+        #if either more routes or move acceptance = True, update.
+        if self._more_routes and update:
+            self.masterproblem.update(self.routes[-1])
 
         # Keep track of convergence rate and update stopping criteria parameters
         self._iteration += 1
@@ -682,39 +700,24 @@ class VehicleRoutingProblem:
             for k in range(self._vehicle_types):
                 self.G.edges["Source", v]["cost"][k] += self.fixed_cost[k]
 
-    def _prune_graph(self):
-        """
-        Preprocessing:
-           - Removes useless edges from graph
-           - Strengthens time windows
-        """
-
-        #REFACTOR:
-        # Lag to nye funksjoner og kall
-        #
-
+    def _remove_infeasible_arcs_capacities(self):
         infeasible_arcs = []
-        if isinstance(self.load_capacity, list):
-            self._max_capacity = max(self.load_capacity)
-        else:
-            self._max_capacity = self.load_capacity
-        # Remove infeasible arcs (capacities)
-        if self.load_capacity:
-            for (i, j) in self.G.edges():
-                if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
-                        self._max_capacity):
-                    infeasible_arcs.append((i, j))
+        for (i, j) in self.G.edges():
+            if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
+                    self._max_capacity):
+                infeasible_arcs.append((i, j))
+        self.G.remove_edges_from(infeasible_arcs)
 
-        # Remove infeasible arcs (time windows)
-        if self.time_windows:
-            for (i, j) in self.G.edges():
-                travel_time = self.G.edges[i, j]["time"]
-                service_time = self.G.nodes[i]["service_time"]
-                tail_inf_time_window = self.G.nodes[i]["lower"]
-                head_sup_time_window = self.G.nodes[j]["upper"]
-                if (tail_inf_time_window + travel_time + service_time >
-                        head_sup_time_window):
-                    infeasible_arcs.append((i, j))
+    def _remove_infeasible_arcs_time_windows(self):
+        infeasible_arcs = []
+        for (i, j) in self.G.edges():
+            travel_time = self.G.edges[i, j]["time"]
+            service_time = self.G.nodes[i]["service_time"]
+            tail_inf_time_window = self.G.nodes[i]["lower"]
+            head_sup_time_window = self.G.nodes[j]["upper"]
+            if (tail_inf_time_window + travel_time + service_time >
+                    head_sup_time_window):
+                infeasible_arcs.append((i, j))
             # Strengthen time windows
             for v in self.G.nodes():
                 if v not in ["Source", "Sink"]:
@@ -732,12 +735,27 @@ class VehicleRoutingProblem:
                     )
         self.G.remove_edges_from(infeasible_arcs)
 
-    def _update_dummy_attributes(self):
-        #REFACTOR:
-        # Hva er vitsen med å dele opp funksjonen?
-        # Ide: lag mindre funksjoner og kall de herfra
-        """Adds dummy attributes on nodes and edges if missing."""
-        # Set attr = 0 if missing
+    def _prune_graph(self):
+        """
+        Preprocessing:
+           - Removes useless edges from graph
+           - Strengthens time windows
+        """
+        if isinstance(self.load_capacity, list):
+            self._max_capacity = max(self.load_capacity)
+        else:
+            self._max_capacity = self.load_capacity
+        # Remove infeasible arcs (capacities)
+        if self.load_capacity:
+            self._remove_infeasible_arcs_capacities()
+
+        # Remove infeasible arcs (time windows)
+        if self.time_windows:
+            self._remove_infeasible_arcs_time_windows()
+
+    def _set_zero_attributes(self):
+        """ Sets attr = 0 if missing """
+
         for v in self.G.nodes():
             for attribute in [
                     "demand",
@@ -758,20 +776,39 @@ class VehicleRoutingProblem:
             for attribute in ["frequency"]:
                 if attribute not in self.G.nodes[v]:
                     self.G.nodes[v][attribute] = 1
-        # Add Source-Sink so that subproblem is always feasible
-        if ("Source", "Sink") not in self.G.edges():
-            self.G.add_edge("Source", "Sink", cost=[0] * self._vehicle_types)
-        # Set time = 0 if missing
+
+    def _set_time_to_zero_if_missing(self):
+        """ Sets time = 0 if missing """
         for (i, j) in self.G.edges():
             for attribute in ["time"]:
                 if attribute not in self.G.edges[i, j]:
                     self.G.edges[i, j][attribute] = 0
-        # Readjust Sink time windows
+
+    def _readjust_sink_time_windows(self):
+        """ Readjusts Sink time windows """
+
         if self.G.nodes["Sink"]["upper"] == 0:
             self.G.nodes["Sink"]["upper"] = max(
                 self.G.nodes[u]["upper"] + self.G.nodes[u]["service_time"] +
                 self.G.edges[u, "Sink"]["time"]
                 for u in self.G.predecessors("Sink"))
+
+    def _update_dummy_attributes(self):
+        """Adds dummy attributes on nodes and edges if missing."""
+
+        # Set attr = 0 if missing
+        self._set_zero_attributes()
+
+        # Add Source-Sink so that subproblem is always feasible
+        if ("Source", "Sink") not in self.G.edges():
+            self.G.add_edge("Source", "Sink", cost=[0] * self._vehicle_types)
+
+        # Set time = 0 if missing
+        self._set_time_to_zero_if_missing()
+
+        # Readjust Sink time windows
+        self._readjust_sink_time_windows()
+
         # Keep a (deep) copy of the graph
         self._H = self.G.to_directed()
 

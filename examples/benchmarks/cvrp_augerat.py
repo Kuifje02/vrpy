@@ -103,12 +103,6 @@ class DataSet:
         mapping = dict(zip(before, after))
         self.G = relabel_nodes(self.G, mapping)
 
-        # initialise the table class object
-        self.table = CsvTableVRPy(instance_name=instance_name,
-                                  path=path,
-                                  subproblem_type=self.G.graph["name"],
-                                  instance_type="augerat")
-
     def distance(self, u, v):
         """2D Euclidian distance between two nodes.
 
@@ -131,7 +125,8 @@ class DataSet:
               time_limit=None,
               pricing_strategy="BestPaths",
               dive=False,
-              greedy=False):
+              greedy=False,
+              path_to=None):
         """Instantiates instance as VRP and solves."""
         if cspy:
             self.G.graph["subproblem"] = "cspy"
@@ -144,17 +139,12 @@ class DataSet:
             load_capacity=self.max_load,
             num_stops=num_stops,
         )
-        self.table.get_data_from_VRPy_instance(
-            prob=prob,
-            dive=dive,
-            subproblem_type=self.G.graph["subproblem"],
-            initial_routes=initial_routes,
-            cspy=cspy,
-            exact=exact,
-            time_limit=time_limit,
-            pricing_strategy=pricing_strategy,
-            greedy=greedy)
-
-        self.table.write_to_file(path="")
+        prob.solve(dive=dive,
+                   initial_routes=initial_routes,
+                   cspy=cspy,
+                   exact=exact,
+                   time_limit=time_limit,
+                   pricing_strategy=pricing_strategy,
+                   greedy=greedy)
 
         self.best_value, self.best_routes = prob.best_value, prob.best_routes
