@@ -1,6 +1,14 @@
 from random import uniform, choice
 from math import exp, log, sqrt
 #from .main import VehicleRoutingProblem
+"""
+TODO: 
+    - Bruke reduced cost på en måte! (Multiobjective optimisiation)
+    - Gi muligheten for å velge en spesifikk heurestikk
+    - Straffe heurestikken hvis det ikke er forbedring, ved å øke n[i]
+    - Change the move acceptance
+    - Det sto noe i den andre om rank based move acceptance, dette bør sjekkes ut fordi vi bryr oss om hvorvidt nye kolonner er funnet, men ikke om verdier!
+"""
 
 
 class HyperHeuristic:
