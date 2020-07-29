@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from networkx import shortest_path
 import pulp
@@ -37,8 +38,7 @@ class MasterSolvePulp(MasterProblemBase):
         self._formulate()
 
     def solve(self, relax, time_limit):
-        self._set_solver(time_limit)
-        self._solve(relax)
+        self._solve(relax, time_limit)
         logger.debug("master problem")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
@@ -55,8 +55,7 @@ class MasterSolvePulp(MasterProblemBase):
         return duals, self.prob.objective.value()
 
     def solve_and_dive(self, time_limit):
-        self._set_solver(time_limit)
-        self._solve(relax=True)
+        self._solve(relax=True, time_limit=time_limit)
         self.pricing_heuristics.run_dive(self.prob)
         self.prob.resolve()
         return self.get_duals(), self.prob.objective.value()
@@ -97,50 +96,6 @@ class MasterSolvePulp(MasterProblemBase):
                         "upper_bound_vehicles_%s" % k].pi
         return duals
 
-    # Private methods to solve and output #
-
-    def _solve(self, relax: bool):
-        # Set variable types
-        for var in self.prob.variables():
-            if relax:
-                var.cat = pulp.LpContinuous
-            else:
-                var.cat = pulp.LpInteger
-                # Force vehicle bound artificial variable to 0
-                if "artificial_bound_" in var.name:
-                    var.upBound = 0
-                    var.lowBound = 0
-        # Solve with solver already set
-        self.prob.resolve()
-
-    def _set_solver(self, time_limit):
-        if self.solver == "cbc":
-            self.prob.setSolver(
-                pulp.PULP_CBC_CMD(
-                    msg=0,
-                    maxSeconds=time_limit,
-                    options=["startalg", "barrier", "crossover", "0"],
-                ))
-        elif self.solver == "cplex":
-            self.prob.setSolver(
-                pulp.CPLEX_CMD(
-                    msg=0,
-                    timelimit=time_limit,
-                    options=["set lpmethod 4", "set barrier crossover -1"],
-                ))
-        elif self.solver == "gurobi":
-            gurobi_options = [
-                ("Method", 2),  # 2 = barrier
-                ("Crossover", 0),
-            ]
-            # Only specify time limit if given (o.w. errors)
-            if time_limit is not None:
-                gurobi_options.append((
-                    "TimeLimit",
-                    time_limit,
-                ))
-            self.prob.setSolver(pulp.GUROBI(msg=0, options=gurobi_options))
-
     def get_total_cost_and_routes(self, relax: bool):
         best_routes = []
         for r in self.routes:
@@ -166,7 +121,48 @@ class MasterSolvePulp(MasterProblemBase):
             total_cost = 0
         return total_cost, best_routes
 
-    # Private methods for formulating the problem #
+    # Private methods to solve and output #
+
+    def _solve(self, relax: bool, time_limit: Optional[int]):
+        # Set variable types
+        for var in self.prob.variables():
+            if relax:
+                var.cat = pulp.LpContinuous
+            else:
+                var.cat = pulp.LpInteger
+                # Force vehicle bound artificial variable to 0
+                if "artificial_bound_" in var.name:
+                    var.upBound = 0
+                    var.lowBound = 0
+        # Solve with appropriate solver
+        if self.solver == "cbc":
+            self.prob.solve(
+                pulp.PULP_CBC_CMD(
+                    msg=0,
+                    maxSeconds=time_limit,
+                    options=["startalg", "barrier", "crossover", "0"],
+                ))
+        elif self.solver == "cplex":
+            self.prob.solve(
+                pulp.CPLEX_CMD(
+                    msg=0,
+                    timelimit=time_limit,
+                    options=["set lpmethod 4", "set barrier crossover -1"],
+                ))
+        elif self.solver == "gurobi":
+            gurobi_options = [
+                ("Method", 2),  # 2 = barrier
+                ("Crossover", 0),
+            ]
+            # Only specify time limit if given (o.w. errors)
+            if time_limit is not None:
+                gurobi_options.append((
+                    "TimeLimit",
+                    time_limit,
+                ))
+            self.prob.solve(pulp.GUROBI(msg=0, options=gurobi_options))
+
+    # Private methods for formulating and updating the problem #
 
     def _formulate(self):
         """

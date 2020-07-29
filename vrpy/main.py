@@ -14,6 +14,7 @@ from vrpy.checks import (check_arguments, check_consistency, check_feasibility,
                          check_initial_routes, check_vrp)
 
 logger = logging.getLogger(__name__)
+
 logging.basicConfig(level=logging.INFO)
 
 
