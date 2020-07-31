@@ -1,11 +1,10 @@
-import sys
 from networkx import DiGraph
-from pytest import raises
 
 from vrpy.subproblem_greedy import SubProblemGreedy
 
 
 class TestsToy:
+
     def setup(self):
         self.G = DiGraph()
         self.G.add_edge("Source", 1, cost=[1], time=20)

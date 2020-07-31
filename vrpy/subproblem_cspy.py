@@ -1,11 +1,8 @@
 import logging
-import sys
 from math import floor
 
 from numpy import array, zeros
 from networkx import DiGraph, add_path
-
-# sys.path.append("../../cspy")
 
 from cspy import BiDirectional, GreedyElim  # Tabu
 from .subproblem import SubProblemBase
@@ -20,6 +17,7 @@ class SubProblemCSPY(SubProblemBase):
 
     Inherits problem parameters from `SubproblemBase`
     """
+
     def __init__(self, *args, exact):
         """Initializes resources."""
         # Pass arguments to base
@@ -45,9 +43,8 @@ class SubProblemCSPY(SubProblemBase):
         self.max_res = [
             floor(len(self.sub_G.nodes()) / 2),  # stop/mono
             floor(total_demand / 2),  # load
-            sum([
-                self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()
-            ]),  # time
+            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()
+                ]),  # time
             1,  # time windows
             total_demand,  # pickup
             total_demand,  # deliver
@@ -140,12 +137,13 @@ class SubProblemCSPY(SubProblemBase):
             # Time windows feasibility
             self.max_res[3] = 0
             # Maximum feasible arrival time
-            self.T = max([
-                self.sub_G.nodes[v]["upper"] +
-                self.sub_G.nodes[v]["service_time"] +
-                self.sub_G.edges[v, "Sink"]["time"]
+            self.T = max(
+                self.sub_G.nodes[v]["upper"]
+                + self.sub_G.nodes[v]["service_time"]
+                + self.sub_G.edges[v, "Sink"]["time"]
                 for v in self.sub_G.predecessors("Sink")
-            ])
+            )
+
         if self.load_capacity and self.distribution_collection:
             self.max_res[4] = self.load_capacity[self.vehicle_type]
             self.max_res[5] = self.load_capacity[self.vehicle_type]
@@ -333,8 +331,7 @@ class SubProblemCSPY(SubProblemBase):
         # Load
         final_res[1] = fwd_res[1] + bwd_res[1]
         # time
-        final_res[
-            2] = fwd_res[2] + theta_i + travel_time + theta_j + bwd_res[2]
+        final_res[2] = fwd_res[2] + theta_i + travel_time + theta_j + bwd_res[2]
         # Time windows
         if not self.time_windows or final_res[2] <= self.T:
             final_res[3] = fwd_res[3] + bwd_res[3]

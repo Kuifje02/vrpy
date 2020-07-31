@@ -1,6 +1,10 @@
-from networkx import DiGraph, shortest_path, NetworkXError, has_path
+"""Functions to check input types and consistency.
+"""
 import logging
-from time import time
+
+from networkx import DiGraph, NetworkXError, has_path
+
+logger = logging.getLogger(__name__)
 
 
 def check_arguments(num_stops: int = None,
@@ -30,25 +34,33 @@ def check_arguments(num_stops: int = None,
         "BestPaths",
     ]
     if pricing_strategy not in strategies:
-        raise ValueError(
-            "Pricing strategy %s is not valid. Pick one among %s" %
-            (pricing_strategy, strategies))
+        raise ValueError("Pricing strategy %s is not valid. Pick one among %s" %
+                         (pricing_strategy, strategies))
     if mixed_fleet:
-        if load_capacity and num_vehicles:
-            if not len(load_capacity) == len(num_vehicles):
-                raise ValueError(
-                    "Input arguments load_capacity and num_vehicles must have same dimension."
-                )
-        if load_capacity and fixed_cost:
-            if not len(load_capacity) == len(fixed_cost):
-                raise ValueError(
-                    "Input arguments load_capacity and fixed_cost must have same dimension."
-                )
-        if num_vehicles and fixed_cost:
-            if not len(num_vehicles) == len(fixed_cost):
-                raise ValueError(
-                    "Input arguments num_vehicles and fixed_cost must have same dimension."
-                )
+        if (
+            load_capacity
+            and num_vehicles
+            and len(load_capacity) != len(num_vehicles)
+        ):
+            raise ValueError(
+                "Input arguments load_capacity and num_vehicles must have same dimension."
+            )
+        if (
+            load_capacity
+            and fixed_cost
+            and len(load_capacity) != len(fixed_cost)
+        ):
+            raise ValueError(
+                "Input arguments load_capacity and fixed_cost must have same dimension."
+            )
+        if (
+            num_vehicles
+            and fixed_cost
+            and len(num_vehicles) != len(fixed_cost)
+        ):
+            raise ValueError(
+                "Input arguments num_vehicles and fixed_cost must have same dimension."
+            )
         for (i, j) in G.edges():
             if not isinstance(G.edges[i, j]["cost"], list):
                 raise TypeError(
@@ -143,19 +155,14 @@ def check_consistency(cspy: bool = None,
 
     # pickup delivery requires cspy=False
     if cspy and pickup_delivery:
-        raise NotImplementedError(
-            "pickup_delivery option requires cspy=False.")
+        raise NotImplementedError("pickup_delivery option requires cspy=False.")
     # pickup delivery requires pricing_stragy="Exact"
     if pickup_delivery and pricing_strategy != "Exact":
         pricing_strategy = "Exact"
         logger.warning("Pricing_strategy changed to 'Exact'.")
     # pickup delivery expects at least one request
     if pickup_delivery:
-        request = False
-        for v in G.nodes():
-            if "request" in G.nodes[v]:
-                request = True
-                break
+        request = any("request" in G.nodes[v] for v in G.nodes())
         if not request:
             raise KeyError(
                 "pickup_delivery option expects at least one request.")

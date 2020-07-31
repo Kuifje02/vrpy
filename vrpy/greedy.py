@@ -1,5 +1,3 @@
-from networkx import DiGraph, add_path, shortest_path
-from random import choice
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,6 +12,7 @@ class Greedy:
         load_capacity (int, optional) : Maximum load per route. Defaults to None.
         num_stops (int, optional) : Maximum stops per route. Defaults to None.
     """
+
     def __init__(self, G, load_capacity=None, num_stops=None, duration=None):
         self.G = G.copy()
         self._format_cost()
@@ -31,6 +30,14 @@ class Greedy:
         self.duration = duration
 
         self._best_value = 0
+
+    @property
+    def best_value(self):
+        return self._best_value
+
+    @property
+    def best_routes(self):
+        return self._best_routes
 
     def run(self):
         """The forward search is run."""
@@ -61,17 +68,15 @@ class Greedy:
         out_going_costs = {}
         # Store the successors cost that meet constraints
         for v in self.G.successors(self._last_node):
-            if self._constraints_met(v):
-                if v in self._unprocessed_nodes:
-                    out_going_costs[v] = self.G.edges[self._last_node,
-                                                      v]["cost"]
+            if self._constraints_met(v) and v in self._unprocessed_nodes:
+                out_going_costs[v] = self.G.edges[self._last_node,
+                                                  v]["cost"]
         if out_going_costs == {}:
             logger.debug("path cannot be extended")
             self._new_node = "Sink"
         else:
             # Select best successor
-            self._new_node = sorted(out_going_costs,
-                                    key=out_going_costs.get)[0]
+            self._new_node = sorted(out_going_costs, key=out_going_costs.get)[0]
 
     def _constraints_met(self, v):
         """Checks if constraints are respected."""
@@ -99,8 +104,7 @@ class Greedy:
             # End path
             self._current_path.append("Sink")
             if self._new_node in self.G.predecessors("Sink"):
-                self._best_value += self.G.edges[self._new_node,
-                                                 "Sink"]["cost"]
+                self._best_value += self.G.edges[self._new_node, "Sink"]["cost"]
                 self._new_node = "Sink"
             else:
                 self._best_value += 1e10
@@ -122,10 +126,7 @@ class Greedy:
     def _check_duration(self, v):
         """Checks duration constraint."""
         u = self._current_path[-1]
-        if v != "Sink":
-            return_time = self.G.edges[v, "Sink"]["time"]
-        else:
-            return_time = 0
+        return_time = self.G.edges[v, "Sink"]["time"] if v != "Sink" else 0
         return (self._time + self.G.nodes[v]["service_time"] +
                 self.G.edges[u, v]["time"] + return_time <= self.duration)
 
@@ -134,11 +135,3 @@ class Greedy:
         for (i, j) in self.G.edges():
             if isinstance(self.G.edges[i, j]["cost"], list):
                 self.G.edges[i, j]["cost"] = self.G.edges[i, j]["cost"][0]
-
-    @property
-    def best_value(self):
-        return self._best_value
-
-    @property
-    def best_routes(self):
-        return self._best_routes

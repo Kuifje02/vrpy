@@ -3,6 +3,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6f27b9ccd1c2446aa1dba15e701aa9b0)](https://app.codacy.com/manual/Kuifje02/vrpy?utm_source=github.com&utm_medium=referral&utm_content=Kuifje02/vrpy&utm_campaign=Badge_Grade_Dashboard)
 [![Python 3.8](https://img.shields.io/badge/python-3.6|3.7|3.8-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![Documentation Status](https://readthedocs.org/projects/vrpy/badge/?version=latest)](https://vrpy.readthedocs.io/en/latest/?badge=master)
+[![status](https://joss.theoj.org/papers/77c3aa9b9cb3ff3d5c32d253922ad390/status.svg)](https://joss.theoj.org/papers/77c3aa9b9cb3ff3d5c32d253922ad390)
 
 # VRPy
 
@@ -71,17 +72,21 @@ Documentation is found [here](https://vrpy.readthedocs.io/en/latest/).
 ### Unit Tests
 
 ```sh
-cd tests
-pytest unittests/
+python3 -m pytest tests/
 ```
 
 ### Benchmarks
 
+To run some non-regression tests on some benchmarks instances (Solomon and Augerat) do
+
 ```sh
-cd tests
-pytest benchmarks/
+python3 -m pytest benchmarks/
 ```
+
+Note that running the benchmarks requires [pandas](https://pypi.org/project/pandas/) and that it takes a while.
+
+For more information and to run more instances, see the [benchmarks](benchmarks/README.md).
 
 ## Bugs
 
-Please report any bugs that you find [here](https://github.com/Kuifje02/vrpy/issues). Or, even better, fork the repository on [GitHub](https://github.com/Kuifje02/vrpy) and create a pull request. Any contributions are welcome.
+Please report any bugs that you find [here](https://github.com/Kuifje02/vrpy/issues). Or, even better, fork the repository on [GitHub](https://github.com/Kuifje02/vrpy) and create a pull request. Please read the guidelines (CONTRIBUTING.md) before contributing. Any contributions are welcome.

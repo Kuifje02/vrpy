@@ -1,11 +1,12 @@
-import sys
+from time import time
+
 from networkx import DiGraph
-from pytest import raises
 
 from vrpy import VehicleRoutingProblem
 
 
 class TestsToy:
+
     def setup(self):
         """
         Creates a toy graph.
@@ -275,7 +276,10 @@ class TestsToy:
 
     def test_time_limit(self):
         prob = VehicleRoutingProblem(self.G, num_stops=3)
+        start = time()
         prob.solve(cspy=False, time_limit=0.01)
+        comp_time = time() - start
+        assert comp_time < 0.01 + 0.1  # time_limit + time for mip
         assert prob.best_value == 70
 
     def test_dive(self):
