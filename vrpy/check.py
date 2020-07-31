@@ -98,10 +98,19 @@ def check_vrp(G: DiGraph = None):
 def check_initial_routes(initial_routes: list = None, G: DiGraph = None):
     """
     Checks if initial routes are consistent.
-    TO DO : check if it is entirely feasible depending on VRP type.
+    TODO : check if it is entirely feasible depending on VRP type.
     One way of doing it : run the subproblem by fixing variables corresponding to initial solution.
     """
+    # problem type
+
+    # kan prøve tipset!
+
+    # try except thing!
+
     # Check if routes start at Sink and end at Node
+
+    # prune_graph -> call it in here,
+
     for route in initial_routes:
         if route[0] != "Source" or route[-1] != "Sink":
             raise ValueError("Route %s must start at Source and end at Sink" %

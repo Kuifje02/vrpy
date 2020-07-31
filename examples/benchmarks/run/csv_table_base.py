@@ -39,7 +39,8 @@ class CsvTableBase:
                  pricing_strategy=None,
                  subproblem_type=None,
                  dive=None,
-                 best_known_solution=None):
+                 best_known_solution=None,
+                 hyper=None):
         self.path = path
         self.instance_name = instance_name if not instance_name.endswith(
             '.csv') else instance_name[:-4]
@@ -57,15 +58,16 @@ class CsvTableBase:
         self.integrality_gap = integrality_gap
         self.optimality_gap = optimality_gap
         self.optimal = optimal
+        self.hyper = hyper
 
-    def write_to_file(self, path_to=None):
-        if path_to == None:
+    def write_to_file(self, path_results_folder=None):
+        if path_results_folder == None:
             cdir = os.path.dirname(__file__)
             total_path = cdir + "/results"
-        elif not os.path.exists(path_to):
+        elif not os.path.exists(path_results_folder):
             print("Path does not exist")
         else:
-            total_path = path_to + "results"
+            total_path = path_results_folder + "results"
 
         try:
             os.makedirs(total_path)
@@ -89,7 +91,7 @@ class CsvTableBase:
                                         "Instance", "Pricing strategy",
                                         "Subproblem type", "Dived", "Runtime",
                                         "Integrality gap", "Optimality gap",
-                                        "Optimal"
+                                        "Optimal", "Hyper"
                                     ])
             if mode == 'w':
                 writer.writeheader()
@@ -101,6 +103,7 @@ class CsvTableBase:
                 "Runtime": self.comp_time,
                 "Integrality gap": self.integrality_gap,
                 "Optimality gap": self.optimality_gap,
-                "Optimal": self.optimal
+                "Optimal": self.optimal,
+                "Hyper": self.hyper
             })
         csv_file.close()

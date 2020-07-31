@@ -113,6 +113,8 @@ class VehicleRoutingProblem:
 
         # Runtime for latest solve call
         self.comp_time = None
+        self.start_time = None
+        self.end_time = None
 
         # Initialise the HyperHeuristic solver, for pricing strategies
         self.hyper_heuristic = HyperHeuristic(poolsize=4)
@@ -187,8 +189,7 @@ class VehicleRoutingProblem:
         self.use_hyper_heuristic = use_hyper_heuristic
 
         # compute run time
-        if compute_runtime:
-            starttime = time()
+        self.starttime = time()
 
         # set solving attributes
         self._more_routes = True
@@ -255,9 +256,9 @@ class VehicleRoutingProblem:
             self._schedule = schedule.routes_per_day
 
         #sets the comp_time
-        if compute_runtime:
-            endtime = time()
-            self.comp_time = endtime - starttime
+        self.endtime = time()
+        self.comp_time = self.endtime - self.starttime
+        #print(self.comp_time)
 
     def _column_generation(self):
         while self._more_routes:
@@ -390,6 +391,8 @@ class VehicleRoutingProblem:
                 # exact=False,
             )
 
+        return self._more_routes
+
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
 
@@ -403,19 +406,22 @@ class VehicleRoutingProblem:
         if not self._dive:
             logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
-        #initialise
+        #pick the heuristic
         if self.use_hyper_heuristic:
             if self.hyper_heuristic.initialisation:
+                #initialise the high-level algorithm
                 self.hyper_heuristic.set_current_objective(relaxed_cost)
                 pricing_strategy = "BestPaths1"
                 update = True
                 self.hyper_heuristic.initialisation = False
+                self.hyper_heuristic.timestart = time()
             else:
-                update = self.hyper_heuristic.move_acceptance(
-                    new_objective_value=relaxed_cost)
-
+                #the high-level heuristic loop
+                self.hyper_heuristic.current_performance(
+                    new_objective_value=relaxed_cost,
+                    pos_reduced_cost=True)  #fix pos reduced cost
+                update = self.hyper_heuristic.move_acceptance()
                 self.hyper_heuristic.update_parameters()
-
                 pricing_strategy = self.hyper_heuristic.pick_heurestic()
         else:
             pricing_strategy = self._pricing_strategy
@@ -433,8 +439,9 @@ class VehicleRoutingProblem:
                 # Update master problem only with new routes
                 if self._more_routes:
                     for r in (r for r in self.routes
-                              if r.graph["name"] not in self.masterproblem.y):
-                        self.masterproblem.update(r)
+                              if r.graph["name"] not in self.masterproblem.y
+                              ):  #kan denne linjen brukes til noe?
+                        self.masterproblem.update(r)  #This thing
 
             # Continue searching for columns
             self._more_routes = False
@@ -445,8 +452,17 @@ class VehicleRoutingProblem:
                 duals=duals)
 
         #if either more routes or move acceptance = True, update.
-        if self._more_routes and update:
-            self.masterproblem.update(self.routes[-1])
+        if self._more_routes:
+            if update:
+                self.masterproblem.update(
+                    self.routes[-1]
+                )  #there are routes which are added to master but not to the column
+            else:
+                print("not updated")
+                self.routes.pop()
+        else:
+            print("No more routes")
+            self.hyper_heuristic.timeend = time()
 
         # Keep track of convergence rate and update stopping criteria parameters
         self._iteration += 1
@@ -545,9 +561,11 @@ class VehicleRoutingProblem:
         """
         self._initial_routes = []
         # Run Clarke & Wright if possible
-        if (not self.time_windows and not self.pickup_delivery
+        if (
+                not self.time_windows and not self.pickup_delivery
                 and not self.distribution_collection and not self.mixed_fleet
-                and not self.periodic):
+                and not self.periodic
+        ):  #only a few routes are getting generated initial routes, preprocessing out of main, add the functions in there. -> instead of self.g feed in self. initial routes!
             best_value = 1e10
             best_num_vehicles = 1e10
             for alpha in [x / 10 for x in range(1, 20)]:
@@ -735,7 +753,9 @@ class VehicleRoutingProblem:
                     )
         self.G.remove_edges_from(infeasible_arcs)
 
-    def _prune_graph(self):
+    def _prune_graph(
+        self
+    ):  #feed in initial graph -> prunegraph removes the infeasible stuff, if it comes out the same then it is good. runs greedy
         """
         Preprocessing:
            - Removes useless edges from graph

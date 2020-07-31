@@ -7,8 +7,8 @@ class CsvTableVRPy(CsvTableBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def write_to_file(self, path_to):
-        super().write_to_file(path_to=path_to)
+    def write_to_file(self, path_results_folder):
+        super().write_to_file(path_results_folder=path_results_folder)
 
     def _find_optimal(self):
         if self.instance_type == "augerat":
@@ -31,7 +31,8 @@ class CsvTableVRPy(CsvTableBase):
                                     lower_bound=None,
                                     comp_time=None,
                                     cspy=None,
-                                    greedy=None):
+                                    greedy=None,
+                                    hyper=None):
 
         if best_known_solution is None:
             self._find_optimal()
@@ -43,8 +44,11 @@ class CsvTableVRPy(CsvTableBase):
         self.subproblem_type = "cspy" if cspy else "lp"
 
         self.comp_time = comp_time
-        self.integrality_gap = (self.upper_bound -
-                                self.lower_bound) / self.lower_bound * 100
+        print("lower_bound", self.upper_bound, self.lower_bound)
+        """ self.integrality_gap = (self.upper_bound - self.lower_bound
+                                ) / self.lower_bound * 100  #disse burde være """
+
+        self.hyper = hyper
 
         if not self.best_known_solution is None:
             self.optimality_gap = (self.upper_bound - self.best_known_solution

@@ -128,3 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 vrpy-workspace.code-workspace
+examples/OpenGLUtils.py
+examples/singlelane.py
+examples/benchmarks/run/run_old.py
+.vscode/launch.json
+.vscode/settings.json
