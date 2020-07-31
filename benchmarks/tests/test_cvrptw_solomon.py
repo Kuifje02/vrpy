@@ -25,7 +25,7 @@ class TestsSolomon:
         ]
         # Set repeating solver arguments
         self.solver_args = {
-            "pricing_strategy": "BestEdges1",
+            "pricing_strategy": "BestPaths",
             "initial_routes": initial_routes
         }
 
