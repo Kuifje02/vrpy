@@ -53,7 +53,6 @@ class CsvTable:
         self.greedy = greedy
         self.iterations = iterations
         self.best_known_solution = best_known_solution
-        self.hyper = hyper
 
     def from_vrpy_instance(self,
                            prob,
@@ -70,7 +69,6 @@ class CsvTable:
 
         self.upper_bound = prob.best_value
         self.lower_bound = prob._lower_bound[-1]
-        self.
 
         # Calculate gaps
         if self.iterations > 1:

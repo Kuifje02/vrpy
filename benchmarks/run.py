@@ -52,13 +52,14 @@ parser.add_argument('--cpu-count',
                     default=0,
                     dest="CPU_COUNT",
                     help='Number of cpus to use. Default: all avaiable.')
-parser.add_argument('--exploration',
-                    '-e',
-                    action='store_false',
-                    dest="PERFORMANCE",
-                    help='To run the benchmarks in performance mode (default)' +
-                    ' or in exploration mode. Exploration mode runs' +
-                    ' different solver parameters')
+parser.add_argument(
+    '--exploration',
+    '-e',
+    action='store_false',
+    dest="PERFORMANCE",
+    help='To run the benchmarks in performance mode (default)' +
+    ' or in exploration mode. Exploration mode runs' +
+    ' different solver parameters')
 
 args = parser.parse_args()
 
@@ -75,7 +76,7 @@ PERFORMANCE_SOLVER_PARAMS: Dict[str, Dict[str, Union[bool, str]]] = {
         'dive': False,
         'greedy': True,
         'cspy': True,
-        'pricing_strategy': 'BestEdges1'
+        'pricing_strategy': 'Hyper'
     },
     'cvrptw': {
         'dive': False,
@@ -101,7 +102,8 @@ def run_series():
                 for dive in [True, False]:
                     for cspy in [True, False]:
                         for pricing_strategy in [
-                                "BestPaths", "BestEdges1", "BestEdges2", "Exact"
+                                "BestPaths", "BestEdges1", "BestEdges2",
+                                "Exact", "Hyper"
                         ]:
                             for greedy in [True, False]:
                                 _run_single_problem(
@@ -116,11 +118,9 @@ def run_parallel():
     """Iterates through the instances using in parallel using CPU_COUNT.
     """
     all_files = [
-        path_to_instance
-        for instance_type in INSTANCE_TYPES
+        path_to_instance for instance_type in INSTANCE_TYPES
         for path_to_instance in Path(INPUT_FOLDER / instance_type).glob("*")
     ]
-
 
     if PERFORMANCE:
         # Iterate through all files
@@ -130,10 +130,10 @@ def run_parallel():
         iterate_over = list(
             product(
                 all_files,
-                [True, False],  # dive
+                [False],  # dive
                 [True],  # greedy
-                [True],  # cspy
-                ["BestPaths"]))
+                [True, False],  # cspy
+                ["Hyper"]))
 
     pool = Pool(processes=CPU_COUNT)
     with pool:
@@ -151,7 +151,8 @@ def _parallel_wrapper(input_tuple):
     else:
         kwargs = dict(
             zip([
-                "path_to_instance", "dive", "greedy", "cspy", "pricing_strategy"
+                "path_to_instance", "dive", "greedy", "cspy",
+                "pricing_strategy"
             ], input_tuple))
         _run_single_problem(**kwargs)
 
@@ -164,20 +165,24 @@ def _run_single_problem(path_to_instance: Path, **kwargs):
     logger.info("Solving instance %s", instance_name)
     # Load data
     if instance_type == "cvrp":
-        data = AugeratDataSet(path=instance_folder, instance_name=instance_name)
+        data = AugeratDataSet(path=instance_folder,
+                              instance_name=instance_name)
     elif instance_type == "cvrptw":
-        data = SolomonDataSet(path=instance_folder, instance_name=instance_name)
+        data = SolomonDataSet(path=instance_folder,
+                              instance_name=instance_name)
     # Solve problem
     prob = VehicleRoutingProblem(data.G,
                                  load_capacity=data.max_load,
                                  time_windows=bool(instance_type == "cvrptw"))
     prob.solve(**kwargs, compute_runtime=True)
+    #logger.info("keywordargs %s", kwargs)
     # Output results
     table = CsvTable(instance_name=instance_name,
                      comp_time=prob.comp_time,
                      best_known_solution=data.best_known_solution,
                      instance_type=instance_type)
     table.from_vrpy_instance(prob)
+    logger.info("hyperheuristic n_list %s", prob.hyper_heuristic.n)
 
 
 def main():

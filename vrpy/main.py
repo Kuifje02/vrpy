@@ -122,6 +122,7 @@ class VehicleRoutingProblem:
         # Initialise the HyperHeuristic solver, for pricing strategies
         self.hyper_heuristic = HyperHeuristic(poolsize=4)
         self.use_hyper_heuristic = use_hyper_heuristic
+        self.resolve_count = None
 
     def solve(self,
               initial_routes=None,
@@ -340,8 +341,12 @@ class VehicleRoutingProblem:
                                          pricing_strategy=None,
                                          vehicle=None,
                                          duals=None):
-
-        if not self._more_routes and self._pricing_strategy == "BestPaths":
+        """Solves pricing problem with input heuristic
+        """
+        """TODO: Jeg får flere paths enn én! Hvordan skal jeg håndtere det?"""
+        """Påstand: Hvis prisheurestikkene ikke gir en kolonne med reduced cost -> termineringskriterium"""
+        resolve_count = 0  #should this be different for each heuristic?
+        if pricing_strategy == "BestPaths":
             for k_shortest_paths in [3, 5, 7, 9]:
                 subproblem = self._def_subproblem(
                     duals,
@@ -349,13 +354,14 @@ class VehicleRoutingProblem:
                     "BestPaths",
                     k_shortest_paths,
                 )
-
+                resolve_count += 1
+                logger.info("k_shortest paths %s" % k_shortest_paths)
                 self.routes, self._more_routes = subproblem.solve(
                     self._get_time_remaining())
                 if self._more_routes:
                     break
 
-        if not self._more_routes and self._pricing_strategy == "BestEdges1":
+        elif pricing_strategy == "BestEdges1":
             for alpha in [0.3, 0.5, 0.7, 0.9]:
                 subproblem = self._def_subproblem(
                     duals,
@@ -363,14 +369,16 @@ class VehicleRoutingProblem:
                     "BestEdges1",
                     alpha,
                 )
+                resolve_count += 1
                 self.routes, self._more_routes = subproblem.solve(
                     self._get_time_remaining(),
                     # exact=False,
                 )
+                logger.info("alpha paths %s" % alpha)
                 if self._more_routes:
                     break
 
-        if not self._more_routes and self._pricing_strategy == "BestEdges2":
+        elif pricing_strategy == "BestEdges2":
             for ratio in [0.1, 0.2, 0.3]:
                 subproblem = self._def_subproblem(
                     duals,
@@ -378,22 +386,25 @@ class VehicleRoutingProblem:
                     "BestEdges2",
                     ratio,
                 )
+                resolve_count += 1
                 self.routes, self._more_routes = subproblem.solve(
                     self._get_time_remaining(),
                     # exact=False,
                 )
+                logger.info("ratio %s" % ratio)
                 if self._more_routes:
                     break
 
         # If no column was found heuristically, solve subproblem exactly
-        if not self._more_routes or self._pricing_strategy == "Exact":
+        elif pricing_strategy == "Exact":
             subproblem = self._def_subproblem(duals, vehicle)
             self.routes, self._more_routes = subproblem.solve(
                 self._get_time_remaining(),
                 # exact=False,
             )
+            resolve_count += 1
 
-        return self._more_routes
+        return self._more_routes, resolve_count
 
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
@@ -405,14 +416,23 @@ class VehicleRoutingProblem:
         else:
             duals, relaxed_cost = self.masterproblem.solve(
                 relax=True, time_limit=self._get_time_remaining())
-        logger.info("iteration %s, %s" % (self._iteration, relaxed_cost))
 
+        logger.info(
+            "iteration %s, %s, \tHyper Choice %s, \tAverage runtime %s, \tQuality:  %s \tExp_terms %s\t \\theta %s"
+            % (self._iteration, relaxed_cost, self.hyper_heuristic.n,
+               self.hyper_heuristic.average_runtime, self.hyper_heuristic.q,
+               self.hyper_heuristic.exp_list, self.hyper_heuristic.theta))
+
+        # endre loopen
+        # initialise
+        update = True
         #pick the heuristic
-        if self.use_hyper_heuristic:
+
+        if self._pricing_strategy == "Hyper":
             if self.hyper_heuristic.initialisation:
                 #initialise the high-level algorithm
                 self.hyper_heuristic.set_current_objective(relaxed_cost)
-                pricing_strategy = "BestPaths1"
+                dynamic_pricing_strategy = "BestPaths1"
                 update = True
                 self.hyper_heuristic.initialisation = False
                 self.hyper_heuristic.timestart = time()
@@ -420,12 +440,16 @@ class VehicleRoutingProblem:
                 #the high-level heuristic loop
                 self.hyper_heuristic.current_performance(
                     new_objective_value=relaxed_cost,
-                    pos_reduced_cost=True)  #fix pos reduced cost
+                    pos_reduced_cost=True,
+                    resolve_count=self.resolve_count)  #fix pos reduced cost
                 update = self.hyper_heuristic.move_acceptance()
                 self.hyper_heuristic.update_parameters()
-                pricing_strategy = self.hyper_heuristic.pick_heurestic()
+                dynamic_pricing_strategy = self.hyper_heuristic.pick_heurestic(
+                )
         else:
-            pricing_strategy = self._pricing_strategy
+            dynamic_pricing_strategy = self._pricing_strategy
+
+        #logger.info("Pricing strategy %s was used" % dynamic_pricing_strategy)
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
@@ -446,8 +470,8 @@ class VehicleRoutingProblem:
             # Continue searching for columns
             self._more_routes = False
 
-            self._solve_subproblem_with_heuristic(
-                pricing_strategy=pricing_strategy,
+            _, self.resolve_count = self._solve_subproblem_with_heuristic(
+                pricing_strategy=dynamic_pricing_strategy,
                 vehicle=vehicle,
                 duals=duals)
 
