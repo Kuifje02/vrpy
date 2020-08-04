@@ -55,7 +55,6 @@ class SubProblemBase:
             Parameter used depending on pricing_strategy.
             Defaults to None.
     """
-
     def __init__(
         self,
         G,
@@ -103,7 +102,8 @@ class SubProblemBase:
             # The graph is pruned
             self.remove_edges_3(pricing_parameter)
 
-        logger.debug("Pricing strategy %s, %s" % (pricing_strategy, pricing_parameter))
+        logger.debug("Pricing strategy %s, %s" %
+                     (pricing_strategy, pricing_parameter))
 
     def add_reduced_cost_attribute(self):
         """Substracts the dual values to compute reduced cost on each edge."""
@@ -115,8 +115,7 @@ class SubProblemBase:
         if "upper_bound_vehicles" in self.duals:
             for v in self.G.successors("Source"):
                 self.G.edges["Source", v]["weight"] -= self.duals[
-                    "upper_bound_vehicles"
-                ][self.vehicle_type]
+                    "upper_bound_vehicles"][self.vehicle_type]
 
     def discard_nodes(self):
         """Removes nodes with marginal cost = 0."""
@@ -135,10 +134,10 @@ class SubProblemBase:
         """
         self.sub_G = self.G.copy()
         largest_dual = max(
-            [self.duals[v] for v in self.duals if v != "upper_bound_vehicles"]
-        )
+            [self.duals[v] for v in self.duals if v != "upper_bound_vehicles"])
         for (u, v) in self.G.edges():
-            if self.G.edges[u, v]["cost"][self.vehicle_type] > alpha * largest_dual:
+            if self.G.edges[u, v]["cost"][
+                    self.vehicle_type] > alpha * largest_dual:
                 self.sub_G.remove_edge(u, v)
 
         # If pruning the graph disconnects the source and the sink,
@@ -188,21 +187,25 @@ class SubProblemBase:
         4. Remove all edges that do not belong to these paths
         """
         # Normalize weights
-        max_weight = max([self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
-        min_weight = min([self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
+        max_weight = max(
+            [self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
+        min_weight = min(
+            [self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
         for edge in self.G.edges(data=True):
-            edge[2]["pos_weight"] = (
-                -max_weight - min_weight + 2 * edge[2]["weight"]
-            ) / (max_weight - min_weight)
+            edge[2]["pos_weight"] = (-max_weight - min_weight +
+                                     2 * edge[2]["weight"]) / (max_weight -
+                                                               min_weight)
             edge[2]["pos_weight"] = max(0, edge[2]["pos_weight"])
 
         # Compute beta shortest paths
         best_paths = list(
             islice(
-                shortest_simple_paths(self.G, "Source", "Sink", weight="pos_weight"),
+                shortest_simple_paths(self.G,
+                                      "Source",
+                                      "Sink",
+                                      weight="pos_weight"),
                 beta,
-            )
-        )
+            ))
 
         # Store these paths as a list of DiGraphs
         best_paths_list = []

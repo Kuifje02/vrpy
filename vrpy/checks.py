@@ -27,37 +27,24 @@ def check_arguments(num_stops: int = None,
                 raise TypeError("Load capacity must be positive integer.")
     if duration and (not isinstance(duration, int) or duration < 0):
         raise TypeError("Maximum duration must be positive integer.")
-    strategies = [
-        "Exact",
-        "BestEdges1",
-        "BestEdges2",
-        "BestPaths",
-    ]
+    strategies = ["Exact", "BestEdges1", "BestEdges2", "BestPaths", "Hyper"]
     if pricing_strategy not in strategies:
-        raise ValueError("Pricing strategy %s is not valid. Pick one among %s" %
-                         (pricing_strategy, strategies))
+        raise ValueError(
+            "Pricing strategy %s is not valid. Pick one among %s" %
+            (pricing_strategy, strategies))
     if mixed_fleet:
-        if (
-            load_capacity
-            and num_vehicles
-            and len(load_capacity) != len(num_vehicles)
-        ):
+        if (load_capacity and num_vehicles
+                and len(load_capacity) != len(num_vehicles)):
             raise ValueError(
                 "Input arguments load_capacity and num_vehicles must have same dimension."
             )
-        if (
-            load_capacity
-            and fixed_cost
-            and len(load_capacity) != len(fixed_cost)
-        ):
+        if (load_capacity and fixed_cost
+                and len(load_capacity) != len(fixed_cost)):
             raise ValueError(
                 "Input arguments load_capacity and fixed_cost must have same dimension."
             )
-        if (
-            num_vehicles
-            and fixed_cost
-            and len(num_vehicles) != len(fixed_cost)
-        ):
+        if (num_vehicles and fixed_cost
+                and len(num_vehicles) != len(fixed_cost)):
             raise ValueError(
                 "Input arguments num_vehicles and fixed_cost must have same dimension."
             )
@@ -110,10 +97,19 @@ def check_vrp(G: DiGraph = None):
 def check_initial_routes(initial_routes: list = None, G: DiGraph = None):
     """
     Checks if initial routes are consistent.
-    TO DO : check if it is entirely feasible depending on VRP type.
+    TODO : check if it is entirely feasible depending on VRP type.
     One way of doing it : run the subproblem by fixing variables corresponding to initial solution.
     """
+    # problem type
+
+    # kan prøve tipset!
+
+    # try except thing!
+
     # Check if routes start at Sink and end at Node
+
+    # prune_graph -> call it in here,
+
     for route in initial_routes:
         if route[0] != "Source" or route[-1] != "Sink":
             raise ValueError("Route %s must start at Source and end at Sink" %
@@ -146,7 +142,8 @@ def check_consistency(cspy: bool = None,
 
     # pickup delivery requires cspy=False
     if cspy and pickup_delivery:
-        raise NotImplementedError("pickup_delivery option requires cspy=False.")
+        raise NotImplementedError(
+            "pickup_delivery option requires cspy=False.")
     # pickup delivery requires pricing_stragy="Exact"
     if pickup_delivery and pricing_strategy != "Exact":
         pricing_strategy = "Exact"
