@@ -3,31 +3,27 @@ from math import exp, log, sqrt
 from time import time
 import json
 #from .main import VehicleRoutingProblem
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 """
 TODO: 
-    - Bruke reduced cost på en måte! (Multiobjective optimisiation) GO R
-    - Gi muligheten for å velge en spesifikk heurestikk R, kan gjøre bedre
-    - Straffe heurestikken hvis det ikke er forbedring, ved å øke n[i]
-    - Det sto noe i den andre om rank based move acceptance, dette bør sjekkes ut fordi vi bryr oss om hvorvidt nye kolonner er funnet, men ikke om verdier!
-"""
-# tre oppgaver: learning R for now, update data structures R , and change the punishment criterium Lets go!
-
-# påstand4 (big step), hva med å ordne heurestikkene i en prioritetskø?
-
-#Oppgaver
-# Finn en måte å sammenlikne resultatet av metaheurestikken på de ulike instancene!
-# Finn ut best måte å teste performance av metaheurestikken
+    #Oppgaver
 # Kjøre performance profileren på en rekke instances, basically!
-# ting jeg setter: move_acceptance
-# ting som jeg vil ha med.
-# reject list, n_list,
-# Sammenlikne Kjøretid i move_acceptance criteria
-# ta stilling til om jeg vil kjøre på
+# Fikse i 1) main 2) hyper 3) csv_writer
+# Finne noen gode instancer å se på
+# Resette average runtime, vurdere -> raskere enn previous search markov chain
+
+# Så kan vi se mer på move_acceptance
 
 # SLITEN:
-#navnendringer:
-"hyperparams"
-#sette inn types i metodene
+# sortere variablene
+# åpne for muligheten å velge en spesifikk heurestikk
+    - Det sto noe i den andre om rank based move acceptance, dette bør sjekkes ut fordi vi bryr oss om hvorvidt nye kolonner er funnet, men ikke om verdier! (kanskje)
+# ordne modulo greiene 
+
+"""
 
 
 class HyperHeuristic:
@@ -69,16 +65,18 @@ class HyperHeuristic:
     def __init__(self,
                  poolsize: int = 4,
                  start_heur: int = 0,
-                 scaling_factor: float = 0.01,
+                 scaling_factor: float = 0.5,
                  offline_learning: bool = False):
 
         #params
         self.scaling_factor = scaling_factor
+        self.theta = 1
         #self.decay_factor = None
 
         #self.time_limit = None
         self.current_objective_value = None
         self.new_objective_value = None
+        self.pos_reduced_cost = None  #ikke egentlig positive reduce cost at this point
 
         self.inf = 1E10
 
@@ -92,7 +90,11 @@ class HyperHeuristic:
         self.q = [0] * poolsize
         self.r = [0] * poolsize
         self.n = [0] * poolsize
+        self.exp_list = [0] * poolsize
         self.d = 0
+        self.d_max = 0
+        self.total_n = 0
+        self.average_runtime = 0
 
         #Consider setting to zero
         self.heuristic_points = [self.inf] * poolsize
@@ -107,13 +109,10 @@ class HyperHeuristic:
         #total time
         self.timestart = None
         self.timeend = None
-        self.time_windows = None
-        self.pos_reduced_cost = None
-        self.reject_list = [0, 0, 0, 0]
-        self.total_n = 0
-        self.start_computing_average = 3
         self.last_runtime = None
-        self.average_runtime = 0
+        self.time_windows = None
+        self.start_computing_average = 1
+        self.reject_list = [0, 0, 0, 0]
 
     def set_current_objective(self, objective: float = None):
         """
@@ -146,14 +145,19 @@ class HyperHeuristic:
             #vil den ikke så og si alltid bare være en?
         return self.current_heuristic
 
+    def update_scaling_factor(self):
+        if self.obj_decrease and self.d > 0 and self.pos_reduced_cost:
+            self.theta = 0.99
+        else:
+            self.theta = max(self.theta - 0.1, 0.1)
+
     def current_performance(self,
                             new_objective_value: float = None,
-                            pos_reduced_cost: bool = None):
+                            pos_reduced_cost: bool = None,
+                            resolve_count=None):
         """Updates the variables relevant for the last iteration
+        TODO: Consider changing self.d somehow to reflect not just improvements. One fix is normalisation
 
-        Args:
-            new_objective_value (float, optional): [description]. Defaults to None.
-            pos_reduced_cost (bool, optional): [description]. Defaults to None.
         """
         #   computes last time
         if self.total_n == 0:
@@ -167,19 +171,16 @@ class HyperHeuristic:
         self.pos_reduced_cost = pos_reduced_cost
         self.obj_decrease = self.current_objective_value - new_objective_value > 0
 
+        #   incorporate resolve count
+
         #   time measure
         if self.total_n > self.start_computing_average + 1:  #problem er at vi beregner ny average etter d.
-            self.d = max((self.average_runtime - self.last_runtime) /
-                         self.average_runtime * 100, 0)
-
-        #problemer:
-        #   n burde være null, nei
-        #
-
-        #   self.average_runtime =
-
-        # compute weighted average runtime
-        # options: let every heuristic run once
+            self.d = (self.average_runtime -
+                      self.last_runtime) / self.average_runtime * 100
+            logger.info("Resolve count %s, improvement %s" %
+                        (resolve_count, self.d))
+            if self.d > self.d_max:
+                self.d_max = self.d
 
     def move_acceptance(self):
         """
@@ -221,51 +222,92 @@ class HyperHeuristic:
 
         return update
 
-    def reward(self, y):
-        x = y  #care?
-        if self.obj_decrease:
-            x /= 2
-        elif self.pos_reduced_cost:
-            x /= 2
+    def reward(self, y, lower_bound=True):
+        """
+        Måte 1: multiplicative reward, prob 0 -> 0 
+        Måte 2: minste terskel
+        Mate 3: Med negative improvements, ikke forverr 
+        TODO: implementere pos reduced cost (alltid true)
+        """
+        # Trøstepremie
+        if lower_bound:
+            x = min(0.1 * self.d_max, y)
+        else:
+            x = y
+
+        #positive improvement
+        if y > 0:
+            if self.obj_decrease and self.pos_reduced_cost:
+                x *= 1.5
+            elif self.obj_decrease and not self.pos_reduced_cost:
+                x *= 1.2
+            elif not self.obj_decrease and self.pos_reduced_cost:
+                x *= 1.2
+            else:
+                x *= 0.9
+        #negative improvement
+        else:
+            if self.obj_decrease and self.pos_reduced_cost:
+                x /= 1.5
+            elif self.obj_decrease and not self.pos_reduced_cost:
+                x /= 1.2
+            elif not self.obj_decrease and self.pos_reduced_cost:
+                x /= 1.2
+            else:
+                x /= 0.9
+
         return x
 
     def update_parameters(self):
         """Updates the high-level parameters
         """
-        # check if above the weighted average or not performance thing -> as with MAB
         # measure time and add to weighted average
-        # have the two boolean functions which affects the r-parameter, set it as below.
 
         i = self.current_heuristic
+
+        self.update_scaling_factor()
 
         #compute average of runtimes
         self.total_n += 1
 
         if self.total_n > self.start_computing_average:
-            reduced_n = self.total_n - self.start_computing_average
-            self.average_runtime = self.average_runtime * (reduced_n - 1) / (
-                reduced_n) + 1 / (reduced_n) * self.last_runtime
+            reduced_n = (self.total_n - self.start_computing_average) % 10
+            if reduced_n == 0:
+                self.average_runtime = self.last_runtime
+            else:
+                self.average_runtime = self.average_runtime * (
+                    reduced_n -
+                    1) / (reduced_n) + 1 / (reduced_n) * self.last_runtime
 
             #store old values
             old_q = self.q[i]
             old_n = self.n[i]
 
+            #frozen TRUE
+            frozen = (old_q == 0 and old_n > 3)
+
             #update new values
             self.n[
                 i] += 1  #ta hensyn til at vi ønsker randomly chosen de første fire
+
+            #tail heavy approach
             self.r[i] = self.r[i] * old_n / (old_n + 1) + 1 / (
-                old_n + 1) * self.reward(self.d)
+                old_n + 1) * self.reward(self.d, lower_bound=frozen)
+            #reflets the current state of the search
+            #self.r[i] = self.reward(self.d)
             """TODO: implement operations depending on no_improvement and bad_column
             """
+
             self.q[i] = (old_q + self.r[i]) / (old_n + 1)
 
             #compute heuristic points MAB-style
             for j in range(len(self.pool)):
                 if not self.n[j] == 0:
+                    self.exp_list[j] = sqrt(2 * log(sum(self.n)) / self.n[j])
                     self.heuristic_points[
-                        j] = self.q[j] + self.scaling_factor * sqrt(
-                            2 * log(sum(self.n)) /
-                            self.n[j])  # consider adaptive selection
+                        j] = self.theta * self.q[j] + self.scaling_factor * (
+                            1 - self.theta
+                        ) * self.exp_list[j]  # consider adaptive selection
         else:
             pass
 
