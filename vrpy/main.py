@@ -15,6 +15,7 @@ from vrpy.checks import (check_arguments, check_consistency, check_feasibility,
 from .hyperheuristic import HyperHeuristic
 
 logger = logging.getLogger(__name__)
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -496,7 +497,6 @@ class VehicleRoutingProblem:
             self._no_improvement = 0
         if not self._dive:
             self._lower_bound.append(relaxed_cost)
-        # Add column (new route) to the master problem
 
     def _get_time_remaining(self, mip: bool = False):
         """

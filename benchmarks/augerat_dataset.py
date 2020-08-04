@@ -4,7 +4,6 @@ from networkx import relabel_nodes, DiGraph
 import numpy as np
 from pandas import read_csv
 
-from vrpy.main import VehicleRoutingProblem
 from benchmarks.utils.distance import distance
 
 
