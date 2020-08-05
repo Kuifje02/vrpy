@@ -13,7 +13,6 @@ class SubProblemLP(SubProblemBase):
 
     Inherits problem parameters from `SubproblemBase`
     """
-
     def __init__(self, *args, solver):
         super(SubProblemLP, self).__init__(*args)
         # create problem
@@ -40,10 +39,10 @@ class SubProblemLP(SubProblemBase):
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective %s" % pulp.value(self.prob.objective))
-        if (pulp.value(self.prob.objective) is not None and
-                pulp.value(self.prob.objective) < -(10**-3)) or (
-                    exact == False and
-                    pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
+        if (pulp.value(self.prob.objective) is not None
+                and pulp.value(self.prob.objective) < -(10**-3)) or (
+                    exact == False
+                    and pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
             more_routes = True
             self._add_new_route()
         else:
@@ -65,7 +64,6 @@ class SubProblemLP(SubProblemBase):
 
         new_route.graph["cost"] = self.total_cost
         new_route.graph["vehicle_type"] = self.vehicle_type
-        self.routes.append(new_route)
         logger.debug("new route %s %s" %
                      (route_id, shortest_path(new_route, "Source", "Sink")))
         logger.debug("new route reduced cost %s" %
