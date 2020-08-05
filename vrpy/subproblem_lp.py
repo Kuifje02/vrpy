@@ -78,9 +78,9 @@ class SubProblemLP(SubProblemBase):
 
     def _solve(self, time_limit):
         if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
+            self.prob.solve(pulp.PULP_CBC_CMD(msg=False, maxSeconds=time_limit))
         elif self.solver == "cplex":
-            self.prob.solve(pulp.CPLEX_CMD(msg=0, timelimit=time_limit))
+            self.prob.solve(pulp.CPLEX_CMD(msg=False, timelimit=time_limit))
         elif self.solver == "gurobi":
             gurobi_options = []
             # Only specify time limit if given (o.w. errors)
