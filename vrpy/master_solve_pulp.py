@@ -16,7 +16,6 @@ class MasterSolvePulp(MasterProblemBase):
 
     Inherits problem parameters from MasterProblemBase
     """
-
     def __init__(self, *args):
         super(MasterSolvePulp, self).__init__(*args)
         # create problem
@@ -76,9 +75,9 @@ class MasterSolvePulp(MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"] and
-                    "depot_from" not in self.G.nodes[node] and
-                    "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"]
+                    and "depot_from" not in self.G.nodes[node]
+                    and "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 if not relax:
                     duals[node] = self.prob.constraints[constr_name].pi
@@ -120,6 +119,31 @@ class MasterSolvePulp(MasterProblemBase):
         if not total_cost:
             total_cost = 0
         return total_cost, best_routes
+
+    def get_heuristic_distribution(self):
+        best_routes_heuristic = {
+            "BestPaths": 0,
+            "BestEdges1": 0,
+            "BestEdges2": 0,
+            "Exact": 0,
+            "Other": 0
+        }
+        best_routes = []
+        for r in self.routes:
+            val = pulp.value(self.y[r.graph["name"]])
+            if val is not None and val > 0:
+                """ logger.debug("%s cost %s load %s" % (
+                    shortest_path(r, "Source", "Sink"),
+                    r.graph["cost"],
+                    sum(self.G.nodes[v]["demand"] for v in r.nodes()),
+                )) """
+                try:
+                    best_routes_heuristic[r.graph["heuristic"]] += 1
+                except:
+                    r.graph["heuristic"] = "Other"
+                    best_routes_heuristic[r.graph["heuristic"]] += 1
+                best_routes.append(r)
+        return best_routes_heuristic, best_routes_heuristic
 
     # Private methods to solve and output #
 
@@ -207,9 +231,9 @@ class MasterSolvePulp(MasterProblemBase):
         (as well as a penalty is the cost function).
         """
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"] and
-                    "depot_from" not in self.G.nodes[node] and
-                    "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"]
+                    and "depot_from" not in self.G.nodes[node]
+                    and "depot_to" not in self.G.nodes[node]):
                 # Set RHS
                 right_hand_term = self.G.nodes[node][
                     "frequency"] if self.periodic else 1
@@ -224,8 +248,7 @@ class MasterSolvePulp(MasterProblemBase):
             lowBound=0,
             upBound=1,
             cat=pulp.LpInteger,
-            e=(pulp.lpSum(self.set_covering_constrs[r]
-                          for r in route.nodes()
+            e=(pulp.lpSum(self.set_covering_constrs[r] for r in route.nodes()
                           if r not in ["Source", "Sink"]) +
                pulp.lpSum(self.vehicle_bound_constrs[k]
                           for k in range(len(self.num_vehicles))
@@ -269,7 +292,8 @@ class MasterSolvePulp(MasterProblemBase):
                     lowBound=0,
                     upBound=None,
                     cat=pulp.LpInteger,
-                    e=(1e10 * self.objective + self.set_covering_constrs[node]),
+                    e=(1e10 * self.objective +
+                       self.set_covering_constrs[node]),
                 )
 
     def _add_bound_vehicles(self):

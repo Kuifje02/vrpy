@@ -64,6 +64,8 @@ class SubProblemLP(SubProblemBase):
 
         new_route.graph["cost"] = self.total_cost
         new_route.graph["vehicle_type"] = self.vehicle_type
+        self.routes.append(new_route)
+
         logger.debug("new route %s %s" %
                      (route_id, shortest_path(new_route, "Source", "Sink")))
         logger.debug("new route reduced cost %s" %
@@ -76,7 +78,8 @@ class SubProblemLP(SubProblemBase):
 
     def _solve(self, time_limit):
         if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(msg=False, maxSeconds=time_limit))
+            self.prob.solve(pulp.PULP_CBC_CMD(msg=False,
+                                              maxSeconds=time_limit))
         elif self.solver == "cplex":
             self.prob.solve(pulp.CPLEX_CMD(msg=False, timelimit=time_limit))
         elif self.solver == "gurobi":

@@ -1,7 +1,7 @@
 import logging
 from time import time
 
-from networkx import DiGraph, shortest_path
+from networkx import DiGraph, shortest_path  #draw_networkx
 
 from vrpy.greedy import Greedy
 from vrpy.master_solve_pulp import MasterSolvePulp
@@ -121,9 +121,12 @@ class VehicleRoutingProblem:
         self.end_time = None
 
         # Initialise the HyperHeuristic solver, for pricing strategies
-        self.hyper_heuristic = HyperHeuristic(poolsize=4)
+        self.hyper_heuristic = HyperHeuristic()
         self.use_hyper_heuristic = use_hyper_heuristic
-        self.resolve_count = None
+        self.produced_column = None
+
+        #number of iterations before exact is tried
+        self.do_exact = 30
 
     def solve(self,
               initial_routes=None,
@@ -338,6 +341,92 @@ class VehicleRoutingProblem:
             solver,
         )
 
+    def _attempt_solve_best_paths(self,
+                                  pricing_strategy=None,
+                                  vehicle=None,
+                                  duals=None):
+        produced_column = False
+        for k_shortest_paths in [3, 5, 7, 9]:
+            subproblem = self._def_subproblem(
+                duals,
+                vehicle,
+                "BestPaths",
+                k_shortest_paths,
+            )
+            logger.info("k_shortest paths %s" % k_shortest_paths)
+            self.routes, self._more_routes = subproblem.solve(
+                self._get_time_remaining())
+            produced_column = self._more_routes
+            if self._more_routes:
+                break
+        else:
+            self._more_routes = True
+            logger.info("Heuristic failed,s et to exact")
+        return produced_column
+
+    def _attempt_solve_BestEdges1(self,
+                                  pricing_strategy=None,
+                                  vehicle=None,
+                                  duals=None):
+        produced_column = False
+        for alpha in [0.3, 0.5, 0.7, 0.9]:
+            subproblem = self._def_subproblem(
+                duals,
+                vehicle,
+                "BestEdges1",
+                alpha,
+            )
+            self.routes, self._more_routes = subproblem.solve(
+                self._get_time_remaining(),
+                # exact=False,
+            )
+            produced_column = self._more_routes
+            logger.info("alpha paths %s" % alpha)
+            if self._more_routes:
+                break
+        else:
+            self._more_routes = True
+            logger.info("Heuristic failed,s et to exact")
+        return produced_column
+
+    def _attempt_solve_BestEdges2(self,
+                                  pricing_strategy=None,
+                                  vehicle=None,
+                                  duals=None):
+        produced_column = False
+        for ratio in [0.1, 0.2, 0.3]:
+            subproblem = self._def_subproblem(
+                duals,
+                vehicle,
+                "BestEdges2",
+                ratio,
+            )
+            self.routes, self._more_routes = subproblem.solve(
+                self._get_time_remaining(),
+                # exact=False,
+            )
+            produced_column = self._more_routes
+            logger.info("ratio %s" % ratio)
+            if self._more_routes:
+                break
+        else:
+            self._more_routes = True
+            logger.info("Heuristic failed,s et to exact")
+        return produced_column
+
+    def _attempt_solve_Exact(self,
+                             pricing_strategy=None,
+                             vehicle=None,
+                             duals=None):
+        logger.info("Run exact")
+        subproblem = self._def_subproblem(duals, vehicle)
+        self.routes, self._more_routes = subproblem.solve(
+            self._get_time_remaining(),
+            # exact=False,
+        )
+        produced_column = self._more_routes
+        return produced_column
+
     def _solve_subproblem_with_heuristic(self,
                                          pricing_strategy=None,
                                          vehicle=None,
@@ -346,66 +435,62 @@ class VehicleRoutingProblem:
         """
         """TODO: Jeg får flere paths enn én! Hvordan skal jeg håndtere det?"""
         """Påstand: Hvis prisheurestikkene ikke gir en kolonne med reduced cost -> termineringskriterium"""
-        resolve_count = 0  #should this be different for each heuristic?
-        if pricing_strategy == "BestPaths":
-            for k_shortest_paths in [3, 5, 7, 9]:
-                subproblem = self._def_subproblem(
-                    duals,
-                    vehicle,
-                    "BestPaths",
-                    k_shortest_paths,
-                )
-                resolve_count += 1
-                logger.info("k_shortest paths %s" % k_shortest_paths)
-                self.routes, self._more_routes = subproblem.solve(
-                    self._get_time_remaining())
-                if self._more_routes:
-                    break
+        """TODO: change to if (self._no_improvement >= K and not self._more_routes and self.exact) or pricing_strategy == "Exact":"""
+        produced_column = False
+        if self._pricing_strategy == "Hyper":
 
-        elif pricing_strategy == "BestEdges1":
-            for alpha in [0.3, 0.5, 0.7, 0.9]:
-                subproblem = self._def_subproblem(
-                    duals,
-                    vehicle,
-                    "BestEdges1",
-                    alpha,
-                )
-                resolve_count += 1
-                self.routes, self._more_routes = subproblem.solve(
-                    self._get_time_remaining(),
-                    # exact=False,
-                )
-                logger.info("alpha paths %s" % alpha)
-                if self._more_routes:
-                    break
+            if pricing_strategy == "Exact" or self._no_improvement > self.do_exact:
+                self._no_improvement = 0  #Fudge solution
+                print("Did exact")
+                self.hyper_heuristic.n_exact += 1
+                produced_column = self._attempt_solve_Exact(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
 
-        elif pricing_strategy == "BestEdges2":
-            for ratio in [0.1, 0.2, 0.3]:
-                subproblem = self._def_subproblem(
-                    duals,
-                    vehicle,
-                    "BestEdges2",
-                    ratio,
-                )
-                resolve_count += 1
-                self.routes, self._more_routes = subproblem.solve(
-                    self._get_time_remaining(),
-                    # exact=False,
-                )
-                logger.info("ratio %s" % ratio)
-                if self._more_routes:
-                    break
+            elif pricing_strategy == "BestPaths":
+                produced_column = self._attempt_solve_best_paths(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
 
-        # If no column was found heuristically, solve subproblem exactly
-        elif pricing_strategy == "Exact":
-            subproblem = self._def_subproblem(duals, vehicle)
-            self.routes, self._more_routes = subproblem.solve(
-                self._get_time_remaining(),
-                # exact=False,
-            )
-            resolve_count += 1
+            elif pricing_strategy == "BestEdges1":
+                produced_column = self._attempt_solve_BestEdges1(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
 
-        return self._more_routes, resolve_count
+            elif pricing_strategy == "BestEdges2":
+                produced_column = self._attempt_solve_BestEdges2(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
+
+        else:  #old approach
+            if pricing_strategy == "BestPaths":
+                produced_column = self._attempt_solve_best_paths(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
+
+            elif pricing_strategy == "BestEdges1":
+                produced_column = self._attempt_solve_BestEdges1(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
+
+            elif pricing_strategy == "BestEdges2":
+                produced_column = self._attempt_solve_BestEdges2(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
+
+            if pricing_strategy == "Exact" or not produced_column:
+                produced_column = self._attempt_solve_Exact(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
+        return produced_column
 
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
@@ -418,22 +503,27 @@ class VehicleRoutingProblem:
             duals, relaxed_cost = self.masterproblem.solve(
                 relax=True, time_limit=self._get_time_remaining())
 
-        logger.info(
-            "iteration %s, %s, \tHyper Choice %s, \tAverage runtime %s, \tQuality:  %s \tExp_terms %s\t \\theta %s"
-            % (self._iteration, relaxed_cost, self.hyper_heuristic.n,
-               self.hyper_heuristic.average_runtime, self.hyper_heuristic.q,
-               self.hyper_heuristic.exp_list, self.hyper_heuristic.theta))
+        #get the active paths and the frequency list per heuristic
+        best_paths, best_paths_freq = self.masterproblem.get_heuristic_distribution(
+        )
 
-        # endre loopen
-        # initialise
+        logger.warning(
+            "iteration %s, %.6s, \tHyper Choice %s, Exact calls %s \t Average runtime %.5s, \tQuality:  [%.5s, %.5s, %.5s] \tExp_terms %0.4s\t \\theta %.5s \t Accepted Columns %s, best_paths_freq %s, \t no_improvement %s"
+            % (self._iteration, relaxed_cost, self.hyper_heuristic.n,
+               self.hyper_heuristic.n_exact,
+               self.hyper_heuristic.average_runtime, self.hyper_heuristic.q[0],
+               self.hyper_heuristic.q[1], self.hyper_heuristic.q[2],
+               self.hyper_heuristic.exp_list, self.hyper_heuristic.theta,
+               self.hyper_heuristic.colacc, best_paths_freq,
+               self._no_improvement))
+
         update = True
         #pick the heuristic
-
         if self._pricing_strategy == "Hyper":
             if self.hyper_heuristic.initialisation:
                 #initialise the high-level algorithm
                 self.hyper_heuristic.set_current_objective(relaxed_cost)
-                dynamic_pricing_strategy = "BestPaths1"
+                dynamic_pricing_strategy = "BestPaths"
                 update = True
                 self.hyper_heuristic.initialisation = False
                 self.hyper_heuristic.timestart = time()
@@ -442,7 +532,7 @@ class VehicleRoutingProblem:
                 self.hyper_heuristic.current_performance(
                     new_objective_value=relaxed_cost,
                     pos_reduced_cost=True,
-                    resolve_count=self.resolve_count)  #fix pos reduced cost
+                    produced_column=self.produced_column)
                 update = self.hyper_heuristic.move_acceptance()
                 self.hyper_heuristic.update_parameters()
                 dynamic_pricing_strategy = self.hyper_heuristic.pick_heurestic(
@@ -471,23 +561,25 @@ class VehicleRoutingProblem:
             # Continue searching for columns
             self._more_routes = False
 
-            _, self.resolve_count = self._solve_subproblem_with_heuristic(
+            old_len = len(self.routes)
+            self.produced_column = self._solve_subproblem_with_heuristic(
                 pricing_strategy=dynamic_pricing_strategy,
                 vehicle=vehicle,
                 duals=duals)
 
-        #if either more routes or move acceptance = True, update.
-        if self._more_routes:
-            if update:
-                self.masterproblem.update(
-                    self.routes[-1]
-                )  #there are routes which are added to master but not to the column
+            #len(set(self.routes)) == len(self.routes))
+            if self._more_routes:
+                if self.produced_column:
+                    logger.info("# new routes %s" %
+                                (len(self.routes) - old_len))
+                    (self.routes[-1]
+                     ).graph["heuristic"] = dynamic_pricing_strategy
+                    self.masterproblem.update(self.routes[-1])
+                else:
+                    logger.info("Column not produced")
             else:
-                print("not updated")
-                self.routes.pop()
-        else:
-            print("No more routes")
-            self.hyper_heuristic.timeend = time()
+                logger.info("No more routes")
+                self.hyper_heuristic.timeend = time()
 
         # Keep track of convergence rate and update stopping criteria parameters
         self._iteration += 1

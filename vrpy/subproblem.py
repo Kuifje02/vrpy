@@ -55,22 +55,20 @@ class SubProblemBase:
             Parameter used depending on pricing_strategy.
             Defaults to None.
     """
-    def __init__(
-        self,
-        G,
-        duals,
-        routes_with_node,
-        routes,
-        vehicle_type,
-        num_stops=None,
-        load_capacity=None,
-        duration=None,
-        time_windows=False,
-        pickup_delivery=False,
-        distribution_collection=False,
-        pricing_strategy="Exact",
-        pricing_parameter=None,
-    ):
+    def __init__(self,
+                 G,
+                 duals,
+                 routes_with_node,
+                 routes,
+                 vehicle_type,
+                 num_stops=None,
+                 load_capacity=None,
+                 duration=None,
+                 time_windows=False,
+                 pickup_delivery=False,
+                 distribution_collection=False,
+                 pricing_strategy="Exact",
+                 pricing_parameter=None):
         # Input attributes
         self.G = G
         self.duals = duals
