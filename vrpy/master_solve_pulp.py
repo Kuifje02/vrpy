@@ -5,7 +5,7 @@ from networkx import shortest_path
 import pulp
 
 from vrpy.masterproblem import MasterProblemBase
-from vrpy.pricing_heuristics import PricingHeuristics
+from vrpy.restricted_master_heuristics import DivingHeuristic
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ class MasterSolvePulp(MasterProblemBase):
 
     Inherits problem parameters from MasterProblemBase
     """
+
     def __init__(self, *args):
         super(MasterSolvePulp, self).__init__(*args)
         # create problem
@@ -31,8 +32,8 @@ class MasterSolvePulp(MasterProblemBase):
         self.set_covering_constrs = {}
         self.vehicle_bound_constrs = {}
         self.drop_penalty_constrs = {}
-        # Diving attributes
-        self.pricing_heuristics = PricingHeuristics()
+        # Restricted master heuristic
+        self.diving_heuristic = DivingHeuristic()
 
         self._formulate()
 
@@ -55,7 +56,7 @@ class MasterSolvePulp(MasterProblemBase):
 
     def solve_and_dive(self, time_limit):
         self._solve(relax=True, time_limit=time_limit)
-        self.pricing_heuristics.run_dive(self.prob)
+        self.diving_heuristic.run_dive(self.prob)
         self.prob.resolve()
         return self.get_duals(), self.prob.objective.value()
 
@@ -75,9 +76,9 @@ class MasterSolvePulp(MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"]
-                    and "depot_from" not in self.G.nodes[node]
-                    and "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 if not relax:
                     duals[node] = self.prob.constraints[constr_name].pi
@@ -130,16 +131,11 @@ class MasterSolvePulp(MasterProblemBase):
         }
         best_routes = []
         for r in self.routes:
-            val = pulp.value(self.y[r.graph["name"]])
+            val = self.y[r.graph["name"]].value()
             if val is not None and val > 0:
-                """ logger.debug("%s cost %s load %s" % (
-                    shortest_path(r, "Source", "Sink"),
-                    r.graph["cost"],
-                    sum(self.G.nodes[v]["demand"] for v in r.nodes()),
-                )) """
-                try:
+                if "heuristic" in r.graph:
                     best_routes_heuristic[r.graph["heuristic"]] += 1
-                except:
+                else:
                     r.graph["heuristic"] = "Other"
                     best_routes_heuristic[r.graph["heuristic"]] += 1
                 best_routes.append(r)
@@ -162,14 +158,14 @@ class MasterSolvePulp(MasterProblemBase):
         if self.solver == "cbc":
             self.prob.solve(
                 pulp.PULP_CBC_CMD(
-                    msg=0,
-                    maxSeconds=time_limit,
+                    msg=False,
+                    timeLimit=time_limit,
                     options=["startalg", "barrier", "crossover", "0"],
                 ))
         elif self.solver == "cplex":
             self.prob.solve(
                 pulp.CPLEX_CMD(
-                    msg=0,
+                    msg=False,
                     timelimit=time_limit,
                     options=["set lpmethod 4", "set barrier crossover -1"],
                 ))
@@ -184,7 +180,7 @@ class MasterSolvePulp(MasterProblemBase):
                     "TimeLimit",
                     time_limit,
                 ))
-            self.prob.solve(pulp.GUROBI(msg=0, options=gurobi_options))
+            self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     # Private methods for formulating and updating the problem #
 
@@ -231,9 +227,9 @@ class MasterSolvePulp(MasterProblemBase):
         (as well as a penalty is the cost function).
         """
         for node in self.G.nodes():
-            if (node not in ["Source", "Sink"]
-                    and "depot_from" not in self.G.nodes[node]
-                    and "depot_to" not in self.G.nodes[node]):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 # Set RHS
                 right_hand_term = self.G.nodes[node][
                     "frequency"] if self.periodic else 1
@@ -248,7 +244,8 @@ class MasterSolvePulp(MasterProblemBase):
             lowBound=0,
             upBound=1,
             cat=pulp.LpInteger,
-            e=(pulp.lpSum(self.set_covering_constrs[r] for r in route.nodes()
+            e=(pulp.lpSum(self.set_covering_constrs[r]
+                          for r in route.nodes()
                           if r not in ["Source", "Sink"]) +
                pulp.lpSum(self.vehicle_bound_constrs[k]
                           for k in range(len(self.num_vehicles))
@@ -292,8 +289,7 @@ class MasterSolvePulp(MasterProblemBase):
                     lowBound=0,
                     upBound=None,
                     cat=pulp.LpInteger,
-                    e=(1e10 * self.objective +
-                       self.set_covering_constrs[node]),
+                    e=(1e10 * self.objective + self.set_covering_constrs[node]),
                 )
 
     def _add_bound_vehicles(self):

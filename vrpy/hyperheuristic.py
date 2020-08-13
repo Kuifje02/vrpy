@@ -1,8 +1,6 @@
 from random import uniform, choice
 from math import exp, log, sqrt
 from time import time
-import json
-#from .main import VehicleRoutingProblem
 import logging
 import bisect
 
@@ -13,81 +11,55 @@ logging.basicConfig(level=logging.INFO)
 class HyperHeuristic:
     """
     HyperHeuristic class manages the high-level heuristic strategies
-    Args: 
-        scaling_factor (float): 
+    In charge of:
+    - Selection
+    - Storing, off_line learning
+    - Different move acceptance
+
+    Args:
+        options (list[str], optional):
+            names of heurestic strategies
+        scaling_factor (float, optional):
             parameter deciding the balance between exploration and explotation
-        time_limit (float): 
-            total time limit for the algorithm
-        current_objective_value (float): 
-            the objective value for previous iteration
-        new_objective_value (float): 
-            the objective value for the current iteration
-        inf (float): 
-            very large number 
-        iteration_counter (int): 
-            counts the number of iterations
-        initialisation (bool): 
-            initialisation parameter 
-        heur_names (list, str): 
-            names of heurestic strategies 
-        pool (list, int: 
-            the pool of heurestics, indexed by integers
-        q (list, floats): 
-            list of heuristic quality (rank)
-        r (list, floats): 
-            list of average improvements
-        n (list, int): 
-            list of iteration counters
-        heuristic_points (list, floats): 
-            list of points for each heurestic at the current timepoint
-        improvements (dict, dict, floats):
-            a dictionary with keys indexed by heuristics with values equal to dictionaries with rewards
-        current_heuristic (int):
-            the currently applied heuristic
+            Defaults to 0.5.
     """
+
     def __init__(self,
-                 poolsize: int = 4,
-                 start_heur: int = 0,
+                 options=["BestPaths", "BestEdges1", "BestEdges2", "Exact"],
                  scaling_factor: float = 0.5,
-                 offline_learning: bool = False,
                  performance_measure="Weighted average",
                  acceptance_type="Accept all"):
 
-        #params
+        # Input parameters
+        self.options = options
         self.scaling_factor = scaling_factor
-        self.theta = 1
-        #self.decay_factor = None
+        self.performance_measure = performance_measure
+        self.acceptance_type = acceptance_type
 
-        #self.time_limit = None
+        # Internal parameters
+        self.theta = 1
+        self.inf = 1E10
         self.current_objective_value = None
         self.new_objective_value = None
         self.produced_column = None
-
-        self.inf = 1E10
-
-        #consider
-        #self.iteration_counter = 0  # maybe one for each heuristic?
-        self.initialisation = True
-
-        #high level data
+        self.current_heuristic = None
         self.performence_measure_list = [
             "Relative improvement", "Weighted average"
         ]
-        self.heur_names = ["BestPaths", "BestEdges1", "BestEdges2", "Exact"]
-        self.pool = [i for i in range(poolsize)]
+        self.pool = range(len(options))
+        poolsize = len(options)
         self.q = [0] * poolsize
         self.r = [0] * poolsize
         self.n = [0] * poolsize
-        self.added_columns = [0] * poolsize
-        self.exp_list = [0] * poolsize
         self.d = 0
         self.d_max = 0
         self.total_n = 0
         self.average_runtime = 0
         self.step = 0.02
         self.n_exact = 0
+        self.added_columns = [0] * poolsize
+        self.exp_list = [0] * poolsize
 
-        #weighed average approach
         self.runtime_dist = []
         self.objective_decrease_list = [0] * poolsize
         self.norm_objective_decrease_list = [0] * poolsize
@@ -98,9 +70,6 @@ class HyperHeuristic:
 
         #Consider setting to zero
         self.heuristic_points = [self.inf] * poolsize
-        #consider
-        self.current_heuristic = start_heur
-        self.loaded_parameters = {}
 
         #total time
         self.timestart = None
@@ -109,9 +78,11 @@ class HyperHeuristic:
         self.time_windows = None
         self.start_computing_average = 1
 
-        #Settings
-        self.performance_measure = performance_measure
-        self.acceptance_type = acceptance_type
+    def init(self, relaxed_cost: float):
+        'Set initial parameters'
+        self.current_heuristic = 0
+        self.set_current_objective(relaxed_cost)
+        self.set_initial_time()
 
     def set_current_objective(self, objective: float = None):
         """
@@ -122,7 +93,7 @@ class HyperHeuristic:
     def set_initial_time(self):
         self.timeend = time()
 
-    def pick_heurestic(self, heuristic: int = None):
+    def pick_heuristic(self, heuristic: int = None):
         """
         Sets the chosen heuristic based on selection points
         """
@@ -135,7 +106,7 @@ class HyperHeuristic:
 
             #before the number of iterations is high enough
             if self.total_n < self.start_computing_average:
-                return choice(self.heur_names[0:2])
+                return choice(self.options[0:2])
 
         elif self.performance_measure == "Weighted average":
             pass
@@ -150,7 +121,7 @@ class HyperHeuristic:
         else:
             self.current_heuristic = choice(best_heuristics)
             #vil den ikke så og si alltid bare være en?
-        return self.heur_names[self.current_heuristic]
+        return self.options[self.current_heuristic]
 
     def update_scaling_factor(self):
         if self.obj_has_decreased and self.produced_column:
@@ -165,7 +136,6 @@ class HyperHeuristic:
         active_columns: dict = None,
     ):
         """Updates the variables at the current iteration
-
         """
         #   computes last time
         self.timestart = self.timeend
@@ -224,8 +194,8 @@ class HyperHeuristic:
                     index = bisect.bisect(self.runtime_dist,
                                           self.last_runtime_list[j])
 
-                    self.norm_runtime_list[j] = (len(
-                        self.runtime_dist) - index) / len(self.runtime_dist)
+                    self.norm_runtime_list[j] = (len(self.runtime_dist) -
+                                                 index) / len(self.runtime_dist)
                     if self.total_objective_decrease > 0:
                         self.norm_objective_decrease_list[
                             j] = self.objective_decrease_list[
@@ -240,8 +210,6 @@ class HyperHeuristic:
         Args:
             new_objective_value (float): new_objective_value. Defaults to None.
 
-        Returns:
-            (bool): if the move is accepted or not
         """
 
         update = True
@@ -259,8 +227,7 @@ class HyperHeuristic:
             elif not self.obj_has_decreased:
                 update = uniform(0, 1) < 0.5 * exp(self.d)
             else:
-                update = uniform(0,
-                                 1) < 0.1 * exp(self.d)  #både punishe og øke
+                update = uniform(0, 1) < 0.1 * exp(self.d)  #både punishe og øke
 
         elif self.acceptance_type == "objective_threshold":
             if self.obj_has_decreased:
@@ -360,7 +327,7 @@ class HyperHeuristic:
             for k in self.pool:
                 #if heuristic has not been applied, let it be self.inf
                 if self.n[k] > 0:
-                    name = self.heur_names[k]
+                    name = self.options[k]
 
                     active_k = self.active_dict[name]
 

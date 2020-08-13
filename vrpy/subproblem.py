@@ -1,13 +1,8 @@
-from networkx import (
-    compose_all,
-    DiGraph,
-    NetworkXException,
-    add_path,
-    has_path,
-    shortest_simple_paths,
-)
-from itertools import islice
 import logging
+from itertools import islice
+
+from networkx import (compose_all, DiGraph, NetworkXException, add_path,
+                      has_path, shortest_simple_paths)
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +50,7 @@ class SubProblemBase:
             Parameter used depending on pricing_strategy.
             Defaults to None.
     """
+
     def __init__(self,
                  G,
                  duals,
@@ -89,7 +85,7 @@ class SubProblemBase:
         # Define the graph on which the sub problem is solved according to the pricing strategy
         if pricing_strategy == "Exact":
             # The graph remains as is
-            self.sub_G = self.G.copy()
+            self.sub_G = self.G
         if pricing_strategy == "BestEdges1":
             # The graph is pruned
             self.remove_edges_1(pricing_parameter)
@@ -112,8 +108,9 @@ class SubProblemBase:
                     edge[2]["weight"] -= self.duals[v]
         if "upper_bound_vehicles" in self.duals:
             for v in self.G.successors("Source"):
-                self.G.edges["Source", v]["weight"] -= self.duals[
-                    "upper_bound_vehicles"][self.vehicle_type]
+                self.G.edges["Source",
+                             v]["weight"] -= self.duals["upper_bound_vehicles"][
+                                 self.vehicle_type]
 
     def discard_nodes(self):
         """Removes nodes with marginal cost = 0."""
@@ -137,7 +134,6 @@ class SubProblemBase:
             if self.G.edges[u, v]["cost"][
                     self.vehicle_type] > alpha * largest_dual:
                 self.sub_G.remove_edge(u, v)
-
         # If pruning the graph disconnects the source and the sink,
         # do not solve the subproblem.
         try:
@@ -154,7 +150,6 @@ class SubProblemBase:
         Edges are sorted by non decreasing reduced cost, and only
         the K|E| ones with lowest reduced cost are kept, where K is a parameter (ratio).
         """
-
         self.sub_G = self.G.copy()
         # Sort the edges by non decreasing reduced cost
         reduced_cost = {}
@@ -162,11 +157,9 @@ class SubProblemBase:
             if u != "Source" and v != "Sink":
                 reduced_cost[(u, v)] = self.G.edges[u, v]["weight"]
         sorted_edges = sorted(reduced_cost, key=reduced_cost.get)
-
         # Keep the best ones
         limit = int(ratio * len(sorted_edges))
         self.sub_G.remove_edges_from(sorted_edges[limit:])
-
         # If pruning the graph disconnects the source and the sink,
         # do not solve the subproblem.
         try:
@@ -194,26 +187,20 @@ class SubProblemBase:
                                      2 * edge[2]["weight"]) / (max_weight -
                                                                min_weight)
             edge[2]["pos_weight"] = max(0, edge[2]["pos_weight"])
-
         # Compute beta shortest paths
         best_paths = list(
             islice(
                 shortest_simple_paths(self.G,
                                       "Source",
                                       "Sink",
-                                      weight="pos_weight"),
-                beta,
-            ))
-
+                                      weight="pos_weight"), beta))
         # Store these paths as a list of DiGraphs
         best_paths_list = []
         for path in best_paths:
             H = DiGraph()
             add_path(H, path)
             best_paths_list.append(H)
-
         # Merge the paths into one graph
         induced_graph = compose_all(best_paths_list)
-
         # Create subgraph induced by the edges of this graph
         self.sub_G = self.G.edge_subgraph(induced_graph.edges()).copy()

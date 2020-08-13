@@ -1,7 +1,8 @@
 from networkx import DiGraph, negative_edge_cycle, shortest_path
 import pulp
 import logging
-from .subproblem import SubProblemBase
+
+from vrpy.subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,7 @@ class SubProblemLP(SubProblemBase):
 
     Inherits problem parameters from `SubproblemBase`
     """
+
     def __init__(self, *args, solver):
         super(SubProblemLP, self).__init__(*args)
         # create problem
@@ -39,10 +41,10 @@ class SubProblemLP(SubProblemBase):
         logger.debug("Solving subproblem using LP")
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective %s" % pulp.value(self.prob.objective))
-        if (pulp.value(self.prob.objective) is not None
-                and pulp.value(self.prob.objective) < -(10**-3)) or (
-                    exact == False
-                    and pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
+        if (pulp.value(self.prob.objective) is not None and
+                pulp.value(self.prob.objective) < -(10**-3)) or (
+                    exact == False and
+                    pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
             more_routes = True
             self._add_new_route()
         else:
@@ -78,19 +80,17 @@ class SubProblemLP(SubProblemBase):
 
     def _solve(self, time_limit):
         if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(msg=False,
-                                              maxSeconds=time_limit))
+            self.prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=time_limit))
         elif self.solver == "cplex":
             self.prob.solve(pulp.CPLEX_CMD(msg=False, timelimit=time_limit))
         elif self.solver == "gurobi":
             gurobi_options = []
-            # Only specify time limit if given (o.w. errors)
             if time_limit is not None:
                 gurobi_options.append((
                     "TimeLimit",
                     time_limit,
                 ))
-            self.prob.solve(pulp.GUROBI(msg=0, options=gurobi_options))
+            self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     def _formulate(self):
         # minimize reduced cost

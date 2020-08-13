@@ -52,14 +52,13 @@ parser.add_argument('--cpu-count',
                     default=0,
                     dest="CPU_COUNT",
                     help='Number of cpus to use. Default: all avaiable.')
-parser.add_argument(
-    '--exploration',
-    '-e',
-    action='store_false',
-    dest="PERFORMANCE",
-    help='To run the benchmarks in performance mode (default)' +
-    ' or in exploration mode. Exploration mode runs' +
-    ' different solver parameters')
+parser.add_argument('--exploration',
+                    '-e',
+                    action='store_false',
+                    dest="PERFORMANCE",
+                    help='To run the benchmarks in performance mode (default)' +
+                    ' or in exploration mode. Exploration mode runs' +
+                    ' different solver parameters')
 
 args = parser.parse_args()
 
@@ -134,7 +133,6 @@ def run_parallel():
                 [True],  # greedy
                 [True, False],  # cspy
                 ["Hyper"]))
-
     pool = Pool(processes=CPU_COUNT)
     with pool:
         res = pool.map_async(_parallel_wrapper, iterate_over)
@@ -151,8 +149,7 @@ def _parallel_wrapper(input_tuple):
     else:
         kwargs = dict(
             zip([
-                "path_to_instance", "dive", "greedy", "cspy",
-                "pricing_strategy"
+                "path_to_instance", "dive", "greedy", "cspy", "pricing_strategy"
             ], input_tuple))
         _run_single_problem(**kwargs)
 
@@ -165,24 +162,20 @@ def _run_single_problem(path_to_instance: Path, **kwargs):
     logger.info("Solving instance %s", instance_name)
     # Load data
     if instance_type == "cvrp":
-        data = AugeratDataSet(path=instance_folder,
-                              instance_name=instance_name)
+        data = AugeratDataSet(path=instance_folder, instance_name=instance_name)
     elif instance_type == "cvrptw":
-        data = SolomonDataSet(path=instance_folder,
-                              instance_name=instance_name)
+        data = SolomonDataSet(path=instance_folder, instance_name=instance_name)
     # Solve problem
     prob = VehicleRoutingProblem(data.G,
                                  load_capacity=data.max_load,
                                  time_windows=bool(instance_type == "cvrptw"))
-    prob.solve(**kwargs, compute_runtime=True)
-    #logger.info("keywordargs %s", kwargs)
+    prob.solve(**kwargs)
     # Output results
     table = CsvTable(instance_name=instance_name,
                      comp_time=prob.comp_time,
                      best_known_solution=data.best_known_solution,
                      instance_type=instance_type)
     table.from_vrpy_instance(prob)
-    logger.info("hyperheuristic n_list %s", prob.hyper_heuristic.n)
 
 
 def main():

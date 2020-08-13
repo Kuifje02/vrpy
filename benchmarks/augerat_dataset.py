@@ -9,6 +9,7 @@ from benchmarks.utils.distance import distance
 
 class AugeratNodePosition:
     """Stores coordinates of a node of Augerat's instances (set P)."""
+
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[0]).item()
@@ -22,6 +23,7 @@ class AugeratNodePosition:
 
 class AugeratNodeDemand:
     """Stores attributes of a node of Augerat's instances (set P)."""
+
     def __init__(self, values):
         # Node ID
         self.name = np.uint32(values[0]).item()
@@ -38,6 +40,7 @@ class AugeratDataSet:
         path (str) : Path to data folder.
         instance_name (str) : Name of instance to read.
     """
+
     def __init__(self, path: Path, instance_name):
         self.G: DiGraph = None
         self.best_known_solution: int = None

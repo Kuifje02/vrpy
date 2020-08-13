@@ -3,6 +3,7 @@ from time import time
 from networkx import DiGraph
 
 from vrpy import VehicleRoutingProblem
+from vrpy.preprocessing import get_num_stops_upper_bound
 
 
 class TestsToy:
@@ -159,14 +160,14 @@ class TestsToy:
     def test_knapsack(self):
         self.G.nodes["Source"]["demand"] = 0
         self.G.nodes["Sink"]["demand"] = 0
-        prob = VehicleRoutingProblem(self.G, load_capacity=10)
-        prob._get_num_stops_upper_bound(10)
-        assert prob.num_stops == 4
+        assert get_num_stops_upper_bound(self.G, 10) == 4
 
     def test_pricing_strategies(self):
-        prob = VehicleRoutingProblem(self.G, num_stops=4)
         sol = []
-        for strategy in ["Exact", "BestPaths", "BestEdges1", "BestEdges2"]:
+        for strategy in [
+                "Exact", "BestPaths", "BestEdges1", "BestEdges2", "Hyper"
+        ]:
+            prob = VehicleRoutingProblem(self.G, num_stops=4)
             prob.solve(pricing_strategy=strategy)
             sol.append(prob.best_value)
         assert len(set(sol)) == 1
