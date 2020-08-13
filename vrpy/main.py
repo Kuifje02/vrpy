@@ -1,5 +1,6 @@
 import logging
 from time import time
+from pathlib import Path
 
 from networkx import DiGraph, shortest_path  #draw_networkx
 
@@ -13,6 +14,7 @@ from vrpy.schedule import Schedule
 from vrpy.checks import (check_arguments, check_consistency, check_feasibility,
                          check_initial_routes, check_vrp)
 from .hyperheuristic import HyperHeuristic
+from csv import DictWriter
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +128,7 @@ class VehicleRoutingProblem:
         self.produced_column = None
 
         #number of iterations before exact is tried
-        self.do_exact = 30
+        self.do_exact = 1000
 
     def solve(self,
               initial_routes=None,
@@ -353,7 +355,6 @@ class VehicleRoutingProblem:
                 "BestPaths",
                 k_shortest_paths,
             )
-            logger.info("k_shortest paths %s" % k_shortest_paths)
             self.routes, self._more_routes = subproblem.solve(
                 self._get_time_remaining())
             produced_column = self._more_routes
@@ -361,7 +362,6 @@ class VehicleRoutingProblem:
                 break
         else:
             self._more_routes = True
-            logger.info("Heuristic failed,s et to exact")
         return produced_column
 
     def _attempt_solve_BestEdges1(self,
@@ -381,12 +381,10 @@ class VehicleRoutingProblem:
                 # exact=False,
             )
             produced_column = self._more_routes
-            logger.info("alpha paths %s" % alpha)
             if self._more_routes:
                 break
         else:
             self._more_routes = True
-            logger.info("Heuristic failed,s et to exact")
         return produced_column
 
     def _attempt_solve_BestEdges2(self,
@@ -406,12 +404,11 @@ class VehicleRoutingProblem:
                 # exact=False,
             )
             produced_column = self._more_routes
-            logger.info("ratio %s" % ratio)
             if self._more_routes:
                 break
         else:
             self._more_routes = True
-            logger.info("Heuristic failed,s et to exact")
+
         return produced_column
 
     def _attempt_solve_Exact(self,
@@ -438,17 +435,7 @@ class VehicleRoutingProblem:
         """TODO: change to if (self._no_improvement >= K and not self._more_routes and self.exact) or pricing_strategy == "Exact":"""
         produced_column = False
         if self._pricing_strategy == "Hyper":
-
-            if pricing_strategy == "Exact" or self._no_improvement > self.do_exact:
-                self._no_improvement = 0  #Fudge solution
-                print("Did exact")
-                self.hyper_heuristic.n_exact += 1
-                produced_column = self._attempt_solve_Exact(
-                    pricing_strategy=pricing_strategy,
-                    vehicle=vehicle,
-                    duals=duals)
-
-            elif pricing_strategy == "BestPaths":
+            if pricing_strategy == "BestPaths":
                 produced_column = self._attempt_solve_best_paths(
                     pricing_strategy=pricing_strategy,
                     vehicle=vehicle,
@@ -462,6 +449,15 @@ class VehicleRoutingProblem:
 
             elif pricing_strategy == "BestEdges2":
                 produced_column = self._attempt_solve_BestEdges2(
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
+
+            elif pricing_strategy == "Exact":
+                #self._no_improvement = 0  #Fudge solution
+                print("Did exact")
+                self.hyper_heuristic.n_exact += 1
+                produced_column = self._attempt_solve_Exact(
                     pricing_strategy=pricing_strategy,
                     vehicle=vehicle,
                     duals=duals)
@@ -492,6 +488,93 @@ class VehicleRoutingProblem:
                     duals=duals)
         return produced_column
 
+    def store_info_heuristic(self,
+                             best_paths=None,
+                             best_paths_freq=None,
+                             relaxed_cost=None,
+                             output_folder="benchmarks/results/instances"):
+        """Store data from a run to output_folder, defaults to "benchmarks/results/instances
+        """
+
+        output_folder = Path(output_folder)
+        output_file_path = output_folder / (self.G.name + '_info_run.csv')
+        mode = 'a' if output_file_path.is_file() else 'w'
+        with open(output_file_path, mode, newline='') as csv_file:
+            writer = DictWriter(
+                csv_file,
+                fieldnames=[
+                    "Iteration", "Objective", "Hyper choice BP",
+                    "Hyper choice BE1", "Hyper choice BE2",
+                    "Hyper choice Exact", "Average runtime", "Quality BP",
+                    "Quality BE1", "Quality BE2", "Quality Exact",
+                    "Selection score BP", "Selection score BE1",
+                    "Selection score BE2", "Selection score Exact",
+                    "Exploration", "Theta", "Accepted columns BP",
+                    "Accepted columns BE1", "Accepted columns BE2",
+                    "Accepted columns Exact", "Active path BP",
+                    "Active path BE1", "Active path BE2", "Active path Exact",
+                    "No improvement", "Total active paths"
+                ])
+            if mode == 'w':
+                writer.writeheader()
+            writer.writerow({
+                "Iteration":
+                self._iteration,
+                "Objective":
+                relaxed_cost,
+                "Hyper choice BP":
+                self.hyper_heuristic.n[0],
+                "Hyper choice BE1":
+                self.hyper_heuristic.n[1],
+                "Hyper choice BE2":
+                self.hyper_heuristic.n[2],
+                "Hyper choice Exact":
+                self.hyper_heuristic.n[3],
+                "Average runtime":
+                self.hyper_heuristic.average_runtime,
+                "Quality BP":
+                self.hyper_heuristic.q[0],
+                "Quality BE1":
+                self.hyper_heuristic.q[1],
+                "Quality BE2":
+                self.hyper_heuristic.q[2],
+                "Quality Exact":
+                self.hyper_heuristic.q[3],
+                "Selection score BP":
+                self.hyper_heuristic.heuristic_points[0],
+                "Selection score BE1":
+                self.hyper_heuristic.heuristic_points[1],
+                "Selection score BE2":
+                self.hyper_heuristic.heuristic_points[2],
+                "Selection score Exact":
+                self.hyper_heuristic.heuristic_points[3],
+                "Exploration":
+                self.hyper_heuristic.exp_list,
+                "Theta":
+                self.hyper_heuristic.theta,
+                "Accepted columns BP":
+                self.hyper_heuristic.added_columns[0],
+                "Accepted columns BE1":
+                self.hyper_heuristic.added_columns[1],
+                "Accepted columns BE2":
+                self.hyper_heuristic.added_columns[2],
+                "Accepted columns Exact":
+                self.hyper_heuristic.added_columns[3],
+                "Active path BP":
+                best_paths_freq["BestPaths"],
+                "Active path BE1":
+                best_paths_freq["BestEdges1"],
+                "Active path BE2":
+                best_paths_freq["BestEdges2"],
+                "Active path Exact":
+                best_paths_freq["Exact"],
+                "No improvement":
+                self._no_improvement,
+                "Total active paths":
+                len(best_paths)
+            })
+        csv_file.close()
+
     def _find_columns(self):
         "Solves masterproblem and pricing problem."
 
@@ -507,40 +590,52 @@ class VehicleRoutingProblem:
         best_paths, best_paths_freq = self.masterproblem.get_heuristic_distribution(
         )
 
-        logger.warning(
-            "iteration %s, %.6s, \tHyper Choice %s, Exact calls %s \t Average runtime %.5s, \tQuality:  [%.5s, %.5s, %.5s] \tExp_terms %0.4s\t \\theta %.5s \t Accepted Columns %s, best_paths_freq %s, \t no_improvement %s"
-            % (self._iteration, relaxed_cost, self.hyper_heuristic.n,
-               self.hyper_heuristic.n_exact,
-               self.hyper_heuristic.average_runtime, self.hyper_heuristic.q[0],
-               self.hyper_heuristic.q[1], self.hyper_heuristic.q[2],
-               self.hyper_heuristic.exp_list, self.hyper_heuristic.theta,
-               self.hyper_heuristic.colacc, best_paths_freq,
-               self._no_improvement))
+        #print performance to file
+        if self._pricing_strategy == "Hyper":
+            logger.info(
+                "iteration %s, %.6s, \tHyper Choice %s, Exact calls %s \t Average runtime %.5s, \tQuality:  [%.5s, %.5s, %.5s], \tExp_terms %0.4s\t \\theta %.5s \t Accepted Columns %s, best_paths_freq %s, \t no_improvement %s, \t length self.routes %s, \t HeurPoints [%.5s, %.5s, %.5s]"
+                % (self._iteration, relaxed_cost, self.hyper_heuristic.n,
+                   self.hyper_heuristic.n_exact,
+                   self.hyper_heuristic.average_runtime,
+                   self.hyper_heuristic.q[0], self.hyper_heuristic.q[1],
+                   self.hyper_heuristic.q[2], self.hyper_heuristic.exp_list,
+                   self.hyper_heuristic.theta,
+                   self.hyper_heuristic.added_columns, best_paths_freq,
+                   self._no_improvement, len(best_paths),
+                   self.hyper_heuristic.heuristic_points[0],
+                   self.hyper_heuristic.heuristic_points[1],
+                   self.hyper_heuristic.heuristic_points[2]))
+        else:
+            logger.info("iteration %s, %.6s" % (self._iteration, relaxed_cost))
 
         update = True
+
         #pick the heuristic
-        if self._pricing_strategy == "Hyper":
+        if self._pricing_strategy == "Hyper" and not self._no_improvement == self.do_exact:
             if self.hyper_heuristic.initialisation:
+                if self.hyper_heuristic.performance_measure == "Relative improvement":
+                    self.do_exact = 30
                 #initialise the high-level algorithm
                 self.hyper_heuristic.set_current_objective(relaxed_cost)
+                self.hyper_heuristic.set_initial_time()
                 dynamic_pricing_strategy = "BestPaths"
                 update = True
                 self.hyper_heuristic.initialisation = False
-                self.hyper_heuristic.timestart = time()
             else:
                 #the high-level heuristic loop
                 self.hyper_heuristic.current_performance(
                     new_objective_value=relaxed_cost,
-                    pos_reduced_cost=True,
-                    produced_column=self.produced_column)
+                    produced_column=self.produced_column,
+                    active_columns=best_paths_freq)
                 update = self.hyper_heuristic.move_acceptance()
                 self.hyper_heuristic.update_parameters()
                 dynamic_pricing_strategy = self.hyper_heuristic.pick_heurestic(
                 )
+        elif self._no_improvement == self.do_exact:
+            self._no_improvement = 0
+            dynamic_pricing_strategy = "Exact"
         else:
             dynamic_pricing_strategy = self._pricing_strategy
-
-        #logger.info("Pricing strategy %s was used" % dynamic_pricing_strategy)
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
@@ -589,6 +684,13 @@ class VehicleRoutingProblem:
             self._no_improvement = 0
         if not self._dive:
             self._lower_bound.append(relaxed_cost)
+
+        # store hyper heuristic data to csv_file
+        store_run_info = False
+        if store_run_info == True and self.hyper_heuristic.performance_measure == "Weighted average":
+            self.store_info_heuristic(best_paths=best_paths,
+                                      best_paths_freq=best_paths_freq,
+                                      relaxed_cost=relaxed_cost)
 
     def _get_time_remaining(self, mip: bool = False):
         """

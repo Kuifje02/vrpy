@@ -143,7 +143,7 @@ class MasterSolvePulp(MasterProblemBase):
                     r.graph["heuristic"] = "Other"
                     best_routes_heuristic[r.graph["heuristic"]] += 1
                 best_routes.append(r)
-        return best_routes_heuristic, best_routes_heuristic
+        return best_routes, best_routes_heuristic
 
     # Private methods to solve and output #
 
