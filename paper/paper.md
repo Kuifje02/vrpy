@@ -110,12 +110,20 @@ can be shown ([@bramel1997solving]) that asymptotically, the relative error goes
 For more advanced users, there are different pricing strategies (approaches for solving subproblems), namely sparsification strategies [@dell2006branch;@santini2018branch], as well as pre-pricing heuristics available that can lead to faster solutions. The heuristics implemented include: a greedy randomized heuristic
 (for the CVRP and the CVRP with resource constraints) [@santini2018branch]. Also, a diving heuristic [@sadykov2019primal] can be called to explore part of the branch-and-price tree, instead of solving the restricted master problem as a MIP.
 
+Additionally, we have an experimental feature that uses Hyper-Heuristics for the dynamic selection of
+pricing strategies. 
+The approach ranks the best pricing strategies as the algorithm is running and chooses
+according to selection functions based on [@sabar2015math;@ferreira2017multi]. The selection criteria has been modified to include a combination of runtime, objective improvement, and currently active columns in the restricted master.
+Adaptive parameter settings found in [@drake2012improved] is used to balance exploration and exploitation
+under stagnation. The main advantage is that selection is done as the programme runs, and is therefore more
+flexible compared to a predefined pricing strategy.
+
 # Future Work
 
 There are many ways ``vrpy`` could be improved. To boost the run times, specific heuristics for each variant could be implemented, e.g., Solomon's insertion algorithm [@solomon1987algorithms] for the VRPTW. Second, the pricing problem is solved with ``cspy``, which is quite recent (2019) and is still being fine tuned.  Also, currently, stabilization issues are delt with a basic interior point based strategy which could be enhanced [@pessoa2018automation]. Last but not least, there are many cutting strategies in the literature [@costa2019exact] that have not been implemented and which have proven to significantly reduce run times for such problems.
 
 # Acknowledgements
 
-We acknowledge contributions from [@Halvaros], and would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
+We acknowledge contributions from Halvard Olsen Storbugt, and would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
 
 # References

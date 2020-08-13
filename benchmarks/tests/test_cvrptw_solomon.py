@@ -1,10 +1,13 @@
+""" from sys import path
+
+path.append('/mnt/c/Users/Halvardo/Documents/code/vrpy') """
+
 from vrpy import VehicleRoutingProblem
 
 from benchmarks.solomon_dataset import SolomonDataSet
 
 
 class TestsSolomon:
-
     def setup(self):
         """
         Solomon instance c101, 25 first nodes only including depot
