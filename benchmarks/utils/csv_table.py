@@ -35,8 +35,7 @@ class CsvTable:
                  dive=None,
                  greedy=None,
                  iterations=None,
-                 best_known_solution=None,
-                 hyper=None):
+                 best_known_solution=None):
         self.path = path
         self.instance_name = instance_name if not instance_name.endswith(
             '.csv') else instance_name[:-4]
