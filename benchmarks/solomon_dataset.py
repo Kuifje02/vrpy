@@ -95,9 +95,8 @@ class SolomonDataSet:
         for u in self.G.nodes():
             if u != "Sink":
                 for v in self.G.nodes():
-                    if v != "Source":
-                        if u != v:
-                            self.G.add_edge(u,
-                                            v,
-                                            cost=distance(self.G, u, v),
-                                            time=distance(self.G, u, v))
+                    if v != "Source" and u != v:
+                        self.G.add_edge(u,
+                                        v,
+                                        cost=distance(self.G, u, v),
+                                        time=distance(self.G, u, v))

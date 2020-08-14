@@ -555,7 +555,7 @@ class VehicleRoutingProblem:
             self.routes, self._more_routes = subproblem.solve(
                 self._get_time_remaining())
             more_columns = self._more_routes
-            if self._more_routes:
+            if more_columns:
                 break
         else:
             self._more_routes = True
@@ -575,7 +575,7 @@ class VehicleRoutingProblem:
                 # exact=False,
             )
             more_columns = self._more_routes
-            if self._more_routes:
+            if more_columns:
                 break
         else:
             self._more_routes = True
@@ -595,7 +595,7 @@ class VehicleRoutingProblem:
                 # exact=False,
             )
             more_columns = self._more_routes
-            if self._more_routes:
+            if more_columns:
                 break
         else:
             self._more_routes = True
@@ -606,13 +606,15 @@ class VehicleRoutingProblem:
         subproblem = self._def_subproblem(duals, vehicle)
         self.routes, self._more_routes = subproblem.solve(
             self._get_time_remaining())
-        more_columns = self._more_routes
-        return more_columns
+        return self._more_routes
 
     def _get_next_pricing_strategy(self, relaxed_cost):
         'Return the appropriate pricing strategy based on input parameters'
         pricing_strategy = None
-        if self._pricing_strategy == "Hyper" and not self._no_improvement == self._run_exact:
+        if (
+            self._pricing_strategy == "Hyper"
+            and self._no_improvement != self._run_exact
+        ):
             self._no_improvement_iteration = self._iteration
             if self._iteration == 0:
                 pricing_strategy = "BestPaths"
@@ -784,12 +786,10 @@ class VehicleRoutingProblem:
         Converts list of initial routes to list of Digraphs.
         By default, initial routes are computed with vehicle type 0 (the first one in the list).
         """
-        route_id = 0
         self._routes = []
         self._routes_with_node = {}
-        for r in self._initial_routes:
+        for route_id, r in enumerate(self._initial_routes, start=1):
             total_cost = 0
-            route_id += 1
             G = DiGraph(name=route_id)
             edges = list(zip(r[:-1], r[1:]))
             for (i, j) in edges:

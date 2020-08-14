@@ -188,14 +188,8 @@ class HyperHeuristic:
         if self.acceptance_type == "Accept all":
             return update
         elif self.acceptance_type == "Table":
-            if self.obj_has_decreased:
-                pass
-            elif self.obj_has_decreased:
+            if not self.obj_has_decreased:
                 update = uniform(0, 1) < 0.5 * exp(self.d)
-            elif not self.obj_has_decreased:
-                update = uniform(0, 1) < 0.5 * exp(self.d)
-            else:
-                update = uniform(0, 1) < 0.1 * exp(self.d)
         elif self.acceptance_type == "objective_threshold":
             if self.obj_has_decreased:
                 return True
@@ -205,19 +199,15 @@ class HyperHeuristic:
     def reward(self, y, stagnated=True):
         'Modify the improvement'
         # if there is stagnation, set improvement to small number
-        if stagnated:
-            x = min(0.1 * self.d_max, y)
+        x = min(0.1 * self.d_max, y) if stagnated else y
+        if self.obj_has_decreased and self.produced_column and y > 0:
+            x *= 1.5
+        elif y <= 0:
+            pass
+        elif self.obj_has_decreased or self.produced_column:
+            x *= 1.2
         else:
-            x = y
-        if y > 0:
-            if self.obj_has_decreased and self.produced_column:
-                x *= 1.5
-            elif self.obj_has_decreased and not self.produced_column:
-                x *= 1.2
-            elif not self.obj_has_decreased and self.produced_column:
-                x *= 1.2
-            else:
-                x *= 0.9
+            x *= 0.9
         return x
 
     def update_parameters(self, iteration: int, no_improvement_count: int,
@@ -282,42 +272,41 @@ class HyperHeuristic:
 
     def _update_params_relimp(self):
         'Updates params for relative improvements performance measure'
-        if self.iteration > self.start_computing_average:
-            reduced_n = (self.iteration - self.start_computing_average) % 10
-            if reduced_n == 0:
-                self.average_runtime = self.last_runtime
-            else:
-                self.average_runtime = self.average_runtime * (
-                    reduced_n -
-                    1) / (reduced_n) + 1 / (reduced_n) * self.last_runtime
-            heuristic = self.current_heuristic
-            # store old values
-            old_q = self.q[heuristic]
-            old_n = self.iterations[heuristic] - 1
-            stagnated = (old_q == 0 and old_n > 3)
-            # average of improvements
-            self.r[heuristic] = (
-                self.r[heuristic] * old_n / (old_n + 1) + 1 /
-                (old_n + 1) * self.reward(self.d, stagnated=stagnated))
-            self.q[heuristic] = (old_q + self.r[heuristic]) / (old_n + 1)
-            # compute heuristic points MAB-style
-            for heuristic in self.heuristic_options:
-                if not self.iterations[heuristic] == 0:
-                    self._update_exp(heuristic)
-                    self.heuristic_points[heuristic] = (
-                        self.theta * self.q[heuristic] +
-                        self.scaling_factor * self.exp[heuristic])
+        if self.iteration <= self.start_computing_average:
+            return
+        reduced_n = (self.iteration - self.start_computing_average) % 10
+        if reduced_n == 0:
+            self.average_runtime = self.last_runtime
         else:
-            pass
+            self.average_runtime = self.average_runtime * (
+                reduced_n -
+                1) / (reduced_n) + 1 / (reduced_n) * self.last_runtime
+        heuristic = self.current_heuristic
+        # store old values
+        old_q = self.q[heuristic]
+        old_n = self.iterations[heuristic] - 1
+        stagnated = (old_q == 0 and old_n > 3)
+        # average of improvements
+        self.r[heuristic] = (
+            self.r[heuristic] * old_n / (old_n + 1) + 1 /
+            (old_n + 1) * self.reward(self.d, stagnated=stagnated))
+        self.q[heuristic] = (old_q + self.r[heuristic]) / (old_n + 1)
+            # compute heuristic points MAB-style
+        for heuristic in self.heuristic_options:
+            if self.iterations[heuristic] != 0:
+                self._update_exp(heuristic)
+                self.heuristic_points[heuristic] = (
+                    self.theta * self.q[heuristic] +
+                    self.scaling_factor * self.exp[heuristic])
 
     def _update_exp(self, heuristic):
         self.exp[heuristic] = sqrt(
-            2 * log(sum(i for i in self.iterations.values())) /
-            self.iterations[heuristic])
+            2 * log(sum(self.iterations.values())) / self.iterations[heuristic]
+        )
 
     def _update_params_wgtavr(self):
         'Updates params for Weighted average performance measure'
-        sum_exp = sum(e for e in self.exp.values())
+        sum_exp = sum(self.exp.values())
         active = sum(self.active_columns.values())
         for heuristic in self.heuristic_options:
             # if heuristic has not been applied, let it be self.inf
@@ -326,7 +315,7 @@ class HyperHeuristic:
                 total_added = self.added_columns[heuristic]
                 norm_runtime = self.norm_runtime[heuristic]
                 norm_spread = 0
-                if not sum_exp == 0:
+                if sum_exp != 0:
                     norm_spread = self.exp[heuristic] / sum_exp
                 self.q[heuristic] = (
                     self.weight_col_basic * active_i / active +
@@ -336,5 +325,3 @@ class HyperHeuristic:
                 self.heuristic_points[heuristic] = (
                     self.theta * self.q[heuristic] +
                     self.weight_spread * norm_spread * (1 - self.theta))
-            else:
-                pass

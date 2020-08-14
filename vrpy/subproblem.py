@@ -83,19 +83,19 @@ class SubProblemBase:
         self.add_reduced_cost_attribute()
 
         # Define the graph on which the sub problem is solved according to the pricing strategy
-        if pricing_strategy == "Exact":
-            # The graph remains as is
-            self.sub_G = self.G
         if pricing_strategy == "BestEdges1":
             # The graph is pruned
             self.remove_edges_1(pricing_parameter)
-        if pricing_strategy == "BestEdges2":
+        elif pricing_strategy == "BestEdges2":
             # The graph is pruned
             self.remove_edges_2(pricing_parameter)
-        if pricing_strategy == "BestPaths":
+        elif pricing_strategy == "BestPaths":
             # The graph is pruned
             self.remove_edges_3(pricing_parameter)
 
+        elif pricing_strategy == "Exact":
+            # The graph remains as is
+            self.sub_G = self.G
         logger.debug("Pricing strategy %s, %s" %
                      (pricing_strategy, pricing_parameter))
 
@@ -129,7 +129,9 @@ class SubProblemBase:
         """
         self.sub_G = self.G.copy()
         largest_dual = max(
-            [self.duals[v] for v in self.duals if v != "upper_bound_vehicles"])
+            self.duals[v] for v in self.duals if v != "upper_bound_vehicles"
+        )
+
         for (u, v) in self.G.edges():
             if self.G.edges[u, v]["cost"][
                     self.vehicle_type] > alpha * largest_dual:
@@ -180,8 +182,7 @@ class SubProblemBase:
         # Normalize weights
         max_weight = max(
             [self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
-        min_weight = min(
-            [self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
+        min_weight = min(self.G.edges[i, j]["weight"] for (i, j) in self.G.edges())
         for edge in self.G.edges(data=True):
             edge[2]["pos_weight"] = (-max_weight - min_weight +
                                      2 * edge[2]["weight"]) / (max_weight -

@@ -133,11 +133,9 @@ class MasterSolvePulp(MasterProblemBase):
         for r in self.routes:
             val = self.y[r.graph["name"]].value()
             if val is not None and val > 0:
-                if "heuristic" in r.graph:
-                    best_routes_heuristic[r.graph["heuristic"]] += 1
-                else:
+                if "heuristic" not in r.graph:
                     r.graph["heuristic"] = "Other"
-                    best_routes_heuristic[r.graph["heuristic"]] += 1
+                best_routes_heuristic[r.graph["heuristic"]] += 1
                 best_routes.append(r)
         return best_routes, best_routes_heuristic
 

@@ -39,9 +39,8 @@ class DivingHeuristic:
         constrs = {}
         while self.depth <= self.max_depth and len(
                 tabu_list) < self.max_discrepancy:
-            non_integer_vars = list(
-                var for var in relax.variables()
-                if abs(var.varValue - round(var.varValue)) != 0)
+            non_integer_vars = [var for var in relax.variables()
+                        if abs(var.varValue - round(var.varValue)) != 0]
             # All non-integer variables not already fixed in this or any
             # iteration of the diving heuristic
             vars_to_fix = [
@@ -77,7 +76,7 @@ class DivingHeuristic:
                 self.depth += 1
                 # if not optimal status code from :
                 # https://github.com/coin-or/pulp/blob/master/pulp/constants.py#L45-L57
-                if not relax.status != 1:
+                if relax.status == 1:
                     prob.extend(constrs)
                     self.current_node = lp_node
                 else:
