@@ -455,7 +455,6 @@ class VehicleRoutingProblem:
 
             elif pricing_strategy == "Exact":
                 #self._no_improvement = 0  #Fudge solution
-                print("Did exact")
                 self.hyper_heuristic.n_exact += 1
                 produced_column = self._attempt_solve_Exact(
                     pricing_strategy=pricing_strategy,
@@ -686,8 +685,8 @@ class VehicleRoutingProblem:
             self._lower_bound.append(relaxed_cost)
 
         # store hyper heuristic data to csv_file
-        store_run_info = False
-        if store_run_info == True and self.hyper_heuristic.performance_measure == "Weighted average":
+        store_run_info = True
+        if store_run_info == True and self.hyper_heuristic.performance_measure == "Weighted average" and self._pricing_strategy == "Hyper":
             self.store_info_heuristic(best_paths=best_paths,
                                       best_paths_freq=best_paths_freq,
                                       relaxed_cost=relaxed_cost)

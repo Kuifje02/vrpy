@@ -132,8 +132,8 @@ def run_parallel():
                 all_files,
                 [False],  # dive
                 [True],  # greedy
-                [True, False],  # cspy
-                ["Hyper"]))
+                [True],  # cspy
+                ["Hyper", "BestPaths", "BestEdges1", "BestEdges2", "Exact"]))
 
     pool = Pool(processes=CPU_COUNT)
     with pool:

@@ -14,59 +14,52 @@ class HyperHeuristic:
     """
     HyperHeuristic class manages the high-level heuristic strategies
     Args: 
+        start_heur (int): 
+            set the initialisation heuristic. Defaults to BestPaths
         scaling_factor (float): 
-            parameter deciding the balance between exploration and explotation
-        time_limit (float): 
-            total time limit for the algorithm
-        current_objective_value (float): 
-            the objective value for previous iteration
-        new_objective_value (float): 
-            the objective value for the current iteration
-        inf (float): 
-            very large number 
-        iteration_counter (int): 
-            counts the number of iterations
-        initialisation (bool): 
-            initialisation parameter 
-        heur_names (list, str): 
-            names of heurestic strategies 
-        pool (list, int: 
-            the pool of heurestics, indexed by integers
-        q (list, floats): 
-            list of heuristic quality (rank)
-        r (list, floats): 
-            list of average improvements
-        n (list, int): 
-            list of iteration counters
-        heuristic_points (list, floats): 
-            list of points for each heurestic at the current timepoint
-        improvements (dict, dict, floats):
-            a dictionary with keys indexed by heuristics with values equal to dictionaries with rewards
-        current_heuristic (int):
-            the currently applied heuristic
+            set the evolution vs exploration parameter. Defaults to 0.5
+        performance_measure (str):
+            Sets performance measure. Defaults to "Weighted average".
+        acceptance_type(str):
+            Set move acceptance. Defaults to "Accept all"
+        step (float, optional): 
+            Adaptive step. Defaults to 0.02
+        start_computing_average (int): 
+            Iteration where average starts being computed. Defaults to 1. 
+
     """
     def __init__(self,
-                 poolsize: int = 4,
                  start_heur: int = 0,
                  scaling_factor: float = 0.5,
-                 offline_learning: bool = False,
                  performance_measure="Weighted average",
-                 acceptance_type="Accept all"):
+                 acceptance_type="Accept all",
+                 step=0.02,
+                 start_computing_average=1):
 
         #params
         self.scaling_factor = scaling_factor
-        self.theta = 1
-        #self.decay_factor = None
+        self.current_heuristic = start_heur
+        self.start_computing_average = start_computing_average
+        self.step = step
 
-        #self.time_limit = None
+        #Settings
+        self.performance_measure = performance_measure
+        self.acceptance_type = acceptance_type
+
+        if self.performance_measure == "Weighted average":
+            poolsize = 4
+        elif self.performance_measure == "Relative improvement":
+            poolsize = 3
+        else:
+            poolsize = 4
+
+        #adaptive CF function
+        self.theta = 1
         self.current_objective_value = None
         self.new_objective_value = None
         self.produced_column = None
-
         self.inf = 1E10
 
-        #consider
-        #self.iteration_counter = 0  # maybe one for each heuristic?
         self.initialisation = True
 
         #high level data
@@ -78,16 +71,16 @@ class HyperHeuristic:
         self.q = [0] * poolsize
         self.r = [0] * poolsize
         self.n = [0] * poolsize
+        self.heuristic_points = [self.inf] * poolsize
         self.added_columns = [0] * poolsize
         self.exp_list = [0] * poolsize
         self.d = 0
         self.d_max = 0
         self.total_n = 0
         self.average_runtime = 0
-        self.step = 0.02
         self.n_exact = 0
 
-        #weighed average approach
+        #weighed average performance measure
         self.runtime_dist = []
         self.objective_decrease_list = [0] * poolsize
         self.norm_objective_decrease_list = [0] * poolsize
@@ -95,23 +88,22 @@ class HyperHeuristic:
         self.norm_runtime_list = [0] * poolsize
         self.last_runtime_list = [0] * poolsize
         self.total_objective_decrease = 0.0
+        #non basic columns / all basic columns
+        self.w0 = 0.5
+        #normalised runtime
+        self.w1 = 0.5
+        #normalised spread
+        self.w2 = 0.3
+        #contribution to objective decrease
+        self.w3 = 0.2
+        #non basic columns / columns added
+        self.w4 = 1
 
-        #Consider setting to zero
-        self.heuristic_points = [self.inf] * poolsize
-        #consider
-        self.current_heuristic = start_heur
-        self.loaded_parameters = {}
-
-        #total time
+        #time related variables
         self.timestart = None
         self.timeend = None
         self.last_runtime = None
         self.time_windows = None
-        self.start_computing_average = 1
-
-        #Settings
-        self.performance_measure = performance_measure
-        self.acceptance_type = acceptance_type
 
     def set_current_objective(self, objective: float = None):
         """
@@ -158,6 +150,59 @@ class HyperHeuristic:
         else:
             self.theta = max(self.theta - self.step, self.step)
 
+    def _compute_last_runtime(self):
+        #   computes last time
+        self.timestart = self.timeend
+        self.timeend = time()
+        self.last_runtime = self.timeend - self.timestart
+
+    def _current_performance_relimp(self):
+        #   time measure
+        if self.total_n > self.start_computing_average + 1:
+            self.d = max((self.average_runtime - self.last_runtime) /
+                         self.average_runtime * 100, 0)
+            logger.info("Resolve count %s, improvement %s" %
+                        (produced_column, self.d))
+            if self.d > self.d_max:
+                self.d_max = self.d
+
+                logger.info(
+                    "Column produced, average runtime %s and last runtime %s" %
+                    (self.average_runtime, self.last_runtime))
+            else:
+                self.d = 0
+
+    def _current_performance_wgtavr(self,
+                                    new_objective_value: float = None,
+                                    active_columns: dict = None):
+        # update the active columns
+        self.active_dict = active_columns
+        # update the decrease counter
+
+        # insert new runtime into sorted list
+        bisect.insort(self.runtime_dist, self.last_runtime)
+
+        self.objective_decrease_list[self.current_heuristic] += max(
+            self.current_objective_value - new_objective_value, 0)
+
+        self.total_objective_decrease += max(
+            self.current_objective_value - new_objective_value, 0)
+
+        #update quality values
+        for j in self.pool:
+            if self.n[j] > 0:
+                self.exp_list[j] = sqrt(2 * log(sum(self.n)) / self.n[j])
+
+                index = bisect.bisect(self.runtime_dist,
+                                      self.last_runtime_list[j])
+
+                self.norm_runtime_list[j] = (len(self.runtime_dist) -
+                                             index) / len(self.runtime_dist)
+                if self.total_objective_decrease > 0:
+                    self.norm_objective_decrease_list[
+                        j] = self.objective_decrease_list[
+                            j] / self.total_objective_decrease
+
     def current_performance(
         self,
         new_objective_value: float = None,
@@ -167,10 +212,7 @@ class HyperHeuristic:
         """Updates the variables at the current iteration
 
         """
-        #   computes last time
-        self.timestart = self.timeend
-        self.timeend = time()
-        self.last_runtime = self.timeend - self.timestart
+        self._compute_last_runtime()
 
         self.last_runtime_list[self.current_heuristic] = self.last_runtime
 
@@ -186,50 +228,14 @@ class HyperHeuristic:
         self.obj_has_decreased = self.current_objective_value - new_objective_value > 0
 
         if self.performance_measure == "Relative improvement":
-            #   time measure
-            if self.total_n > self.start_computing_average + 1:
-                self.d = max((self.average_runtime - self.last_runtime) /
-                             self.average_runtime * 100, 0)
-                logger.info("Resolve count %s, improvement %s" %
-                            (produced_column, self.d))
-                if self.d > self.d_max:
-                    self.d_max = self.d
+            self._current_performance_relavr()
 
-                    logger.info(
-                        "Column produced, average runtime %s and last runtime %s"
-                        % (self.average_runtime, self.last_runtime))
-                else:
-                    self.d = 0
-
-        if self.performance_measure == "Weighted average":
-
-            # update the active columns
-            self.active_dict = active_columns
-            # update the decrease counter
-
-            # insert new runtime into sorted list
-            bisect.insort(self.runtime_dist, self.last_runtime)
-
-            self.objective_decrease_list[self.current_heuristic] += max(
-                self.current_objective_value - new_objective_value, 0)
-
-            self.total_objective_decrease += max(
-                self.current_objective_value - new_objective_value, 0)
-
-            #update quality values
-            for j in self.pool:
-                if self.n[j] > 0:
-                    self.exp_list[j] = sqrt(2 * log(sum(self.n)) / self.n[j])
-
-                    index = bisect.bisect(self.runtime_dist,
-                                          self.last_runtime_list[j])
-
-                    self.norm_runtime_list[j] = (len(
-                        self.runtime_dist) - index) / len(self.runtime_dist)
-                    if self.total_objective_decrease > 0:
-                        self.norm_objective_decrease_list[
-                            j] = self.objective_decrease_list[
-                                j] / self.total_objective_decrease
+        elif self.performance_measure == "Weighted average":
+            self._current_performance_wgtavr(
+                active_columns=active_columns,
+                new_objective_value=new_objective_value)
+        else:
+            raise ValueError("performence_measure not set correctly!")
 
         self.set_current_objective(objective=new_objective_value)
 
@@ -290,22 +296,10 @@ class HyperHeuristic:
                 x *= 0.9
         return x
 
-    def update_parameters(self):
-        """Updates the high-level parameters
-        """
-        # measure time and add to weighted average
+    def _update_params_relimp(self):
+        """Updates params for relative improvements performance measure"""
 
-        i = self.current_heuristic
-
-        self.update_scaling_factor()
-
-        self.total_n += 1
-
-        #compute average of runtimes
-
-        if self.performance_measure == "Relative improvement":
-
-            if self.total_n > self.start_computing_average:
+        if self.total_n > self.start_computing_average:
                 reduced_n = (self.total_n - self.start_computing_average) % 10
                 if reduced_n == 0:
                     self.average_runtime = self.last_runtime
@@ -343,17 +337,9 @@ class HyperHeuristic:
             else:
                 pass
 
-        elif self.performance_measure == "Weighted average":
-            # non basic column / total number non basic columns
-            w0 = 0.5
-            #normalised runtime
-            w1 = 0.5
-            #normalised spread
-            w2 = 0.3
-            #contribution to objective decrease
-            w3 = 0.2
-            #non basic columns / columns added
-            w4 = 1
+    self.update_params_wgtavr():
+        """Updates params for Weighted average performance measure"""
+            
             sum_exp_list = sum(self.exp_list)
             active = sum(self.active_dict.values())
 
@@ -373,10 +359,32 @@ class HyperHeuristic:
                         norm_spread = self.exp_list[k] / sum_exp_list
 
                     self.q[
-                        k] = w0 * active_k / active + w1 * norm_runtime + w3 * self.norm_objective_decrease_list[
-                            k] + w4 * active_k / total_added
+                        k] = self.w0 * active_k / active + self.w1 * norm_runtime + self.w3 * self.norm_objective_decrease_list[
+                            k] + self.w4 * active_k / total_added
 
                     self.heuristic_points[k] = self.theta * self.q[
-                        k] + w2 * norm_spread * (1 - self.theta)
+                        k] + self.w2 * norm_spread * (1 - self.theta)
                 else:
                     pass
+
+    def update_parameters(self):
+        """Updates the high-level parameters
+        """
+        # measure time and add to weighted average
+
+        i = self.current_heuristic
+
+        self.update_scaling_factor()
+
+        self.total_n += 1
+
+        #compute average of runtimes
+
+        if self.performance_measure == "Relative improvement":
+            self._update_params_relimp()
+            
+        elif self.performance_measure == "Weighted average":
+            self._update_params_wgtavr()
+        else: 
+            logger.info("heuristic parameters not updated")
+            
