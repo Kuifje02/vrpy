@@ -74,15 +74,17 @@ PERFORMANCE_SOLVER_PARAMS: Dict[str, Dict[str, Union[bool, str]]] = {
     'cvrp': {
         'dive': False,
         'greedy': True,
-        'cspy': True,
-        'pricing_strategy': 'Hyper'
+        'cspy': False,
+        'pricing_strategy': 'Hyper',
+        'time_limit': TIME_LIMIT
     },
     'cvrptw': {
         'dive': False,
         'greedy': True,
         'cspy': False,
         'pricing_strategy': 'BestEdges1',
-        'max_iter': 0
+        'max_iter': 0,
+        'time_limit': TIME_LIMIT
     }
 }
 

@@ -17,7 +17,6 @@ def n(request):
 
 
 class TestsSolomon:
-
     def test_subproblem(self, n):
         data = SolomonDataSet(path="benchmarks/data/cvrptw/",
                               instance_name="C101.txt",

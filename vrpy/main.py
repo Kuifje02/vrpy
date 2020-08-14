@@ -15,7 +15,7 @@ from vrpy.schedule import Schedule
 from vrpy.checks import (check_arguments, check_consistency, check_feasibility,
                          check_initial_routes, check_vrp)
 from vrpy.preprocessing import get_num_stops_upper_bound
-from vrpy.hyperheuristic import HyperHeuristic
+from vrpy.hyper_heuristic import HyperHeuristic
 from csv import DictWriter
 
 logger = logging.getLogger(__name__)
@@ -366,7 +366,8 @@ class VehicleRoutingProblem:
             self._define_vehicle_types()
         else:
             self._vehicle_types = 1
-        # Consistency checks
+        # TODO collect all checks into a wrapper
+        # Consistency , dive=Truechecks
         check_arguments(num_stops=self.num_stops,
                         load_capacity=self.load_capacity,
                         duration=self.duration,
@@ -460,6 +461,7 @@ class VehicleRoutingProblem:
         if self._dive:
             duals, relaxed_cost = self.masterproblem.solve_and_dive(
                 time_limit=self._get_time_remaining())
+            self.hyper_heuristic.init(relaxed_cost)
         else:
             duals, relaxed_cost = self.masterproblem.solve(
                 relax=True, time_limit=self._get_time_remaining())
@@ -490,7 +492,7 @@ class VehicleRoutingProblem:
                 self.routes[-1].graph["heuristic"] = pricing_strategy
                 self.masterproblem.update(self.routes[-1])
             elif self._pricing_strategy == "Hyper":
-                self.hyper_heuristic.timeend = time()
+                self.hyper_heuristic.end_time = time()
 
         # Keep track of convergence rate and update stopping criteria parameters
         self._iteration += 1
@@ -498,6 +500,7 @@ class VehicleRoutingProblem:
             self._no_improvement += 1
         else:
             self._no_improvement = 0
+            self._no_improvement_iteration = self._iteration
         if not self._dive:
             self._lower_bound.append(relaxed_cost)
 
@@ -521,7 +524,6 @@ class VehicleRoutingProblem:
                 more_columns = self._attempt_solve_best_edges2(vehicle=vehicle,
                                                                duals=duals)
             elif pricing_strategy == "Exact":
-                self.hyper_heuristic.n_exact += 1
                 more_columns = self._attempt_solve_exact(vehicle=vehicle,
                                                          duals=duals)
         # old approach
@@ -610,12 +612,12 @@ class VehicleRoutingProblem:
         'Return the appropriate pricing strategy based on input parameters'
         pricing_strategy = None
         if self._pricing_strategy == "Hyper" and not self._no_improvement == self._run_exact:
+            self._no_improvement_iteration = self._iteration
             if self._iteration == 0:
                 pricing_strategy = "BestPaths"
-                if self.hyper_heuristic.performance_measure == "Relative improvement":
+                if self.hyper_heuristic.performance_measure_type == "relative_improvement":
                     self._run_exact = 30
                 self.hyper_heuristic.init(relaxed_cost)
-            # the high-level heuristic loop
             else:
                 # Get the active paths and the frequency list per heuristic
                 self._update_hyper_heuristic(relaxed_cost)
@@ -635,7 +637,9 @@ class VehicleRoutingProblem:
             produced_column=self._more_routes,
             active_columns=best_paths_freq)
         self.hyper_heuristic.move_acceptance()
-        self.hyper_heuristic.update_parameters()
+        self.hyper_heuristic.update_parameters(self._iteration,
+                                               self._no_improvement,
+                                               self._no_improvement_iteration)
 
     def _get_time_remaining(self, mip: bool = False):
         """
@@ -656,14 +660,12 @@ class VehicleRoutingProblem:
             return 0.0
         return None
 
-    def _def_subproblem(
-        self,
-        duals,
-        vehicle_type,
-        pricing_strategy="Exact",
-        pricing_parameter=None,
-        greedy=False,
-    ):
+    def _def_subproblem(self,
+                        duals,
+                        vehicle_type,
+                        pricing_strategy="Exact",
+                        pricing_parameter=None,
+                        greedy=False):
         """Instanciates the subproblem."""
 
         if greedy:
