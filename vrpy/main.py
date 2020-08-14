@@ -461,7 +461,8 @@ class VehicleRoutingProblem:
         if self._dive:
             duals, relaxed_cost = self.masterproblem.solve_and_dive(
                 time_limit=self._get_time_remaining())
-            self.hyper_heuristic.init(relaxed_cost)
+            if self.hyper_heuristic is not None:
+                self.hyper_heuristic.init(relaxed_cost)
         else:
             duals, relaxed_cost = self.masterproblem.solve(
                 relax=True, time_limit=self._get_time_remaining())
