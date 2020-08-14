@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Periodic CVRP scheduling option
 - Initial solution for CVRP computed with Greedy Algorithm
 - Diving heuristic (controlled with new paramater in `VehicleRoutingProblem.solve`)
+- Hyper-heuristic pricing strategy option `pricing_strategy="Hyper"`.
+- Jupyter notebooks with hyper-heuristics experiments (one to be updated soon).
+- Paragraph to the paper with the hyper-heuristic explanation and citations.
 
 ### Changed
 
