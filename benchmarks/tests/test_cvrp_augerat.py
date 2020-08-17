@@ -32,24 +32,12 @@ class TestsAugerat:
         self.prob.solve(**self.solver_args, cspy=False)
         assert round(self.prob.best_value, -1) in [450, 460]
 
-    def test_subproblem_lp_dive(self):
-        self.prob.solve(**self.solver_args, cspy=False, dive=True)
-        assert round(self.prob.best_value, -1) in [450, 460]
-
     def test_subproblem_lp_greedy(self):
         self.prob.solve(**self.solver_args, cspy=False, greedy=True)
         assert round(self.prob.best_value, -1) in [450, 460]
 
-    def test_subproblem_lp_greedy_dive(self):
-        self.prob.solve(**self.solver_args, cspy=False, greedy=True, dive=True)
-        assert round(self.prob.best_value, -1) in [450, 460]
-
     def test_subproblem_cspy(self):
         self.prob.solve(**self.solver_args)
-        assert round(self.prob.best_value, -1) in [450, 460]
-
-    def test_subproblem_cspy_dive(self):
-        self.prob.solve(**self.solver_args, dive=True)
         assert round(self.prob.best_value, -1) in [450, 460]
 
     def test_subproblem_lp_with_initial_routes(self):
@@ -67,24 +55,6 @@ class TestsAugerat:
         self.prob.solve(**self.solver_args, cspy=False, initial_routes=ini)
         assert int(self.prob.best_value) == 450
 
-    def test_subproblem_lp_with_initial_routes_dive(self):
-        # benchmark result
-        # http://vrp.galgos.inf.puc-rio.br/index.php/en/
-        r_1 = ["Source", 2, "Sink"]
-        r_2 = ["Source", 6, "Sink"]
-        r_3 = ["Source", 8, "Sink"]
-        r_4 = ["Source", 15, 12, 10, "Sink"]
-        r_5 = ["Source", 14, 5, "Sink"]
-        r_6 = ["Source", 13, 9, 7, "Sink"]
-        r_7 = ["Source", 11, 4, "Sink"]
-        r_8 = ["Source", 3, 1, "Sink"]
-        ini = [r_1, r_2, r_3, r_4, r_5, r_6, r_7, r_8]
-        self.prob.solve(**self.solver_args,
-                        initial_routes=ini,
-                        cspy=False,
-                        dive=True)
-        assert int(self.prob.best_value) == 450
-
     def test_subproblem_cspy_with_initial_routes(self):
         # benchmark result
         # http://vrp.galgos.inf.puc-rio.br/index.php/en/
@@ -98,19 +68,4 @@ class TestsAugerat:
         r_8 = ["Source", 3, 1, "Sink"]
         ini = [r_1, r_2, r_3, r_4, r_5, r_6, r_7, r_8]
         self.prob.solve(**self.solver_args, initial_routes=ini)
-        assert int(self.prob.best_value) == 450
-
-    def test_subproblem_cspy_with_initial_routes_true(self):
-        # benchmark result
-        # http://vrp.galgos.inf.puc-rio.br/index.php/en/
-        r_1 = ["Source", 2, "Sink"]
-        r_2 = ["Source", 6, "Sink"]
-        r_3 = ["Source", 8, "Sink"]
-        r_4 = ["Source", 15, 12, 10, "Sink"]
-        r_5 = ["Source", 14, 5, "Sink"]
-        r_6 = ["Source", 13, 9, 7, "Sink"]
-        r_7 = ["Source", 11, 4, "Sink"]
-        r_8 = ["Source", 3, 1, "Sink"]
-        ini = [r_1, r_2, r_3, r_4, r_5, r_6, r_7, r_8]
-        self.prob.solve(**self.solver_args, initial_routes=ini, dive=True)
         assert int(self.prob.best_value) == 450

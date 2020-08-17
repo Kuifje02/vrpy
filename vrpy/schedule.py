@@ -16,9 +16,13 @@ class Schedule:
         num_vehicles (int, optional): Maximum number of vehicles available. Defaults to None.
     """
 
-    def __init__(
-        self, G, time_span, routes, route_type, num_vehicles=None, solver="cbc"
-    ):
+    def __init__(self,
+                 G,
+                 time_span,
+                 routes,
+                 route_type,
+                 num_vehicles=None,
+                 solver="cbc"):
         self.G = G
         self.time_span = time_span
         self.routes = routes
@@ -32,15 +36,22 @@ class Schedule:
         # y[r][t] = 1 <=> route r is scheduled on day t
         self.y = pulp.LpVariable.dicts(
             "y",
-            (self.routes, [t for t in range(self.time_span)],),
+            (
+                self.routes,
+                [t for t in range(self.time_span)],
+            ),
             lowBound=0,
             upBound=1,
             cat=pulp.LpBinary,
         )
         # max load
-        self.load_max = pulp.LpVariable("load_max", lowBound=0, cat=pulp.LpContinuous)
+        self.load_max = pulp.LpVariable("load_max",
+                                        lowBound=0,
+                                        cat=pulp.LpContinuous)
         # min load
-        self.load_min = pulp.LpVariable("load_min", lowBound=0, cat=pulp.LpContinuous)
+        self.load_min = pulp.LpVariable("load_min",
+                                        lowBound=0,
+                                        cat=pulp.LpContinuous)
 
     def solve(self, time_limit):
         """Formulates the scheduling problem as a linear program and solves it."""
@@ -60,14 +71,16 @@ class Schedule:
         # load_max definition
         for t in range(self.time_span):
             self.prob += (
-                pulp.lpSum([self.y[r][t] for r in self.routes]) <= self.load_max,
+                pulp.lpSum([self.y[r][t] for r in self.routes]) <=
+                self.load_max,
                 "load_max_%s" % t,
             )
 
         # load_min definition
         for t in range(self.time_span):
             self.prob += (
-                pulp.lpSum([self.y[r][t] for r in self.routes]) >= self.load_min,
+                pulp.lpSum([self.y[r][t] for r in self.routes]) >=
+                self.load_min,
                 "load_min_%s" % t,
             )
 
@@ -82,10 +95,11 @@ class Schedule:
             for v in self.G.nodes():
                 if self.G.nodes[v]["demand"] > 0:
                     self.prob += (
-                        pulp.lpSum(
-                            [self.y[r][t] for r in self.routes if v in self.routes[r]]
-                        )
-                        <= 1,
+                        pulp.lpSum([
+                            self.y[r][t]
+                            for r in self.routes
+                            if v in self.routes[r]
+                        ]) <= 1,
                         "day_%s_max_visit_%s" % (t, v),
                     )
         # max fleet per day
@@ -93,25 +107,27 @@ class Schedule:
             for k in range(len(self.num_vehicles)):
                 for t in range(self.time_span):
                     self.prob += (
-                        pulp.lpSum(
-                            [
-                                self.y[r][t]
-                                for r in self.routes
-                                if self.route_type[r] == k
-                            ]
-                        )
-                        <= self.num_vehicles[k],
+                        pulp.lpSum([
+                            self.y[r][t]
+                            for r in self.routes
+                            if self.route_type[r] == k
+                        ]) <= self.num_vehicles[k],
                         "max_fleet_type_%s_day_%s" % (k, t),
                     )
 
     def _solve(self, time_limit):
         if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
+            self.prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=time_limit))
         elif self.solver == "cplex":
-            self.prob.solve(pulp.CPLEX_CMD(msg=0, timelimit=time_limit))
+            self.prob.solve(pulp.CPLEX_CMD(msg=False, timelimit=time_limit))
         elif self.solver == "gurobi":
-            gurobi_options = [("TimeLimit", time_limit)]
-            self.prob.solve(pulp.GUROBI_CMD(options=gurobi_options))
+            gurobi_options = []
+            if time_limit is not None:
+                gurobi_options.append((
+                    "TimeLimit",
+                    time_limit,
+                ))
+            self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     @property
     def routes_per_day(self):

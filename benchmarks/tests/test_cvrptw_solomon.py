@@ -1,6 +1,6 @@
-from vrpy import VehicleRoutingProblem
-
 from benchmarks.solomon_dataset import SolomonDataSet
+
+from vrpy import VehicleRoutingProblem
 
 
 class TestsSolomon:
@@ -47,12 +47,6 @@ class TestsSolomon:
         # benchmark result
         # e.g., in Feillet et al. (2004)
         self.prob.solve(**self.solver_args, cspy=False)
-        assert round(self.prob.best_value, -1) in [190, 200]
-
-    def test_subproblem_lp_dive(self):
-        # benchmark result
-        # e.g., in Feillet et al. (2004)
-        self.prob.solve(**self.solver_args, cspy=False, dive=True)
         assert round(self.prob.best_value, -1) in [190, 200]
 
     def test_subproblem_cspy(self):

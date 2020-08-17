@@ -20,7 +20,6 @@ class CsvTable:
         dive (bool): Diving heuristic
     Methods:
     """
-
     def __init__(self,
                  path=None,
                  instance_name=None,
@@ -79,7 +78,7 @@ class CsvTable:
 
         if self.best_known_solution is not None:
             self.optimality_gap = (self.upper_bound - self.best_known_solution
-                                  ) / self.best_known_solution * 100
+                                   ) / self.best_known_solution * 100
             self.optimal = (self.optimality_gap == 0)
         else:
             self.optimality_gap = "Unknown"

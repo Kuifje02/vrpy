@@ -1,7 +1,8 @@
 from networkx import DiGraph, negative_edge_cycle, shortest_path
 import pulp
 import logging
-from .subproblem import SubProblemBase
+
+from vrpy.subproblem import SubProblemBase
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,7 @@ class SubProblemLP(SubProblemBase):
         new_route.graph["cost"] = self.total_cost
         new_route.graph["vehicle_type"] = self.vehicle_type
         self.routes.append(new_route)
+
         logger.debug("new route %s %s" %
                      (route_id, shortest_path(new_route, "Source", "Sink")))
         logger.debug("new route reduced cost %s" %
@@ -78,18 +80,17 @@ class SubProblemLP(SubProblemBase):
 
     def _solve(self, time_limit):
         if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(msg=False, maxSeconds=time_limit))
+            self.prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=time_limit))
         elif self.solver == "cplex":
             self.prob.solve(pulp.CPLEX_CMD(msg=False, timelimit=time_limit))
         elif self.solver == "gurobi":
             gurobi_options = []
-            # Only specify time limit if given (o.w. errors)
             if time_limit is not None:
                 gurobi_options.append((
                     "TimeLimit",
                     time_limit,
                 ))
-            self.prob.solve(pulp.GUROBI(msg=0, options=gurobi_options))
+            self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     def _formulate(self):
         # minimize reduced cost

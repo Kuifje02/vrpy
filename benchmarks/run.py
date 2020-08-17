@@ -74,15 +74,17 @@ PERFORMANCE_SOLVER_PARAMS: Dict[str, Dict[str, Union[bool, str]]] = {
     'cvrp': {
         'dive': False,
         'greedy': True,
-        'cspy': True,
-        'pricing_strategy': 'BestEdges1'
+        'cspy': False,
+        'pricing_strategy': 'Hyper',
+        'time_limit': TIME_LIMIT
     },
     'cvrptw': {
         'dive': False,
         'greedy': True,
         'cspy': False,
         'pricing_strategy': 'BestEdges1',
-        'max_iter': 0
+        'max_iter': 0,
+        'time_limit': TIME_LIMIT
     }
 }
 
@@ -101,7 +103,8 @@ def run_series():
                 for dive in [True, False]:
                     for cspy in [True, False]:
                         for pricing_strategy in [
-                                "BestPaths", "BestEdges1", "BestEdges2", "Exact"
+                                "BestPaths", "BestEdges1", "BestEdges2",
+                                "Exact", "Hyper"
                         ]:
                             for greedy in [True, False]:
                                 _run_single_problem(
@@ -116,11 +119,9 @@ def run_parallel():
     """Iterates through the instances using in parallel using CPU_COUNT.
     """
     all_files = [
-        path_to_instance
-        for instance_type in INSTANCE_TYPES
+        path_to_instance for instance_type in INSTANCE_TYPES
         for path_to_instance in Path(INPUT_FOLDER / instance_type).glob("*")
     ]
-
 
     if PERFORMANCE:
         # Iterate through all files
@@ -130,11 +131,10 @@ def run_parallel():
         iterate_over = list(
             product(
                 all_files,
-                [True, False],  # dive
+                [False],  # dive
                 [True],  # greedy
-                [True],  # cspy
-                ["BestPaths"]))
-
+                [True, False],  # cspy
+                ["Hyper"]))
     pool = Pool(processes=CPU_COUNT)
     with pool:
         res = pool.map_async(_parallel_wrapper, iterate_over)
@@ -171,7 +171,7 @@ def _run_single_problem(path_to_instance: Path, **kwargs):
     prob = VehicleRoutingProblem(data.G,
                                  load_capacity=data.max_load,
                                  time_windows=bool(instance_type == "cvrptw"))
-    prob.solve(**kwargs, compute_runtime=True)
+    prob.solve(**kwargs)
     # Output results
     table = CsvTable(instance_name=instance_name,
                      comp_time=prob.comp_time,
