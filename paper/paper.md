@@ -111,7 +111,7 @@ For more advanced users, there are different pricing strategies (approaches for 
 (for the CVRP and the CVRP with resource constraints) [@santini2018branch]. Also, a diving heuristic [@sadykov2019primal] can be called to explore part of the branch-and-price tree, instead of solving the restricted master problem as a MIP.
 
 Additionally, we have an experimental feature that uses Hyper-Heuristics for the dynamic selection of
-pricing strategies. 
+pricing strategies.
 The approach ranks the best pricing strategies as the algorithm is running and chooses
 according to selection functions based on [@sabar2015math;@ferreira2017multi]. The selection criteria has been modified to include a combination of runtime, objective improvement, and currently active columns in the restricted master.
 Adaptive parameter settings found in [@drake2012improved] is used to balance exploration and exploitation
@@ -124,6 +124,10 @@ There are many ways ``vrpy`` could be improved. To boost the run times, specific
 
 # Acknowledgements
 
+<<<<<<< HEAD
 We acknowledge contributions from Halvard Olsen Storbugt, and would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
+=======
+We acknowledge contributions from [@Halvaros], and would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
+>>>>>>> joss
 
 # References
