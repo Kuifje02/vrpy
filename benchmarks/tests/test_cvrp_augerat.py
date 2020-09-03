@@ -1,16 +1,19 @@
+import sys
+
+sys.path.append("../../")
 from benchmarks.augerat_dataset import AugeratDataSet
 
 from vrpy import VehicleRoutingProblem
 
 
 class TestsAugerat:
-
     def setup(self):
         """
         Augerat instance P-n16-k8.vrp
         """
-        data = AugeratDataSet(path="benchmarks/data/cvrp/",
-                              instance_name="P-n16-k8.vrp")
+        data = AugeratDataSet(
+            path="benchmarks/data/cvrp/", instance_name="P-n16-k8.vrp"
+        )
         self.G = data.G
         self.prob = VehicleRoutingProblem(self.G, load_capacity=data.max_load)
         self.solver_args = {"pricing_strategy": "BestPaths"}
