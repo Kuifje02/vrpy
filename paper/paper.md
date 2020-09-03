@@ -33,7 +33,7 @@ Mathematicians have started tackling VRPs since 1959 [@dantzig1959truck]. Ever s
 
 # Features
 
-``vrpy`` is a Python package that offers an easy-to-use, unified API for many variants of VRP including:
+``vrpy`` is a Python package that offers an easy-to-use, unified API for many variants of vehicle routing problems including:
 
 -   the Capacitated VRP (CVRP) [@laporte2007you;@baldacci2010exact],
 -   the CVRP with resource constraints [@laporte1985optimal],
@@ -99,7 +99,7 @@ We do not claim to outperform ``OR-Tools``, but aim to have results of the same 
 
 The master problem is a set partitioning linear formulation and is solved with the open source solver Clp from COIN-OR [@johnjforrest_2020_clp], while the subproblem is a shortest elementary path problem with *resource constraints*. It is solved with the help of the  ``cspy`` library [@cspy] which is specifically designed for such problems.
 
-This column generation procedure is very generic, as for each of the featuring VRP variants, the master problem is identical and partitions the customers into subsets (routes). It is the subproblem (or pricing problem) that differs from one variant to another. More specifically, each variant has its unique set of *resources* which must remain in a given interval. For example, for the CVRP, a resource representing the vehicle's load is carried along the path and must not exceed the vehicle capacity; for the CVRP with time windows, two extra resources must be considered: the first one for time, and the second one for time window feasibility. The reader may refer to [@augerat1995approche] for more details on each of these variants and how they are delt with within the framework of column generation.
+This column generation procedure is very generic, as for each of the featuring VRP variants, the master problem is identical and partitions the customers into subsets (routes). It is the subproblem (or pricing problem) that differs from one variant to another. More specifically, each variant has its unique set of *resources* which must remain in a given interval. For example, for the CVRP, a resource representing the vehicle's load is carried along the path and must not exceed the vehicle capacity; for the CVRP with time windows, two extra resources must be considered: the first one for time, and the second one for time window feasibility. The reader may refer to [@costa2019exact] for more details on each of these variants and how they are delt with within the framework of column generation.
 
 Note that ``vrpy`` does not necessarily return an optimal solution. Indeed, once the pricing problems fails to find
 a route with negative marginal cost, the master problem is solved as a MIP. This *price-and-branch* strategy does not guarantee optimality. Note however that it
@@ -124,10 +124,6 @@ There are many ways ``vrpy`` could be improved. To boost the run times, specific
 
 # Acknowledgements
 
-<<<<<<< HEAD
 We acknowledge contributions from Halvard Olsen Storbugt, and would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
-=======
-We acknowledge contributions from [@Halvaros], and would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
->>>>>>> joss
 
 # References
