@@ -5,7 +5,7 @@ from networkx import (
     DiGraph,
     compose,
 )
-from numpy import matrix
+from numpy import array
 
 from data import DISTANCES, TRAVEL_TIMES, TIME_WINDOWS_LOWER, TIME_WINDOWS_UPPER
 import sys
@@ -14,11 +14,11 @@ sys.path.append("../../")
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph
-A = matrix(DISTANCES, dtype=[("cost", int)])
+A = array(DISTANCES, dtype=[("cost", int)])
 G_d = from_numpy_matrix(A, create_using=DiGraph())
 
 # Transform time matrix to DiGraph
-A = matrix(TRAVEL_TIMES, dtype=[("time", int)])
+A = array(TRAVEL_TIMES, dtype=[("time", int)])
 G_t = from_numpy_matrix(A, create_using=DiGraph())
 
 # Merge
@@ -38,3 +38,4 @@ if __name__ == "__main__":
     print(prob.best_value)
     print(prob.best_routes)
     print(prob.arrival_time)
+    assert prob.best_value == 6528

@@ -1,5 +1,5 @@
 from networkx import from_numpy_matrix, relabel_nodes, DiGraph
-from numpy import matrix
+from numpy import array
 from data import DISTANCES, PICKUPS_DELIVERIES
 import sys
 
@@ -7,7 +7,7 @@ sys.path.append("../../")
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph
-A = matrix(DISTANCES, dtype=[("cost", int)])
+A = array(DISTANCES, dtype=[("cost", int)])
 G = from_numpy_matrix(A, create_using=DiGraph())
 
 # Set demands and requests
@@ -26,3 +26,4 @@ if __name__ == "__main__":
     print(prob.best_value)
     print(prob.best_routes)
     print(prob.node_load)
+    assert prob.best_value == 5980
