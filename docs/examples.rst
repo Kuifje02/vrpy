@@ -289,7 +289,7 @@ We will make use of the *NetworkX* module to create this graph and store its att
 .. code:: python
 
  from networkx import DiGraph, from_numpy_matrix, relabel_nodes, set_node_attributes
- from numpy import matrix
+ from numpy import array
 
  # Distance matrix
  DISTANCES = [
@@ -317,7 +317,7 @@ We will make use of the *NetworkX* module to create this graph and store its att
  DEMAND = {1: 1, 2: 1, 3: 2, 4: 4, 5: 2, 6: 4, 7: 8, 8: 8, 9: 1, 10: 2, 11: 1, 12: 2, 13: 4, 14: 4, 15: 8, 16: 8}
 
  # The matrix is transformed into a DiGraph
- A = matrix(DISTANCES, dtype=[("cost", int)])
+ A = array(DISTANCES, dtype=[("cost", int)])
  G = from_numpy_matrix(A, create_using=nx.DiGraph())
 
  # The demands are stored as node attributes
@@ -359,7 +359,7 @@ some waste material.
 .. code:: python
 
  from networkx import DiGraph, from_numpy_matrix, relabel_nodes, set_node_attributes
- from numpy import matrix
+ from numpy import array
 
  # Distance matrix
  DISTANCES = [
@@ -390,7 +390,7 @@ some waste material.
  COLLECT = {1: 1, 2: 1, 3: 1, 4: 1, 5: 2, 6: 1, 7: 4, 8: 1, 9: 1, 10: 2, 11: 3, 12: 2, 13: 4, 14: 2, 15: 1, 16: 2}
 
  # The matrix is transformed into a DiGraph
- A = matrix(DISTANCES, dtype=[("cost", int)])
+ A = array(DISTANCES, dtype=[("cost", int)])
  G = from_numpy_matrix(A, create_using=nx.DiGraph())
 
  # The distribution and collection amounts are stored as node attributes
@@ -431,7 +431,7 @@ This time, the network is defined by its distance matrix and its time matrix:
 .. code:: python
 
     from networkx import DiGraph, from_numpy_matrix, relabel_nodes, set_node_attributes
-    from numpy import matrix
+    from numpy import array
 
     # Distance matrix
     DISTANCES = [
@@ -481,11 +481,11 @@ This time, the network is defined by its distance matrix and its time matrix:
     TIME_WINDOWS_UPPER = {1: 12, 2: 15, 3: 18, 4: 13, 5: 5, 6: 10, 7: 4, 8: 10, 9: 3, 10: 16, 11: 15, 12: 5, 13: 10, 14: 8, 15: 15, 16: 15,}
 
     # Transform distance matrix into DiGraph
-    A = matrix(DISTANCES, dtype=[("cost", int)])
+    A = array(DISTANCES, dtype=[("cost", int)])
     G_d = from_numpy_matrix(A, create_using=DiGraph())
 
     # Transform time matrix into DiGraph
-    A = matrix(TRAVEL_TIMES, dtype=[("time", int)])
+    A = array(TRAVEL_TIMES, dtype=[("time", int)])
     G_t = from_numpy_matrix(A, create_using=DiGraph())
 
     # Merge
@@ -569,7 +569,7 @@ as many customers as possible, and allow dropping visits, at the cost of a :math
 .. code:: python
 
  from networkx import DiGraph, from_numpy_matrix, relabel_nodes, set_node_attributes
- from numpy import matrix
+ from numpy import array
 
  # Distance matrix
  DISTANCES = [
@@ -597,7 +597,7 @@ as many customers as possible, and allow dropping visits, at the cost of a :math
  DEMAND = {1: 1, 2: 1, 3: 3, 4: 6, 5: 3, 6: 6, 7: 8, 8: 8, 9: 1, 10: 2, 11: 1, 12: 2, 13: 6, 14: 6, 15: 8, 16: 8}
 
  # The matrix is transformed into a DiGraph
- A = matrix(DISTANCES, dtype=[("cost", int)])
+ A = array(DISTANCES, dtype=[("cost", int)])
  G = from_numpy_matrix(A, create_using=nx.DiGraph())
 
  # The demands are stored as node attributes
