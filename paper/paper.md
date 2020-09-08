@@ -13,7 +13,7 @@ authors:
     orcid: 0000-0002-2894-9432
     affiliation: "2"
   - name: Halvard Olsen Storbugt
-    orcid: xxxx
+    orcid: 0000
     affiliation: "2"
 affiliations:
  - name: EURODECISION
