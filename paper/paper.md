@@ -12,6 +12,9 @@ authors:
   - name: David Torres Sanchez
     orcid: 0000-0002-2894-9432
     affiliation: "2"
+  - name: Halvard Olsen Storbugt
+    orcid: xxxx
+    affiliation: "2"
 affiliations:
  - name: EURODECISION
    index: 1
@@ -124,6 +127,6 @@ There are many ways ``vrpy`` could be improved. To boost the run times, specific
 
 # Acknowledgements
 
-We acknowledge contributions from Halvard Olsen Storbugt, and would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
+We would like to thank reviewers Ben Stabler and Serdar Kadioglu for their helpful and constructive suggestions.
 
 # References
