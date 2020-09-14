@@ -89,7 +89,7 @@ For more information and to run more instances, see the [benchmarks](benchmarks/
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.txt](https://github.com/Kuifje02/vrpy/blob/dev/LICENSE.txt) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/Kuifje02/vrpy/blob/dev/LICENSE) file for details.
 
 ## Bugs
 
