@@ -1,8 +1,14 @@
 import logging
 from itertools import islice
 
-from networkx import (compose_all, DiGraph, NetworkXException, add_path,
-                      has_path, shortest_simple_paths)
+from networkx import (
+    compose_all,
+    DiGraph,
+    NetworkXException,
+    add_path,
+    has_path,
+    shortest_simple_paths,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +23,9 @@ class SubProblemBase:
         routes_with_node (dict): Keys : nodes ; Values : list of routes which contain the node.
         routes (list): Current routes/variables/columns.
         vehicle_type (int): Current vehicle type.
+        route (DiGraph):
+            Current route.
+            Is not None if pricing problem is route dependent (e.g, when minimizing global span).
 
     Attributes:
         num_stops (int, optional):
@@ -51,26 +60,30 @@ class SubProblemBase:
             Defaults to None.
     """
 
-    def __init__(self,
-                 G,
-                 duals,
-                 routes_with_node,
-                 routes,
-                 vehicle_type,
-                 num_stops=None,
-                 load_capacity=None,
-                 duration=None,
-                 time_windows=False,
-                 pickup_delivery=False,
-                 distribution_collection=False,
-                 pricing_strategy="Exact",
-                 pricing_parameter=None):
+    def __init__(
+        self,
+        G,
+        duals,
+        routes_with_node,
+        routes,
+        vehicle_type,
+        route=None,
+        num_stops=None,
+        load_capacity=None,
+        duration=None,
+        time_windows=False,
+        pickup_delivery=False,
+        distribution_collection=False,
+        pricing_strategy="Exact",
+        pricing_parameter=None,
+    ):
         # Input attributes
         self.G = G
         self.duals = duals
         self.routes_with_node = routes_with_node
         self.routes = routes
         self.vehicle_type = vehicle_type
+        self.route = route
         self.num_stops = num_stops
         self.load_capacity = load_capacity
         self.duration = duration
@@ -81,6 +94,9 @@ class SubProblemBase:
 
         # Add reduced cost to "weight" attribute
         self.add_reduced_cost_attribute()
+        # print(self.duals)
+        # for (i, j) in self.G.edges():
+        #    print(i, j, self.G.edges[i, j])
 
         # Define the graph on which the sub problem is solved according to the pricing strategy
         if pricing_strategy == "BestEdges1":
@@ -96,21 +112,24 @@ class SubProblemBase:
         elif pricing_strategy == "Exact":
             # The graph remains as is
             self.sub_G = self.G
-        logger.debug("Pricing strategy %s, %s" %
-                     (pricing_strategy, pricing_parameter))
+        logger.debug("Pricing strategy %s, %s" % (pricing_strategy, pricing_parameter))
 
     def add_reduced_cost_attribute(self):
         """Substracts the dual values to compute reduced cost on each edge."""
         for edge in self.G.edges(data=True):
             edge[2]["weight"] = edge[2]["cost"][self.vehicle_type]
+            if self.route:
+                edge[2]["weight"] *= -self.duals[
+                    "makespan_%s" % self.route.graph["name"]
+                ]
             for v in self.duals:
                 if edge[0] == v:
                     edge[2]["weight"] -= self.duals[v]
         if "upper_bound_vehicles" in self.duals:
             for v in self.G.successors("Source"):
-                self.G.edges["Source",
-                             v]["weight"] -= self.duals["upper_bound_vehicles"][
-                                 self.vehicle_type]
+                self.G.edges["Source", v]["weight"] -= self.duals[
+                    "upper_bound_vehicles"
+                ][self.vehicle_type]
 
     def discard_nodes(self):
         """Removes nodes with marginal cost = 0."""
@@ -133,8 +152,7 @@ class SubProblemBase:
         )
 
         for (u, v) in self.G.edges():
-            if self.G.edges[u, v]["cost"][
-                    self.vehicle_type] > alpha * largest_dual:
+            if self.G.edges[u, v]["cost"][self.vehicle_type] > alpha * largest_dual:
                 self.sub_G.remove_edge(u, v)
         # If pruning the graph disconnects the source and the sink,
         # do not solve the subproblem.
@@ -180,21 +198,20 @@ class SubProblemBase:
         4. Remove all edges that do not belong to these paths
         """
         # Normalize weights
-        max_weight = max(
-            [self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
+        max_weight = max([self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
         min_weight = min(self.G.edges[i, j]["weight"] for (i, j) in self.G.edges())
         for edge in self.G.edges(data=True):
-            edge[2]["pos_weight"] = (-max_weight - min_weight +
-                                     2 * edge[2]["weight"]) / (max_weight -
-                                                               min_weight)
+            edge[2]["pos_weight"] = (
+                -max_weight - min_weight + 2 * edge[2]["weight"]
+            ) / (max_weight - min_weight)
             edge[2]["pos_weight"] = max(0, edge[2]["pos_weight"])
         # Compute beta shortest paths
         best_paths = list(
             islice(
-                shortest_simple_paths(self.G,
-                                      "Source",
-                                      "Sink",
-                                      weight="pos_weight"), beta))
+                shortest_simple_paths(self.G, "Source", "Sink", weight="pos_weight"),
+                beta,
+            )
+        )
         # Store these paths as a list of DiGraphs
         best_paths_list = []
         for path in best_paths:

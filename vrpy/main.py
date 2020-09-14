@@ -3,7 +3,7 @@ from time import time
 from pathlib import Path
 from typing import List, Union
 
-from networkx import DiGraph, shortest_path  #draw_networkx
+from networkx import DiGraph, shortest_path  # draw_networkx
 
 from vrpy.greedy import Greedy
 from vrpy.master_solve_pulp import MasterSolvePulp
@@ -12,8 +12,13 @@ from vrpy.subproblem_cspy import SubProblemCSPY
 from vrpy.subproblem_greedy import SubProblemGreedy
 from vrpy.clarke_wright import ClarkeWright, RoundTrip
 from vrpy.schedule import Schedule
-from vrpy.checks import (check_arguments, check_consistency, check_feasibility,
-                         check_initial_routes, check_vrp)
+from vrpy.checks import (
+    check_arguments,
+    check_consistency,
+    check_feasibility,
+    check_initial_routes,
+    check_vrp,
+)
 from vrpy.preprocessing import get_num_stops_upper_bound
 from vrpy.hyper_heuristic import HyperHeuristic
 from csv import DictWriter
@@ -63,21 +68,27 @@ class VehicleRoutingProblem:
         mixed_fleet (bool, optional):
             True if heterogeneous fleet.
             Defaluts to False.
+        minimize_global_span (bool, optaional):
+            True if global span (max{cost}) is minimized (instad of total cost (sum(cost)))
+            Defaults to False.
     """
 
-    def __init__(self,
-                 G,
-                 num_stops=None,
-                 load_capacity=None,
-                 duration=None,
-                 time_windows=False,
-                 pickup_delivery=False,
-                 distribution_collection=False,
-                 drop_penalty=None,
-                 fixed_cost=0,
-                 num_vehicles=None,
-                 periodic=None,
-                 mixed_fleet=False):
+    def __init__(
+        self,
+        G,
+        num_stops=None,
+        load_capacity=None,
+        duration=None,
+        time_windows=False,
+        pickup_delivery=False,
+        distribution_collection=False,
+        drop_penalty=None,
+        fixed_cost=0,
+        num_vehicles=None,
+        periodic=None,
+        mixed_fleet=False,
+        minimize_global_span=False,
+    ):
         self.G = G
         # VRP options/constraints
         self.num_stops = num_stops
@@ -91,6 +102,7 @@ class VehicleRoutingProblem:
         self.num_vehicles = num_vehicles if num_vehicles is not None else []
         self.periodic = periodic
         self.mixed_fleet = mixed_fleet
+        self.minimize_global_span = minimize_global_span
 
         # Solving parameters
         self.masterproblem: MasterSolvePulp = None
@@ -130,17 +142,19 @@ class VehicleRoutingProblem:
         # Check if given inputs are consistent
         check_vrp(self.G)
 
-    def solve(self,
-              initial_routes=None,
-              preassignments=None,
-              pricing_strategy="BestEdges1",
-              cspy=True,
-              exact=True,
-              time_limit=None,
-              solver="cbc",
-              dive=False,
-              greedy=False,
-              max_iter=None):
+    def solve(
+        self,
+        initial_routes=None,
+        preassignments=None,
+        pricing_strategy="BestEdges1",
+        cspy=True,
+        exact=True,
+        time_limit=None,
+        solver="cbc",
+        dive=False,
+        greedy=False,
+        max_iter=None,
+    ):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
         Args:
@@ -230,7 +244,11 @@ class VehicleRoutingProblem:
         """Returns value of best solution found."""
         if self.drop_penalty:
             penalty = self.drop_penalty * len(self._dropped_nodes)
+            if self.minimize_global_span:
+                return max(self.best_routes_cost.values()) + penalty
             return sum(self.best_routes_cost.values()) + penalty
+        if self.minimize_global_span:
+            return max(self.best_routes_cost.values())
         return sum(self.best_routes_cost.values())
 
     @property
@@ -245,23 +263,25 @@ class VehicleRoutingProblem:
         """Returns dict with route ids as keys and route costs as values."""
         cost = {}
         for route in self.best_routes:
-            edges = list(
-                zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
+            edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
             k = self._best_routes_vehicle_type[route]
-            cost[route] = sum(
-                self._H.edges[i, j]["cost"][k] for (i, j) in edges)
+            cost[route] = sum(self._H.edges[i, j]["cost"][k] for (i, j) in edges)
         return cost
 
     @property
     def best_routes_load(self):
         """Returns dict with route ids as keys and route loads as values."""
         load = {}
-        if (not self.load_capacity or self.distribution_collection or
-                self.pickup_delivery):
+        if (
+            not self.load_capacity
+            or self.distribution_collection
+            or self.pickup_delivery
+        ):
             return load
         for route in self.best_routes:
             load[route] = sum(
-                self._H.nodes[v]["demand"] for v in self.best_routes[route])
+                self._H.nodes[v]["demand"] for v in self.best_routes[route]
+            )
         return load
 
     @property
@@ -273,8 +293,11 @@ class VehicleRoutingProblem:
         If truck is distributing, load refers to accumulated amount that has been unloaded.
         """
         load = {}
-        if (not self.load_capacity and not self.pickup_delivery and
-                not self.distribution_collection):
+        if (
+            not self.load_capacity
+            and not self.pickup_delivery
+            and not self.distribution_collection
+        ):
             return load
         for i in self.best_routes:
             load[i] = {}
@@ -294,14 +317,13 @@ class VehicleRoutingProblem:
         if not self.duration and not self.time_windows:
             return duration
         for route in self.best_routes:
-            edges = list(
-                zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
+            edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
             # Travel times
-            duration[route] = sum(
-                self._H.edges[i, j]["time"] for (i, j) in edges)
+            duration[route] = sum(self._H.edges[i, j]["time"] for (i, j) in edges)
             # Service times
-            duration[route] += sum(self._H.nodes[v]["service_time"]
-                                   for v in self.best_routes[route])
+            duration[route] += sum(
+                self._H.nodes[v]["service_time"] for v in self.best_routes[route]
+            )
 
         return duration
 
@@ -322,8 +344,9 @@ class VehicleRoutingProblem:
                 tail = route[j - 1]
                 head = route[j]
                 arrival[i][head] = max(
-                    arrival[i][tail] + self._H.nodes[tail]["service_time"] +
-                    self._H.edges[tail, head]["time"],
+                    arrival[i][tail]
+                    + self._H.nodes[tail]["service_time"]
+                    + self._H.edges[tail, head]["time"],
                     self._H.nodes[head]["lower"],
                 )
             del arrival[i]["Source"]
@@ -345,11 +368,15 @@ class VehicleRoutingProblem:
             for j in range(1, len(route) - 1):
                 tail = route[j - 1]
                 head = route[j]
-                departure[i][head] = (max(
-                    departure[i][tail] + self._H.nodes[tail]["service_time"] +
-                    self._H.edges[tail, head]["time"],
-                    self._H.nodes[head]["lower"],
-                ) + self._H.nodes[head]["service_time"])
+                departure[i][head] = (
+                    max(
+                        departure[i][tail]
+                        + self._H.nodes[tail]["service_time"]
+                        + self._H.edges[tail, head]["time"],
+                        self._H.nodes[head]["lower"],
+                    )
+                    + self._H.nodes[head]["service_time"]
+                )
         return departure
 
     @property
@@ -368,29 +395,33 @@ class VehicleRoutingProblem:
             self._vehicle_types = 1
         # TODO collect all checks into a wrapper
         # Consistency , dive=Truechecks
-        check_arguments(num_stops=self.num_stops,
-                        load_capacity=self.load_capacity,
-                        duration=self.duration,
-                        pricing_strategy=self._pricing_strategy,
-                        mixed_fleet=self.mixed_fleet,
-                        fixed_cost=self.fixed_cost,
-                        G=self.G,
-                        vehicle_types=self._vehicle_types,
-                        num_vehicles=self.num_vehicles)
+        check_arguments(
+            num_stops=self.num_stops,
+            load_capacity=self.load_capacity,
+            duration=self.duration,
+            pricing_strategy=self._pricing_strategy,
+            mixed_fleet=self.mixed_fleet,
+            fixed_cost=self.fixed_cost,
+            G=self.G,
+            vehicle_types=self._vehicle_types,
+            num_vehicles=self.num_vehicles,
+        )
         # Setup fixed costs
         if self.fixed_cost:
             self._add_fixed_costs()
         # Setup default attributes if missing
         self._update_dummy_attributes()
         # Check options consistency
-        check_consistency(cspy=self._cspy,
-                          pickup_delivery=self.pickup_delivery,
-                          pricing_strategy=self._pricing_strategy,
-                          G=self.G)
+        check_consistency(
+            cspy=self._cspy,
+            pickup_delivery=self.pickup_delivery,
+            pricing_strategy=self._pricing_strategy,
+            G=self.G,
+        )
         # Check feasibility
-        check_feasibility(load_capacity=self.load_capacity,
-                          G=self.G,
-                          duration=self.duration)
+        check_feasibility(
+            load_capacity=self.load_capacity, G=self.G, duration=self.duration
+        )
         # Lock preassigned routes
         if self._preassignments:
             self._lock()
@@ -398,9 +429,9 @@ class VehicleRoutingProblem:
         self._prune_graph()
         # Compute upper bound on number of stops as knapsack problem
         if self.load_capacity and not self.pickup_delivery:
-            num_stops = get_num_stops_upper_bound(self.G, self._max_capacity,
-                                                  self.num_stops,
-                                                  self.distribution_collection)
+            num_stops = get_num_stops_upper_bound(
+                self.G, self._max_capacity, self.num_stops, self.distribution_collection
+            )
             self.num_stops = num_stops
             logger.info("new upper bound : max num stops = %s" % num_stops)
 
@@ -422,6 +453,7 @@ class VehicleRoutingProblem:
             self.drop_penalty,
             self.num_vehicles,
             self.periodic,
+            self.minimize_global_span,
             solver,
         )
 
@@ -431,28 +463,39 @@ class VehicleRoutingProblem:
             self._dive = True
             self._more_routes = True
             self._column_generation()
-            self._best_value, self._best_routes_as_graphs = \
-                    self.masterproblem.get_total_cost_and_routes(relax=True)
+            (
+                self._best_value,
+                self._best_routes_as_graphs,
+            ) = self.masterproblem.get_total_cost_and_routes(relax=True)
         elif len(self.G.nodes()) > 2:
             # Solve as MIP
             _, _ = self.masterproblem.solve(
-                relax=False, time_limit=self._get_time_remaining(mip=True))
-            self._best_value, self._best_routes_as_graphs = \
-                    self.masterproblem.get_total_cost_and_routes(relax=False)
+                relax=False, time_limit=self._get_time_remaining(mip=True)
+            )
+            (
+                self._best_value,
+                self._best_routes_as_graphs,
+            ) = self.masterproblem.get_total_cost_and_routes(relax=False)
         self._post_process(solver)
 
     def _column_generation(self):
         while self._more_routes:
             # Generate good columns
+            # if self.minimize_global_span:
+            #    self._find_columns_for_global_span()
+            # else:
             self._find_columns()
             # Stop if time limit is passed
-            if isinstance(self._get_time_remaining(),
-                          float) and self._get_time_remaining() == 0.0:
+            if (
+                isinstance(self._get_time_remaining(), float)
+                and self._get_time_remaining() == 0.0
+            ):
                 logger.info("time up !")
                 break
             # Stop if no improvement limit is passed or max iter exceeded
             if self._no_improvement > 1000 or (
-                    self._max_iter and self._iteration >= self._max_iter):
+                self._max_iter and self._iteration >= self._max_iter
+            ):
                 break
 
     def _find_columns(self):
@@ -460,12 +503,14 @@ class VehicleRoutingProblem:
         # Solve restricted relaxed master problem
         if self._dive:
             duals, relaxed_cost = self.masterproblem.solve_and_dive(
-                time_limit=self._get_time_remaining())
+                time_limit=self._get_time_remaining()
+            )
             if self.hyper_heuristic is not None:
                 self.hyper_heuristic.init(relaxed_cost)
         else:
             duals, relaxed_cost = self.masterproblem.solve(
-                relax=True, time_limit=self._get_time_remaining())
+                relax=True, time_limit=self._get_time_remaining()
+            )
 
         logger.info("iteration %s, %.6s" % (self._iteration, relaxed_cost))
         pricing_strategy = self._get_next_pricing_strategy(relaxed_cost)
@@ -473,21 +518,40 @@ class VehicleRoutingProblem:
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
             # Solve pricing problem with randomised greedy algorithm
-            if (self._greedy and not self.time_windows and
-                    not self.distribution_collection and
-                    not self.pickup_delivery):
+            if (
+                self._greedy
+                and not self.time_windows
+                and not self.distribution_collection
+                and not self.pickup_delivery
+                and not self.minimize_global_span
+            ):
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
                 # Add initial_routes
                 if self._more_routes:
-                    for r in (r for r in self.routes
-                              if r.graph["name"] not in self.masterproblem.y):
+                    for r in (
+                        r
+                        for r in self.routes
+                        if r.graph["name"] not in self.masterproblem.y
+                    ):
                         self.masterproblem.update(r)
 
             # Continue searching for columns
             self._more_routes = False
-            self._more_routes = self._solve_subproblem_with_heuristic(
-                pricing_strategy=pricing_strategy, vehicle=vehicle, duals=duals)
+            if not self.minimize_global_span:
+                self._more_routes = self._solve_subproblem_with_heuristic(
+                    pricing_strategy=pricing_strategy, vehicle=vehicle, duals=duals
+                )
+            else:
+                for route in self._routes[: len(self._routes)]:
+                    self._more_routes = self._solve_subproblem_with_heuristic(
+                        pricing_strategy=pricing_strategy,
+                        vehicle=vehicle,
+                        duals=duals,
+                        route=route,
+                    )
+                    if self._more_routes:
+                        break
 
             if self._more_routes:
                 self.routes[-1].graph["heuristic"] = pricing_strategy
@@ -505,55 +569,58 @@ class VehicleRoutingProblem:
         if not self._dive:
             self._lower_bound.append(relaxed_cost)
 
-    # Run different pricing strategies #
-
-    def _solve_subproblem_with_heuristic(self,
-                                         pricing_strategy=None,
-                                         vehicle=None,
-                                         duals=None):
+    def _solve_subproblem_with_heuristic(
+        self, pricing_strategy=None, vehicle=None, duals=None, route=None,
+    ):
         """Solves pricing problem with input heuristic
         """
         more_columns = False
         if self._pricing_strategy == "Hyper":
             if pricing_strategy == "BestPaths":
-                more_columns = self._attempt_solve_best_paths(vehicle=vehicle,
-                                                              duals=duals)
+                more_columns = self._attempt_solve_best_paths(
+                    vehicle=vehicle, duals=duals, route=route
+                )
             elif pricing_strategy == "BestEdges1":
-                more_columns = self._attempt_solve_best_edges1(vehicle=vehicle,
-                                                               duals=duals)
+                more_columns = self._attempt_solve_best_edges1(
+                    vehicle=vehicle, duals=duals, route=route
+                )
             elif pricing_strategy == "BestEdges2":
-                more_columns = self._attempt_solve_best_edges2(vehicle=vehicle,
-                                                               duals=duals)
+                more_columns = self._attempt_solve_best_edges2(
+                    vehicle=vehicle, duals=duals, route=route
+                )
             elif pricing_strategy == "Exact":
-                more_columns = self._attempt_solve_exact(vehicle=vehicle,
-                                                         duals=duals)
+                more_columns = self._attempt_solve_exact(
+                    vehicle=vehicle, duals=duals, route=route
+                )
         # old approach
         else:
             if pricing_strategy == "BestPaths":
-                more_columns = self._attempt_solve_best_paths(vehicle=vehicle,
-                                                              duals=duals)
+                more_columns = self._attempt_solve_best_paths(
+                    vehicle=vehicle, duals=duals, route=route
+                )
             elif pricing_strategy == "BestEdges1":
-                more_columns = self._attempt_solve_best_edges1(vehicle=vehicle,
-                                                               duals=duals)
+                more_columns = self._attempt_solve_best_edges1(
+                    vehicle=vehicle, duals=duals, route=route
+                )
             elif pricing_strategy == "BestEdges2":
-                more_columns = self._attempt_solve_best_edges2(vehicle=vehicle,
-                                                               duals=duals)
+                more_columns = self._attempt_solve_best_edges2(
+                    vehicle=vehicle, duals=duals, route=route
+                )
             if pricing_strategy == "Exact" or not more_columns:
-                more_columns = self._attempt_solve_exact(vehicle=vehicle,
-                                                         duals=duals)
+                more_columns = self._attempt_solve_exact(
+                    vehicle=vehicle, duals=duals, route=route
+                )
         return more_columns
 
-    def _attempt_solve_best_paths(self, vehicle=None, duals=None):
+    def _attempt_solve_best_paths(self, vehicle=None, duals=None, route=None):
         more_columns = False
         for k_shortest_paths in [3, 5, 7, 9]:
             subproblem = self._def_subproblem(
-                duals,
-                vehicle,
-                "BestPaths",
-                k_shortest_paths,
+                duals, vehicle, route, "BestPaths", k_shortest_paths,
             )
             self.routes, self._more_routes = subproblem.solve(
-                self._get_time_remaining())
+                self._get_time_remaining()
+            )
             more_columns = self._more_routes
             if more_columns:
                 break
@@ -561,18 +628,14 @@ class VehicleRoutingProblem:
             self._more_routes = True
         return more_columns
 
-    def _attempt_solve_best_edges1(self, vehicle=None, duals=None):
+    def _attempt_solve_best_edges1(self, vehicle=None, duals=None, route=None):
         more_columns = False
         for alpha in [0.3, 0.5, 0.7, 0.9]:
             subproblem = self._def_subproblem(
-                duals,
-                vehicle,
-                "BestEdges1",
-                alpha,
+                duals, vehicle, route, "BestEdges1", alpha,
             )
             self.routes, self._more_routes = subproblem.solve(
                 self._get_time_remaining(),
-                # exact=False,
             )
             more_columns = self._more_routes
             if more_columns:
@@ -581,14 +644,11 @@ class VehicleRoutingProblem:
             self._more_routes = True
         return more_columns
 
-    def _attempt_solve_best_edges2(self, vehicle=None, duals=None):
+    def _attempt_solve_best_edges2(self, vehicle=None, duals=None, route=None):
         more_columns = False
         for ratio in [0.1, 0.2, 0.3]:
             subproblem = self._def_subproblem(
-                duals,
-                vehicle,
-                "BestEdges2",
-                ratio,
+                duals, vehicle, route, "BestEdges2", ratio,
             )
             self.routes, self._more_routes = subproblem.solve(
                 self._get_time_remaining(),
@@ -602,14 +662,13 @@ class VehicleRoutingProblem:
 
         return more_columns
 
-    def _attempt_solve_exact(self, vehicle=None, duals=None):
-        subproblem = self._def_subproblem(duals, vehicle)
-        self.routes, self._more_routes = subproblem.solve(
-            self._get_time_remaining())
+    def _attempt_solve_exact(self, vehicle=None, duals=None, route=None):
+        subproblem = self._def_subproblem(duals, vehicle, route)
+        self.routes, self._more_routes = subproblem.solve(self._get_time_remaining())
         return self._more_routes
 
     def _get_next_pricing_strategy(self, relaxed_cost):
-        'Return the appropriate pricing strategy based on input parameters'
+        "Return the appropriate pricing strategy based on input parameters"
         pricing_strategy = None
         if (
             self._pricing_strategy == "Hyper"
@@ -618,7 +677,10 @@ class VehicleRoutingProblem:
             self._no_improvement_iteration = self._iteration
             if self._iteration == 0:
                 pricing_strategy = "BestPaths"
-                if self.hyper_heuristic.performance_measure_type == "relative_improvement":
+                if (
+                    self.hyper_heuristic.performance_measure_type
+                    == "relative_improvement"
+                ):
                     self._run_exact = 30
                 self.hyper_heuristic.init(relaxed_cost)
             else:
@@ -633,16 +695,16 @@ class VehicleRoutingProblem:
         return pricing_strategy
 
     def _update_hyper_heuristic(self, relaxed_cost: float):
-        best_paths, best_paths_freq = \
-                self.masterproblem.get_heuristic_distribution()
+        best_paths, best_paths_freq = self.masterproblem.get_heuristic_distribution()
         self.hyper_heuristic.current_performance(
             new_objective_value=relaxed_cost,
             produced_column=self._more_routes,
-            active_columns=best_paths_freq)
+            active_columns=best_paths_freq,
+        )
         self.hyper_heuristic.move_acceptance()
-        self.hyper_heuristic.update_parameters(self._iteration,
-                                               self._no_improvement,
-                                               self._no_improvement_iteration)
+        self.hyper_heuristic.update_parameters(
+            self._iteration, self._no_improvement, self._no_improvement_iteration
+        )
 
     def _get_time_remaining(self, mip: bool = False):
         """
@@ -663,12 +725,15 @@ class VehicleRoutingProblem:
             return 0.0
         return None
 
-    def _def_subproblem(self,
-                        duals,
-                        vehicle_type,
-                        pricing_strategy="Exact",
-                        pricing_parameter=None,
-                        greedy=False):
+    def _def_subproblem(
+        self,
+        duals,
+        vehicle_type,
+        route=None,
+        pricing_strategy="Exact",
+        pricing_parameter=None,
+        greedy=False,
+    ):
         """Instanciates the subproblem."""
 
         if greedy:
@@ -678,6 +743,7 @@ class VehicleRoutingProblem:
                 self._routes_with_node,
                 self._routes,
                 vehicle_type,
+                route,
                 self.num_stops,
                 self.load_capacity,
                 self.duration,
@@ -695,6 +761,7 @@ class VehicleRoutingProblem:
                 self._routes_with_node,
                 self._routes,
                 vehicle_type,
+                route,
                 self.num_stops,
                 self.load_capacity,
                 self.duration,
@@ -713,6 +780,7 @@ class VehicleRoutingProblem:
                 self._routes_with_node,
                 self._routes,
                 vehicle_type,
+                route,
                 self.num_stops,
                 self.load_capacity,
                 self.duration,
@@ -735,9 +803,13 @@ class VehicleRoutingProblem:
         """
         self._initial_routes = []
         # Run Clarke & Wright if possible
-        if (not self.time_windows and not self.pickup_delivery and
-                not self.distribution_collection and not self.mixed_fleet and
-                not self.periodic):
+        if (
+            not self.time_windows
+            and not self.pickup_delivery
+            and not self.distribution_collection
+            and not self.mixed_fleet
+            and not self.periodic
+        ):
             best_value = 1e10
             best_num_vehicles = 1e10
             for alpha in [x / 10 for x in range(1, 20)]:
@@ -758,15 +830,17 @@ class VehicleRoutingProblem:
                     best_value = alg.best_value
                     best_num_vehicles = len(alg.best_routes)
             logger.info(
-                "Clarke & Wright solution found with value %s and %s vehicles" %
-                (best_value, best_num_vehicles))
+                "Clarke & Wright solution found with value %s and %s vehicles"
+                % (best_value, best_num_vehicles)
+            )
 
             # Run greedy algorithm if possible
-            alg = Greedy(self.G, self.load_capacity, self.num_stops,
-                         self.duration)
+            alg = Greedy(self.G, self.load_capacity, self.num_stops, self.duration)
             alg.run()
-            logger.info("Greedy solution found with value %s and %s vehicles" %
-                        (alg.best_value, len(alg.best_routes)))
+            logger.info(
+                "Greedy solution found with value %s and %s vehicles"
+                % (alg.best_value, len(alg.best_routes))
+            )
             self._initial_routes += alg.best_routes
 
         # If pickup and delivery, initial routes are Source-pickup-delivery-Sink
@@ -774,7 +848,8 @@ class VehicleRoutingProblem:
             for v in self.G.nodes():
                 if "request" in self.G.nodes[v]:
                     self._initial_routes.append(
-                        ["Source", v, self.G.nodes[v]["request"], "Sink"])
+                        ["Source", v, self.G.nodes[v]["request"], "Sink"]
+                    )
         # Otherwise compute round trips
         else:
             alg = RoundTrip(self.G)
@@ -837,8 +912,10 @@ class VehicleRoutingProblem:
     def _remove_infeasible_arcs_capacities(self):
         infeasible_arcs = []
         for (i, j) in self.G.edges():
-            if (self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"] >
-                    self._max_capacity):
+            if (
+                self.G.nodes[i]["demand"] + self.G.nodes[j]["demand"]
+                > self._max_capacity
+            ):
                 infeasible_arcs.append((i, j))
         self.G.remove_edges_from(infeasible_arcs)
 
@@ -849,8 +926,7 @@ class VehicleRoutingProblem:
             service_time = self.G.nodes[i]["service_time"]
             tail_inf_time_window = self.G.nodes[i]["lower"]
             head_sup_time_window = self.G.nodes[j]["upper"]
-            if (tail_inf_time_window + travel_time + service_time >
-                    head_sup_time_window):
+            if tail_inf_time_window + travel_time + service_time > head_sup_time_window:
                 infeasible_arcs.append((i, j))
             # Strengthen time windows
             for v in self.G.nodes():
@@ -858,14 +934,13 @@ class VehicleRoutingProblem:
                     # earliest time is coming straight from depot
                     self.G.nodes[v]["lower"] = max(
                         self.G.nodes[v]["lower"],
-                        self.G.nodes["Source"]["lower"] +
-                        self.G.edges["Source", v]["time"],
+                        self.G.nodes["Source"]["lower"]
+                        + self.G.edges["Source", v]["time"],
                     )
                     # Latest time is going straight to depot
                     self.G.nodes[v]["upper"] = min(
                         self.G.nodes[v]["upper"],
-                        self.G.nodes["Sink"]["upper"] -
-                        self.G.edges[v, "Sink"]["time"],
+                        self.G.nodes["Sink"]["upper"] - self.G.edges[v, "Sink"]["time"],
                     )
         self.G.remove_edges_from(infeasible_arcs)
 
@@ -892,18 +967,19 @@ class VehicleRoutingProblem:
 
         for v in self.G.nodes():
             for attribute in [
-                    "demand",
-                    "collect",
-                    "service_time",
-                    "lower",
-                    "upper",
+                "demand",
+                "collect",
+                "service_time",
+                "lower",
+                "upper",
             ]:
                 if attribute not in self.G.nodes[v]:
                     self.G.nodes[v][attribute] = 0
             # Ignore demand at Source/Sink
             if v in ["Source", "Sink"] and self.G.nodes[v]["demand"] > 0:
-                logger.warning("Demand %s at node %s is ignored." %
-                               (self.G.nodes[v]["demand"], v))
+                logger.warning(
+                    "Demand %s at node %s is ignored." % (self.G.nodes[v]["demand"], v)
+                )
                 self.G.nodes[v]["demand"] = 0
 
             # Set frequency = 1 if missing
@@ -923,9 +999,11 @@ class VehicleRoutingProblem:
 
         if self.G.nodes["Sink"]["upper"] == 0:
             self.G.nodes["Sink"]["upper"] = max(
-                self.G.nodes[u]["upper"] + self.G.nodes[u]["service_time"] +
-                self.G.edges[u, "Sink"]["time"]
-                for u in self.G.predecessors("Sink"))
+                self.G.nodes[u]["upper"]
+                + self.G.nodes[u]["service_time"]
+                + self.G.edges[u, "Sink"]["time"]
+                for u in self.G.predecessors("Sink")
+            )
 
     def _update_dummy_attributes(self):
         """Adds dummy attributes on nodes and edges if missing."""
@@ -954,8 +1032,7 @@ class VehicleRoutingProblem:
         for route in self._best_routes_as_graphs:
             node_list = shortest_path(route, "Source", "Sink")
             self._best_routes[route_id] = node_list
-            self._best_routes_vehicle_type[route_id] = route.graph[
-                "vehicle_type"]
+            self._best_routes_vehicle_type[route_id] = route.graph["vehicle_type"]
             route_id += 1
         # Merge with preassigned complete routes
         for route in self._preassignments:
@@ -965,8 +1042,7 @@ class VehicleRoutingProblem:
                 best_cost = 1e10
                 for k in range(self._vehicle_types):
                     # If different vehicles, the cheapest feasible one is accounted for
-                    cost = sum(
-                        self._H.edges[i, j]["cost"][k] for (i, j) in edges)
+                    cost = sum(self._H.edges[i, j]["cost"][k] for (i, j) in edges)
                     load = sum(self._H.nodes[i]["demand"] for i in route)
                     if cost < best_cost:
                         if self.load_capacity:

@@ -28,18 +28,22 @@ class MasterSolvePulp(MasterProblemBase):
         self.drop = {}  # dropping variable
         self.dummy = {}  # dummy variable
         self.dummy_bound = {}  # dummy variable for vehicle bound cost
+        self.makespan = {}  # maximum global span
         # constrs
         self.set_covering_constrs = {}
         self.vehicle_bound_constrs = {}
         self.drop_penalty_constrs = {}
+        self.makespan_constr = {}
         # Restricted master heuristic
         self.diving_heuristic = DivingHeuristic()
+        # Parameter when minimizing global span
+        self._n_columns = 1000
 
         self._formulate()
 
     def solve(self, relax, time_limit):
         self._solve(relax, time_limit)
-        logger.debug("master problem")
+        logger.debug("master problem relax %s" % relax)
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
 
@@ -47,11 +51,11 @@ class MasterSolvePulp(MasterProblemBase):
             raise Exception("problem " + str(pulp.LpStatus[self.prob.status]))
         if relax:
             for r in self.routes:
-                if pulp.value(self.y[r.graph["name"]]) > 0.5:
-                    logger.debug("route %s selected" % r.graph["name"])
+                val = pulp.value(self.y[r.graph["name"]])
+                if val > 0.1:
+                    logger.debug("route %s selected %s" % (r.graph["name"], val))
         duals = self.get_duals()
         logger.debug("duals : %s" % duals)
-
         return duals, self.prob.objective.value()
 
     def solve_and_dive(self, time_limit):
@@ -63,7 +67,10 @@ class MasterSolvePulp(MasterProblemBase):
     def update(self, new_route):
         """Add new column.
         """
-        self._add_route_selection_variable(new_route)
+        if self.minimize_global_span:
+            self._add_route_selection_variable_for_global_span(new_route)
+        else:
+            self._add_route_selection_variable(new_route)
 
     def get_duals(self, relax: pulp.LpProblem = None):
         """Gets the dual values of each constraint of the master problem.
@@ -97,6 +104,17 @@ class MasterSolvePulp(MasterProblemBase):
                 else:
                     duals["upper_bound_vehicles"][k] = relax.constraints[
                         "upper_bound_vehicles_%s" % k
+                    ].pi
+        # global span duals
+        if self.minimize_global_span:
+            for route in self.routes:
+                if not relax:
+                    duals["makespan_%s" % route.graph["name"]] = self.prob.constraints[
+                        "makespan_%s" % route.graph["name"]
+                    ].pi
+                else:
+                    duals["makespan_%s" % route.graph["name"]] = relax.constraints[
+                        "makespan_%s" % route.graph["name"]
                     ].pi
         return duals
 
@@ -159,6 +177,7 @@ class MasterSolvePulp(MasterProblemBase):
                 if "artificial_bound_" in var.name:
                     var.upBound = 0
                     var.lowBound = 0
+        self.prob.writeLP("master.lp")
         # Solve with appropriate solver
         if self.solver == "cbc":
             self.prob.solve(
@@ -199,10 +218,20 @@ class MasterSolvePulp(MasterProblemBase):
         if self.num_vehicles and not self.periodic:
             self._add_bound_vehicles()
 
+        if self.minimize_global_span:
+            self._add_maximum_makespan_constraints()
+
         # Add variables #
         # Route selection variables
-        for route in self.routes:
-            self._add_route_selection_variable(route)
+        if self.minimize_global_span:
+            for route in self.routes:
+                self._add_route_selection_variable_for_global_span(route)
+            for route in range(1, self._n_columns):
+                self.prob += self.makespan_constr[route]
+        else:
+            for route in self.routes:
+                self._add_route_selection_variable(route)
+
         # if dropping nodes is allowed
         if self.drop_penalty:
             self._add_drop_variables()
@@ -218,6 +247,9 @@ class MasterSolvePulp(MasterProblemBase):
 
         # Add dummy_vehicle variables
         self._add_vehicle_dummy_variables()
+
+        if self.minimize_global_span:
+            self._add_makespan_variable()
 
         # Set objective function
         self.prob.sense = pulp.LpMinimize
@@ -266,6 +298,27 @@ class MasterSolvePulp(MasterProblemBase):
             ),
         )
 
+    def _add_route_selection_variable_for_global_span(self, route):
+        self.y[route.graph["name"]] = pulp.LpVariable(
+            "y{}".format(route.graph["name"]),
+            lowBound=0,
+            upBound=1,
+            cat=pulp.LpInteger,
+            e=(
+                pulp.lpSum(
+                    self.set_covering_constrs[r]
+                    for r in route.nodes()
+                    if r not in ["Source", "Sink"]
+                )
+                + pulp.lpSum(
+                    self.vehicle_bound_constrs[k]
+                    for k in range(len(self.num_vehicles))
+                    if route.graph["vehicle_type"] == k
+                )
+                + route.graph["cost"] * self.makespan_constr[route.graph["name"]]
+            ),
+        )
+
     def _add_vehicle_dummy_variables(self):
         for key in range(len(self.num_vehicles)):
             self.dummy_bound[key] = pulp.LpVariable(
@@ -311,5 +364,29 @@ class MasterSolvePulp(MasterProblemBase):
         for k in range(len(self.num_vehicles)):
             self.vehicle_bound_constrs[k] = pulp.LpConstraintVar(
                 "upper_bound_vehicles_%s" % k, pulp.LpConstraintLE, self.num_vehicles[k]
+            )
+
+    def _add_makespan_variable(self, new_route=None):
+        """Defines maximum makespan of each route"""
+        if new_route:
+            constraints = [self.makespan_constr[new_route.graph["name"]]]
+            cost = 0
+        else:
+            # constraints = [self.makespan_constr[r.graph["name"]] for r in self.routes]
+            constraints = [self.makespan_constr[x] for x in range(1, 75)]
+            cost = 1
+        self.makespan = pulp.LpVariable(
+            "makespan",
+            lowBound=0,
+            upBound=None,
+            cat=pulp.LpContinuous,
+            e=(cost * self.objective - pulp.lpSum(constraints)),
+        )
+
+    def _add_maximum_makespan_constraints(self):
+        """Defines maximum makespan"""
+        for route in range(1, self._n_columns):
+            self.makespan_constr[route] = pulp.LpConstraintVar(
+                "makespan_%s" % route, pulp.LpConstraintLE, 0,
             )
 
