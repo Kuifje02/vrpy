@@ -89,4 +89,4 @@ For more information and to run more instances, see the [benchmarks](benchmarks/
 
 ## Bugs
 
-Please report any bugs that you find [here](https://github.com/Kuifje02/vrpy/issues). Or, even better, fork the repository on [GitHub](https://github.com/Kuifje02/vrpy) and create a pull request. Please read the guidelines (CONTRIBUTING.md) before contributing. Any contributions are welcome.
+Please report any bugs that you find [here](https://github.com/Kuifje02/vrpy/issues). Or, even better, fork the repository on [GitHub](https://github.com/Kuifje02/vrpy) and create a pull request. Please read the [Community Guidelines](https://github.com/Kuifje02/vrpy/blob/dev/CONTRIBUTING.md) before contributing. Any contributions are welcome.
