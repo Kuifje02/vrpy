@@ -7,7 +7,6 @@ from vrpy.preprocessing import get_num_stops_upper_bound
 
 
 class TestsToy:
-
     def setup(self):
         """
         Creates a toy graph.
@@ -58,10 +57,7 @@ class TestsToy:
         """Tests column generation procedure on toy graph
            with stop, capacity and duration constraints
         """
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     load_capacity=10,
-                                     duration=62)
+        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
         prob.solve(exact=False)
         assert prob.best_value == 85
         assert set(prob.best_routes_duration.values()) == {41, 62}
@@ -71,11 +67,7 @@ class TestsToy:
         """Tests column generation procedure on toy graph
            with stop, capacity and time_window constraints
         """
-        prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-            time_windows=True,
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
         prob.solve()
         assert prob.best_value == 80
         assert prob.departure_time[1]["Source"] == 0
@@ -102,31 +94,21 @@ class TestsToy:
     def test_LP_stops_capacity_duration(self):
         """Tests column generation procedure on toy graph"""
         prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-            load_capacity=10,
-            duration=62,
+            self.G, num_stops=3, load_capacity=10, duration=62,
         )
         prob.solve(cspy=False)
         assert prob.best_value == 85
 
     def test_LP_stops_time_windows(self):
         """Tests column generation procedure on toy graph"""
-        prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-            time_windows=True,
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3, time_windows=True,)
         prob.solve(cspy=False)
         assert prob.best_value == 80
 
     def test_LP_stops_elementarity(self):
         """Tests column generation procedure on toy graph"""
         self.G.add_edge(2, 1, cost=2)
-        prob = VehicleRoutingProblem(
-            self.G,
-            num_stops=3,
-        )
+        prob = VehicleRoutingProblem(self.G, num_stops=3,)
         prob.solve(cspy=False)
         assert prob.best_value == 67
 
@@ -135,11 +117,9 @@ class TestsToy:
     #########
 
     def test_all(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     time_windows=True,
-                                     duration=63,
-                                     load_capacity=10)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, time_windows=True, duration=63, load_capacity=10
+        )
         prob.solve(cspy=False)
         lp_best = prob.best_value
         prob.solve(cspy=True)
@@ -164,9 +144,7 @@ class TestsToy:
 
     def test_pricing_strategies(self):
         sol = []
-        for strategy in [
-                "Exact", "BestPaths", "BestEdges1", "BestEdges2", "Hyper"
-        ]:
+        for strategy in ["Exact", "BestPaths", "BestEdges1", "BestEdges2", "Hyper"]:
             prob = VehicleRoutingProblem(self.G, num_stops=4)
             prob.solve(pricing_strategy=strategy)
             sol.append(prob.best_value)
@@ -211,11 +189,7 @@ class TestsToy:
         self.G.nodes[5]["demand"] = -10
         self.G.add_edge(2, 5, cost=10)
         self.G.remove_node(1)
-        prob = VehicleRoutingProblem(
-            self.G,
-            load_capacity=15,
-            pickup_delivery=True,
-        )
+        prob = VehicleRoutingProblem(self.G, load_capacity=15, pickup_delivery=True,)
         prob.solve(pricing_strategy="Exact", cspy=False)
         assert prob.best_value == 65
 
@@ -223,9 +197,7 @@ class TestsToy:
         self.G.nodes[1]["collect"] = 12
         self.G.nodes[4]["collect"] = 1
         prob = VehicleRoutingProblem(
-            self.G,
-            load_capacity=15,
-            distribution_collection=True,
+            self.G, load_capacity=15, distribution_collection=True,
         )
         prob.solve(cspy=False)
         lp_sol = prob.best_value
@@ -241,10 +213,9 @@ class TestsToy:
         assert set(prob.best_routes_cost.values()) == {30 + 100, 40 + 100}
 
     def test_drop_nodes(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     num_vehicles=1,
-                                     drop_penalty=100)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, num_vehicles=1, drop_penalty=100
+        )
         prob.solve()
         assert prob.best_value == 240
         assert prob.best_routes == {1: ["Source", 1, 2, 3, "Sink"]}
@@ -280,7 +251,7 @@ class TestsToy:
         start = time()
         prob.solve(cspy=False, time_limit=0.01)
         comp_time = time() - start
-        assert comp_time < 0.01 + 0.1  # time_limit + time for mip
+        assert comp_time < 0.01 + 0.15  # time_limit + time for mip
         assert prob.best_value == 70
 
     def test_dive(self):

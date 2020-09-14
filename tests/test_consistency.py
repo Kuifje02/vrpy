@@ -3,7 +3,7 @@ import pytest
 import sys
 
 sys.path.append("../")
-from vrpy.main import VehicleRoutingProblem
+from vrpy.vrp import VehicleRoutingProblem
 
 #####################
 # consistency tests #

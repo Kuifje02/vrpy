@@ -5,12 +5,12 @@ from networkx import (
     DiGraph,
     compose,
 )
-from numpy import matrix
+from numpy import array
 import sys
 
 sys.path.append("../vrpy/")
 from vrpy import VehicleRoutingProblem
-from examples.ortools.data import (
+from examples.data import (
     DISTANCES,
     TRAVEL_TIMES,
     TIME_WINDOWS_LOWER,
@@ -24,10 +24,10 @@ from examples.ortools.data import (
 class TestsOrTools:
     def setup(self):
         # Transform distance matrix to DiGraph
-        A = matrix(DISTANCES, dtype=[("cost", int)])
+        A = array(DISTANCES, dtype=[("cost", int)])
         G_d = from_numpy_matrix(A, create_using=DiGraph())
         # Transform time matrix to DiGraph
-        A = matrix(TRAVEL_TIMES, dtype=[("time", int)])
+        A = array(TRAVEL_TIMES, dtype=[("time", int)])
         G_t = from_numpy_matrix(A, create_using=DiGraph())
         # Merge
         G = compose(G_d, G_t)
