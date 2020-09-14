@@ -87,6 +87,10 @@ Note that running the benchmarks requires [pandas](https://pypi.org/project/pand
 
 For more information and to run more instances, see the [benchmarks](benchmarks/README.md).
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.txt](https://github.com/Kuifje02/vrpy/blob/dev/LICENSE.txt) file for details.
+
 ## Bugs
 
 Please report any bugs that you find [here](https://github.com/Kuifje02/vrpy/issues). Or, even better, fork the repository on [GitHub](https://github.com/Kuifje02/vrpy) and create a pull request. Please read the [Community Guidelines](https://github.com/Kuifje02/vrpy/blob/dev/CONTRIBUTING.md) before contributing. Any contributions are welcome.
