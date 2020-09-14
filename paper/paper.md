@@ -116,9 +116,9 @@ For more advanced users, there are different pricing strategies (approaches for 
 Additionally, we have an experimental feature that uses Hyper-Heuristics for the dynamic selection of
 pricing strategies.
 The approach ranks the best pricing strategies as the algorithm is running and chooses
-according to selection functions based on [@sabar2015math;@ferreira2017multi]. The selection criteria has been modified to include a combination of runtime, objective improvement, and currently active columns in the restricted master.
+according to selection functions based on [@sabar2015math;@ferreira2017multi]. The selection criteria has been modified to include a combination of runtime, objective improvement, and currently active columns in the restricted master problem.
 Adaptive parameter settings found in [@drake2012improved] is used to balance exploration and exploitation
-under stagnation. The main advantage is that selection is done as the programme runs, and is therefore more
+under stagnation. The main advantage is that selection is done as the program runs, and is therefore more
 flexible compared to a predefined pricing strategy.
 
 # Future Work
