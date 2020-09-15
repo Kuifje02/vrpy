@@ -3,7 +3,7 @@ from numpy import array
 from data import DISTANCES, PICKUPS_DELIVERIES
 import sys
 
-sys.path.append("../../")
+sys.path.append("../")
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph
