@@ -14,7 +14,7 @@ import pulp
 logger = logging.getLogger(__name__)
 
 
-class DivingHeuristic:
+class _DivingHeuristic:
     """Implements diving algorithm with Limited Discrepancy Search
     Parameters as suggested by the authors. This only fixes one column.
     `Sadykov et al. (2019)`_.
@@ -26,7 +26,7 @@ class DivingHeuristic:
         self.max_depth = max_depth
         self.max_discrepancy = max_discrepancy
         self.depth = 0
-        self.current_node = LPNode()
+        self.current_node = _LPNode()
         self.tabu_list = []
 
     def run_dive(self, prob):
@@ -35,39 +35,40 @@ class DivingHeuristic:
         # Init current_node
         if self.current_node.parent is None:
             self.current_node.parent = relax
-        lp_node = LPNode(self.current_node)
+        lp_node = _LPNode(self.current_node)
         constrs = {}
-        while self.depth <= self.max_depth and len(
-                tabu_list) < self.max_discrepancy:
-            non_integer_vars = [var for var in relax.variables()
-                        if abs(var.varValue - round(var.varValue)) != 0]
+        while self.depth <= self.max_depth and len(tabu_list) < self.max_discrepancy:
+            non_integer_vars = [
+                var
+                for var in relax.variables()
+                if abs(var.varValue - round(var.varValue)) != 0
+            ]
             # All non-integer variables not already fixed in this or any
             # iteration of the diving heuristic
             vars_to_fix = [
-                var for var in non_integer_vars
-                if var.name not in self.current_node.tabu_list and
-                var.name not in tabu_list
+                var
+                for var in non_integer_vars
+                if var.name not in self.current_node.tabu_list
+                and var.name not in tabu_list
             ]
             if vars_to_fix:
                 # If non-integer variables not already fixed and
                 # max_discrepancy not violated
 
                 var_to_fix = min(
-                    vars_to_fix,
-                    key=lambda x: abs(x.varValue - round(x.varValue)))
+                    vars_to_fix, key=lambda x: abs(x.varValue - round(x.varValue))
+                )
                 value_to_fix = 1
                 value_previous = var_to_fix.varValue
 
                 name_le = "fix_{}_LE".format(var_to_fix.name)
                 name_ge = "fix_{}_GE".format(var_to_fix.name)
-                constrs[name_le] = pulp.LpConstraint(var_to_fix,
-                                                     pulp.LpConstraintLE,
-                                                     name=name_le,
-                                                     rhs=value_to_fix)
-                constrs[name_ge] = pulp.LpConstraint(var_to_fix,
-                                                     pulp.LpConstraintGE,
-                                                     name=name_ge,
-                                                     rhs=value_to_fix)
+                constrs[name_le] = pulp.LpConstraint(
+                    var_to_fix, pulp.LpConstraintLE, name=name_le, rhs=value_to_fix
+                )
+                constrs[name_ge] = pulp.LpConstraint(
+                    var_to_fix, pulp.LpConstraintGE, name=name_ge, rhs=value_to_fix
+                )
 
                 relax += constrs[name_le]  # add <= constraint
                 relax += constrs[name_ge]  # add >= constraint
@@ -82,16 +83,16 @@ class DivingHeuristic:
                 else:
                     # Backtrack
                     self.current_node = self.current_node.parent
-                logger.info("fixed %s with previous value %s", var_to_fix.name,
-                            value_previous)
+                logger.info(
+                    "fixed %s with previous value %s", var_to_fix.name, value_previous
+                )
 
             else:
                 break
         self.current_node.tabu_list.extend(tabu_list)  # Update global tabu list
 
 
-class LPNode:
-
+class _LPNode:
     def __init__(self, parent=None, tabu_list=[]):
         self.parent = parent
         self.tabu_list = tabu_list

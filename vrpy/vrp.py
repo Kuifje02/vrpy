@@ -5,13 +5,13 @@ from typing import List, Union
 
 from networkx import DiGraph, shortest_path  # draw_networkx
 
-from vrpy.greedy import Greedy
-from vrpy.master_solve_pulp import MasterSolvePulp
-from vrpy.subproblem_lp import SubProblemLP
-from vrpy.subproblem_cspy import SubProblemCSPY
-from vrpy.subproblem_greedy import SubProblemGreedy
-from vrpy.clarke_wright import ClarkeWright, RoundTrip
-from vrpy.schedule import Schedule
+from vrpy.greedy import _Greedy
+from vrpy.master_solve_pulp import _MasterSolvePulp
+from vrpy.subproblem_lp import _SubProblemLP
+from vrpy.subproblem_cspy import _SubProblemCSPY
+from vrpy.subproblem_greedy import _SubProblemGreedy
+from vrpy.clarke_wright import _ClarkeWright, _RoundTrip
+from vrpy.schedule import _Schedule
 from vrpy.checks import (
     check_arguments,
     check_consistency,
@@ -20,7 +20,7 @@ from vrpy.checks import (
     check_vrp,
 )
 from vrpy.preprocessing import get_num_stops_upper_bound
-from vrpy.hyper_heuristic import HyperHeuristic
+from vrpy.hyper_heuristic import _HyperHeuristic
 from csv import DictWriter
 
 logger = logging.getLogger(__name__)
@@ -105,8 +105,8 @@ class VehicleRoutingProblem:
         self.minimize_global_span = minimize_global_span
 
         # Solving parameters
-        self.masterproblem: MasterSolvePulp = None
-        self.hyper_heuristic: HyperHeuristic = None
+        self.masterproblem: _MasterSolvePulp = None
+        self.hyper_heuristic: _HyperHeuristic = None
         self.routes: List = []
         self.comp_time = None
 
@@ -138,7 +138,7 @@ class VehicleRoutingProblem:
         self._best_value = None
         self._best_routes = []
         self._best_routes_as_graphs = []
-        self._schedule: Schedule = None
+        self._schedule: _Schedule = None
         # Check if given inputs are consistent
         check_vrp(self.G)
 
@@ -219,7 +219,7 @@ class VehicleRoutingProblem:
         self._greedy = greedy
         self._max_iter = max_iter
         if self._pricing_strategy == "Hyper":
-            self.hyper_heuristic = HyperHeuristic()
+            self.hyper_heuristic = _HyperHeuristic()
 
         self._start_time = time()
         if preassignments:
@@ -446,7 +446,7 @@ class VehicleRoutingProblem:
         # Initial routes are converted to digraphs
         self._convert_initial_routes_to_digraphs()
         # Init master problem
-        self.masterproblem = MasterSolvePulp(
+        self.masterproblem = _MasterSolvePulp(
             self.G,
             self._routes_with_node,
             self._routes,
@@ -739,7 +739,7 @@ class VehicleRoutingProblem:
         """Instanciates the subproblem."""
 
         if greedy:
-            subproblem = SubProblemGreedy(
+            subproblem = _SubProblemGreedy(
                 self.G,
                 duals,
                 self._routes_with_node,
@@ -757,7 +757,7 @@ class VehicleRoutingProblem:
 
         if self._cspy:
             # With cspy
-            subproblem = SubProblemCSPY(
+            subproblem = _SubProblemCSPY(
                 self.G,
                 duals,
                 self._routes_with_node,
@@ -776,7 +776,7 @@ class VehicleRoutingProblem:
             )
         else:
             # As LP
-            subproblem = SubProblemLP(
+            subproblem = _SubProblemLP(
                 self.G,
                 duals,
                 self._routes_with_node,
@@ -817,7 +817,7 @@ class VehicleRoutingProblem:
             for alpha in [x / 10 for x in range(1, 20)]:
                 # for beta in  [x / 10 for x in range(20)]:
                 # for gamma in  [x / 10 for x in range(20)]:
-                alg = ClarkeWright(
+                alg = _ClarkeWright(
                     self.G,
                     self.load_capacity,
                     self.duration,
@@ -837,7 +837,7 @@ class VehicleRoutingProblem:
             )
 
             # Run greedy algorithm if possible
-            alg = Greedy(self.G, self.load_capacity, self.num_stops, self.duration)
+            alg = _Greedy(self.G, self.load_capacity, self.num_stops, self.duration)
             alg.run()
             logger.info(
                 "Greedy solution found with value %s and %s vehicles"
@@ -854,7 +854,7 @@ class VehicleRoutingProblem:
                     )
         # Otherwise compute round trips
         else:
-            alg = RoundTrip(self.G)
+            alg = _RoundTrip(self.G)
             alg.run()
             self._initial_routes = alg.round_trips
 
@@ -1090,7 +1090,7 @@ class VehicleRoutingProblem:
         self._best_routes_as_node_lists()
         # Schedule routes over time span if Periodic CVRP
         if self.periodic:
-            schedule = Schedule(
+            schedule = _Schedule(
                 self.G,
                 self.periodic,
                 self.best_routes,

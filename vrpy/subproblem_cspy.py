@@ -6,12 +6,12 @@ from networkx import DiGraph, add_path
 
 from cspy import BiDirectional
 
-from vrpy.subproblem import SubProblemBase
+from vrpy.subproblem import _SubProblemBase
 
 logger = logging.getLogger(__name__)
 
 
-class SubProblemCSPY(SubProblemBase):
+class _SubProblemCSPY(_SubProblemBase):
     """
     Solves the sub problem for the column generation procedure with cspy;
     attemps to find routes with negative reduced cost.
@@ -22,7 +22,7 @@ class SubProblemCSPY(SubProblemBase):
     def __init__(self, *args, exact):
         """Initializes resources."""
         # Pass arguments to base
-        super(SubProblemCSPY, self).__init__(*args)
+        super(_SubProblemCSPY, self).__init__(*args)
         self.exact = exact
         # Resource names
         self.resources = [

@@ -2,12 +2,12 @@ from networkx import DiGraph, negative_edge_cycle, shortest_path
 import pulp
 import logging
 
-from vrpy.subproblem import SubProblemBase
+from vrpy.subproblem import _SubProblemBase
 
 logger = logging.getLogger(__name__)
 
 
-class SubProblemLP(SubProblemBase):
+class _SubProblemLP(_SubProblemBase):
     """
     Solves the sub problem for the column generation procedure ; attemps
     to find routes with negative reduced cost.
@@ -16,7 +16,7 @@ class SubProblemLP(SubProblemBase):
     """
 
     def __init__(self, *args, solver):
-        super(SubProblemLP, self).__init__(*args)
+        super(_SubProblemLP, self).__init__(*args)
         # create problem
         self.prob = pulp.LpProblem("SubProblem", pulp.LpMinimize)
         # flow variables

@@ -1,4 +1,4 @@
-class MasterProblemBase:
+class _MasterProblemBase:
     """Base class for the master problems.
 
     Args:

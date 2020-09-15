@@ -1,7 +1,7 @@
 from networkx import DiGraph, shortest_path
 
-from vrpy.clarke_wright import ClarkeWright, RoundTrip
-from vrpy.greedy import Greedy
+from vrpy.clarke_wright import _ClarkeWright, _RoundTrip
+from vrpy.greedy import _Greedy
 
 
 class TestsInitialSolution:
@@ -11,6 +11,7 @@ class TestsInitialSolution:
         - Clarke & Wright;
         - Greedy.
     """
+
     def setup(self):
         self.G = DiGraph()
         self.G.add_edge("Source", 1, cost=10, time=1)
@@ -24,21 +25,20 @@ class TestsInitialSolution:
         self.G.nodes[1]["demand"] = 1
         self.G.nodes[2]["demand"] = 2
         self.G.nodes[3]["demand"] = 3
-        self.G.nodes["Sink"]["demand"] = self.G.nodes["Sink"][
-            "service_time"] = 0
+        self.G.nodes["Sink"]["demand"] = self.G.nodes["Sink"]["service_time"] = 0
         self.G.nodes[1]["service_time"] = 1
         self.G.nodes[2]["service_time"] = 1
         self.G.nodes[3]["service_time"] = 0
 
-        self.alg = ClarkeWright(self.G, load_capacity=4)
-        self.greedy = Greedy(self.G, load_capacity=4)
+        self.alg = _ClarkeWright(self.G, load_capacity=4)
+        self.greedy = _Greedy(self.G, load_capacity=4)
 
     ##############
     # Round Trip #
     ##############
 
     def test_round_trip(self):
-        round_trips = RoundTrip(self.G)
+        round_trips = _RoundTrip(self.G)
         round_trips.run()
         assert len(round_trips.round_trips) == 3
 

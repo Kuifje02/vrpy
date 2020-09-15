@@ -4,13 +4,13 @@ from typing import Optional
 from networkx import shortest_path
 import pulp
 
-from vrpy.masterproblem import MasterProblemBase
-from vrpy.restricted_master_heuristics import DivingHeuristic
+from vrpy.masterproblem import _MasterProblemBase
+from vrpy.restricted_master_heuristics import _DivingHeuristic
 
 logger = logging.getLogger(__name__)
 
 
-class MasterSolvePulp(MasterProblemBase):
+class _MasterSolvePulp(_MasterProblemBase):
     """
     Solves the master problem for the column generation procedure.
 
@@ -18,7 +18,7 @@ class MasterSolvePulp(MasterProblemBase):
     """
 
     def __init__(self, *args):
-        super(MasterSolvePulp, self).__init__(*args)
+        super(_MasterSolvePulp, self).__init__(*args)
         # create problem
         self.prob = pulp.LpProblem("MasterProblem", pulp.LpMinimize)
         # objective
@@ -35,7 +35,7 @@ class MasterSolvePulp(MasterProblemBase):
         self.drop_penalty_constrs = {}
         self.makespan_constr = {}
         # Restricted master heuristic
-        self.diving_heuristic = DivingHeuristic()
+        self.diving_heuristic = _DivingHeuristic()
         # Parameter when minimizing global span
         self._n_columns = 1000
 

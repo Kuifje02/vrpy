@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Greedy:
+class _Greedy:
     """
     Greedy algorithm. Iteratively adds closest feasible node to current path.
 
@@ -69,8 +69,7 @@ class Greedy:
         # Store the successors cost that meet constraints
         for v in self.G.successors(self._last_node):
             if self._constraints_met(v) and v in self._unprocessed_nodes:
-                out_going_costs[v] = self.G.edges[self._last_node,
-                                                  v]["cost"]
+                out_going_costs[v] = self.G.edges[self._last_node, v]["cost"]
         if out_going_costs == {}:
             logger.debug("path cannot be extended")
             self._new_node = "Sink"
@@ -98,8 +97,10 @@ class Greedy:
             self._unprocessed_nodes.remove(self._new_node)
         self._stops += 1
         self._best_value += self.G.edges[last_node, self._new_node]["cost"]
-        self._time += (self.G.edges[last_node, self._new_node]["time"] +
-                       self.G.nodes[self._new_node]["service_time"])
+        self._time += (
+            self.G.edges[last_node, self._new_node]["time"]
+            + self.G.nodes[self._new_node]["service_time"]
+        )
         if self._stops == self.num_stops and self._new_node != "Sink":
             # End path
             self._current_path.append("Sink")
@@ -127,8 +128,13 @@ class Greedy:
         """Checks duration constraint."""
         u = self._current_path[-1]
         return_time = self.G.edges[v, "Sink"]["time"] if v != "Sink" else 0
-        return (self._time + self.G.nodes[v]["service_time"] +
-                self.G.edges[u, v]["time"] + return_time <= self.duration)
+        return (
+            self._time
+            + self.G.nodes[v]["service_time"]
+            + self.G.edges[u, v]["time"]
+            + return_time
+            <= self.duration
+        )
 
     def _format_cost(self):
         """If list of costs is given, first item of list is considered."""
