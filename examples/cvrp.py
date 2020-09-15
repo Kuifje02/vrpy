@@ -19,7 +19,7 @@ G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 if __name__ == "__main__":
 
     prob = VehicleRoutingProblem(G, load_capacity=15)
-    prob.solve(pricing_strategy="Hyper")
+    prob.solve()
     print(prob.best_value)
     print(prob.best_routes)
     assert prob.best_value == 6208
