@@ -67,9 +67,9 @@ class VehicleRoutingProblem:
             Defaults to None.
         mixed_fleet (bool, optional):
             True if heterogeneous fleet.
-            Defaluts to False.
-        minimize_global_span (bool, optaional):
-            True if global span (max{cost}) is minimized (instad of total cost (sum(cost)))
+            Defaults to False.
+        minimize_global_span (bool, optional):
+            True if global span is minimized (instead of total cost).
             Defaults to False.
     """
 
@@ -481,9 +481,6 @@ class VehicleRoutingProblem:
     def _column_generation(self):
         while self._more_routes:
             # Generate good columns
-            # if self.minimize_global_span:
-            #    self._find_columns_for_global_span()
-            # else:
             self._find_columns()
             # Stop if time limit is passed
             if (

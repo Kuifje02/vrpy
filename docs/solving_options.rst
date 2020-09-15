@@ -85,6 +85,7 @@ This may result in a slow convergence. To speed up the resolution, there are two
 	- `BestEdges1`,
 	- `BestEdges2`,
 	- `BestPaths`,
+	- `Hyper`
 	
 
 .. code-block:: python
@@ -97,6 +98,10 @@ and :math:`\pi_{max}` is the largest dual value returned by the current restrict
 a route is found. `BestEdges2` is another sparsification strategy, described for example in :cite:`santini2018branch`. The :math:`\beta` edges with highest reduced cost are discarded, where :math:`\beta` is a parameter that is increased iteratively.
 As for `BestPaths`, the idea is to look for routes in the subgraph induced by the :math:`k` shortest paths from the Source to the Sink (without any resource constraints),
 where :math:`k` is a parameter that is increased iteratively.
+
+Additionally, we have an experimental feature that uses Hyper-Heuristics for the dynamic selection of pricing strategies. 
+The approach ranks the best pricing strategies as the algorithm is running and chooses according to selection functions based on :cite:`sabar2015math,ferreira2017multi`. 
+The selection criteria has been modified to include a combination of runtime, objective improvement, and currently active columns in the restricted master. Adaptive parameter settings found in :cite:`drake2012improved` is used to balance exploration and exploitation under stagnation. The main advantage is that selection is done as the programme runs, and is therefore more flexible compared to a predefined pricing strategy.
 
 For each of these heuristic pricing strategies, if a route with negative reduced cost is found, it is fed to the master problem. Otherwise,
 the sub problem is solved exactly. 

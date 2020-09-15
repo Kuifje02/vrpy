@@ -6,7 +6,7 @@ API
 vrpy.VehicleRoutingProblem
 --------------------------
 
-.. automodule:: vrpy.main
+.. automodule:: vrpy.vrp
    :members:
    :inherited-members:
    
