@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Schedule:
+class _Schedule:
     """
     Scheduling algorithm for the Periodic CVRP.
 
@@ -106,12 +106,14 @@ class Schedule:
 
     def _solve(self, time_limit):
         if self.solver == "cbc":
-            self.prob.solve(pulp.PULP_CBC_CMD(maxSeconds=time_limit))
+            self.prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=time_limit))
         elif self.solver == "cplex":
-            self.prob.solve(pulp.CPLEX_CMD(msg=0, timelimit=time_limit))
+            self.prob.solve(pulp.CPLEX_CMD(msg=False, timelimit=time_limit))
         elif self.solver == "gurobi":
-            gurobi_options = [("TimeLimit", time_limit)]
-            self.prob.solve(pulp.GUROBI_CMD(options=gurobi_options))
+            gurobi_options = []
+            if time_limit is not None:
+                gurobi_options.append(("TimeLimit", time_limit,))
+            self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     @property
     def routes_per_day(self):

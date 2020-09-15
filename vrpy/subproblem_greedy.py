@@ -3,13 +3,13 @@ from networkx import DiGraph, add_path
 
 # from os import sys
 # sys.path.append("../")
-from vrpy.subproblem import SubProblemBase
+from .subproblem import _SubProblemBase
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class SubProblemGreedy(SubProblemBase):
+class _SubProblemGreedy(_SubProblemBase):
     """
     Solves the sub problem for the column generation procedure with
     a greedy randomised heuristic.
@@ -20,7 +20,7 @@ class SubProblemGreedy(SubProblemBase):
 
     def __init__(self, *args):
         # Pass arguments to base
-        super(SubProblemGreedy, self).__init__(*args)
+        super(_SubProblemGreedy, self).__init__(*args)
 
     def _initialize_run(self):
         self._load = 0
@@ -32,7 +32,7 @@ class SubProblemGreedy(SubProblemBase):
         """The forward and backwards search are run."""
         more_routes = False
         # The forward search is run n_runs times
-        for run in range(n_runs):
+        for _ in range(n_runs):
             self._initialize_run()
             self.run_forward()
             if self._new_node and self._weight < 0:
@@ -40,7 +40,7 @@ class SubProblemGreedy(SubProblemBase):
                 more_routes = True
                 self._add_new_route()
         # The backwards search is run n_runs times
-        for run in range(n_runs):
+        for _ in range(n_runs):
             self._initialize_run()
             self.run_backwards()
             if self._new_node and self._weight < 0:
@@ -117,41 +117,38 @@ class SubProblemGreedy(SubProblemBase):
 
     def _update(self, forward):
         """Updates path, path load, path time, path weight."""
-        extend = True
-        if self._new_node:
-            self._stops += 1
-            self._load += self.sub_G.nodes[self._new_node]["demand"]
-            if forward:
-                self._weight += self.sub_G.edges[self._last_node, self._new_node][
-                    "weight"
-                ]
-                self._time += self.sub_G.edges[self._last_node, self._new_node]["time"]
-                self._current_path.append(self._new_node)
-                if self._stops == self.num_stops and self._new_node != "Sink":
-                    # Finish path
-                    if self._new_node in self.sub_G.predecessors("Sink"):
-                        self._current_path.append("Sink")
-                    else:
-                        self._new_node = False
-                    return False
-                elif self._new_node == "Sink":
-                    return False
-            else:
-                self._weight += self.sub_G.edges[self._new_node, self._last_node][
-                    "weight"
-                ]
-                self._time += self.sub_G.edges[self._new_node, self._last_node]["time"]
-                self._current_path.insert(0, self._new_node)
-                if self._stops == self.num_stops and self._new_node != "Source":
-                    # Finish path
-                    if self._new_node in self.sub_G.successors("Sink"):
-                        self._current_path.insert(0, "Source")
-                    else:
-                        self._new_node = False
-                    return False
-                elif self._new_node == "Source":
-                    return False
-            return extend
+        if not self._new_node:
+            return
+
+        self._stops += 1
+        self._load += self.sub_G.nodes[self._new_node]["demand"]
+        if forward:
+            self._weight += self.sub_G.edges[self._last_node, self._new_node]["weight"]
+            self._time += self.sub_G.edges[self._last_node, self._new_node]["time"]
+            self._current_path.append(self._new_node)
+            if self._stops == self.num_stops and self._new_node != "Sink":
+                # Finish path
+                if self._new_node in self.sub_G.predecessors("Sink"):
+                    self._current_path.append("Sink")
+                else:
+                    self._new_node = False
+                return False
+            elif self._new_node == "Sink":
+                return False
+        else:
+            self._weight += self.sub_G.edges[self._new_node, self._last_node]["weight"]
+            self._time += self.sub_G.edges[self._new_node, self._last_node]["time"]
+            self._current_path.insert(0, self._new_node)
+            if self._stops == self.num_stops and self._new_node != "Source":
+                # Finish path
+                if self._new_node in self.sub_G.successors("Sink"):
+                    self._current_path.insert(0, "Source")
+                else:
+                    self._new_node = False
+                return False
+            elif self._new_node == "Source":
+                return False
+        return True
 
     def _add_new_route(self):
         """Create new route as DiGraph and add to pool of columns"""

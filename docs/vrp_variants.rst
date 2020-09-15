@@ -138,14 +138,17 @@ Periodic CVRP (PCVRP)
 In the periodic CVRP, the planning period is extended over a time horizon, and customers can be serviced more than once. 
 The demand is considered constant over time, and the frequencies (the number of visits) of each customer are known. 
 
-For each node, the ``frequency`` attribute (type :class:`int`) is set, and the boolean parameter ``periodic`` is set to ``True.`` All nodes that
-have no frequency are visited exactly once. 
+For each node, the ``frequency`` attribute (type :class:`int`) is set, and the parameter ``periodic`` is set to the value of the considered time span (the planning period).
+All nodes that have no frequency are visited exactly once. 
 
 .. code-block:: python
 
 	>>> G.nodes[1]["frequency"] = 2
-	>>> prob.periodic = True
+	>>> prob.periodic = 2
 	>>> prob.solve()
+	
+A planning of the routes can then be queried by calling ``prob.schedule,`` which returns a dictionary with keys day numbers and values the list of
+route numbers scheduled this day. 
 	
 .. note:: 
 

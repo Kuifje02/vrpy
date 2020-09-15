@@ -26,8 +26,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            cd ~/vrpy/tests/
-            pytest unittests --cov
+            python3 -m pytest tests/ --cov
             codecov
             bash <(curl -s https://codecov.io/bash)
       - store_artifacts:
@@ -51,8 +50,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            cd ~/vrpy/tests/
-            pytest unittests
+            python3 -m pytest tests/
 
   "python-3.6":
     docker:
@@ -71,8 +69,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            cd ~/vrpy/tests/
-            pytest unittests
+            python3 -m pytest tests/
 
 workflows:
   version: 2

@@ -1,7 +1,7 @@
 Using `VRPy`
 ============
 
-In order to use the `VRPy` package, first, one has to create a directed graph which represents the underlying network.
+In order to use the VRPy package, first, one has to create a directed graph which represents the underlying network.
 
 To do so, we make use of the well-known `NetworkX` package, with the following input requirements:
 

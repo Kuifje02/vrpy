@@ -1,17 +1,17 @@
-from numpy import array, zeros
 import logging
-import sys
+from math import floor
+
+from numpy import array, zeros
 from networkx import DiGraph, add_path
 
-# sys.path.append("../../cspy")
+from cspy import BiDirectional
 
-from cspy import BiDirectional, GreedyElim  # Tabu
-from vrpy.subproblem import SubProblemBase
+from vrpy.subproblem import _SubProblemBase
 
 logger = logging.getLogger(__name__)
 
 
-class SubProblemCSPY(SubProblemBase):
+class _SubProblemCSPY(_SubProblemBase):
     """
     Solves the sub problem for the column generation procedure with cspy;
     attemps to find routes with negative reduced cost.
@@ -22,9 +22,9 @@ class SubProblemCSPY(SubProblemBase):
     def __init__(self, *args, exact):
         """Initializes resources."""
         # Pass arguments to base
-        super(SubProblemCSPY, self).__init__(*args)
+        super(_SubProblemCSPY, self).__init__(*args)
+        self.exact = exact
         # Resource names
-        self.alg = None
         self.resources = [
             "stops/mono",
             "load",
@@ -33,7 +33,6 @@ class SubProblemCSPY(SubProblemBase):
             "collect",
             "deliver",
         ]
-        self.exact = exact
         # Set number of resources as attribute of graph
         self.sub_G.graph["n_res"] = len(self.resources)
         # Default lower and upper bounds
@@ -41,8 +40,8 @@ class SubProblemCSPY(SubProblemBase):
         # Add upper bounds for mono, stops, load and time, and time windows
         total_demand = sum([self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
         self.max_res = [
-            len(self.sub_G.nodes()),  # stop/mono
-            total_demand,  # load
+            floor(len(self.sub_G.nodes()) / 2),  # stop/mono
+            floor(total_demand / 2),  # load
             sum(
                 [self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()]
             ),  # time
@@ -80,35 +79,39 @@ class SubProblemCSPY(SubProblemBase):
 
         while True:
             if self.exact:
-                logger.debug("solving with bidirectional")
-                self.alg = BiDirectional(
+                alg = BiDirectional(
                     self.sub_G,
                     self.max_res,
                     self.min_res,
                     direction="both",
                     method="generated",
+                    time_limit=time_limit,
                     REF_forward=self.get_REF("forward"),
                     REF_backward=self.get_REF("backward"),
                     REF_join=self.get_REF("join"),
                 )
             else:
-                logger.debug("solving with greedyelim")
-                self.alg = GreedyElim(
+                alg = BiDirectional(
                     self.sub_G,
                     self.max_res,
                     self.min_res,
-                    REF=self.get_REF("forward"),
-                    max_depth=40,
+                    direction="both",
+                    method="generated",
+                    time_limit=time_limit,
+                    threshold=-1,
+                    REF_forward=self.get_REF("forward"),
+                    REF_backward=self.get_REF("backward"),
+                    REF_join=self.get_REF("join"),
                 )
-            self.alg.run()
+            alg.run()
             logger.debug("subproblem")
-            logger.debug("cost = %s" % self.alg.total_cost)
-            logger.debug("resources = %s" % self.alg.consumed_resources)
-            if self.alg.total_cost < -(10 ** -3):
+            logger.debug("cost = %s" % alg.total_cost)
+            logger.debug("resources = %s" % alg.consumed_resources)
+            if alg.total_cost < -(1e-3):
                 more_routes = True
-                self.add_new_route()
-                logger.debug("new route %s" % self.alg.path)
-                logger.debug("reduced cost = %s" % self.alg.total_cost)
+                self.add_new_route(alg.path)
+                logger.debug("new route %s" % alg.path)
+                logger.debug("reduced cost = %s" % alg.total_cost)
                 logger.debug("real cost = %s" % self.total_cost)
                 break
             # If not already solved exactly
@@ -139,22 +142,21 @@ class SubProblemCSPY(SubProblemBase):
             self.max_res[3] = 0
             # Maximum feasible arrival time
             self.T = max(
-                [
-                    self.sub_G.nodes[v]["upper"]
-                    + self.sub_G.nodes[v]["service_time"]
-                    + self.sub_G.edges[v, "Sink"]["time"]
-                    for v in self.sub_G.predecessors("Sink")
-                ]
+                self.sub_G.nodes[v]["upper"]
+                + self.sub_G.nodes[v]["service_time"]
+                + self.sub_G.edges[v, "Sink"]["time"]
+                for v in self.sub_G.predecessors("Sink")
             )
+
         if self.load_capacity and self.distribution_collection:
             self.max_res[4] = self.load_capacity[self.vehicle_type]
             self.max_res[5] = self.load_capacity[self.vehicle_type]
 
-    def add_new_route(self):
+    def add_new_route(self, path):
         """Create new route as DiGraph and add to pool of columns"""
         route_id = len(self.routes) + 1
         new_route = DiGraph(name=route_id)
-        add_path(new_route, self.alg.path)
+        add_path(new_route, path)
         self.total_cost = 0
         for (i, j) in new_route.edges():
             edge_cost = self.sub_G.edges[i, j]["cost"][self.vehicle_type]
@@ -213,7 +215,7 @@ class SubProblemCSPY(SubProblemBase):
             # Use default
             return
 
-    def REF_forward(self, cumulative_res, edge):
+    def REF_forward(self, cumulative_res, edge, **kwargs):
         """
         Resource extension for forward paths.
         """
@@ -225,15 +227,32 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[1] += self.sub_G.nodes[j]["demand"]
         # time
-        service_time = self.sub_G.nodes[i]["service_time"]
-        travel_time = self.sub_G.edges[i, j]["time"]
+        # Service times
+        theta_i = self.sub_G.nodes[i]["service_time"]
+        theta_j = self.sub_G.nodes[j]["service_time"]
+        theta_t = self.sub_G.nodes["Sink"]["service_time"]
+        # Travel times
+        travel_time_ij = self.sub_G.edges[i, j]["time"]
+        try:
+            travel_time_jt = self.sub_G.edges[j, "Sink"]["time"]
+        except KeyError:
+            travel_time_jt = 0
+        # Time windows
+        # Lower
         a_j = self.sub_G.nodes[j]["lower"]
+        a_t = self.sub_G.nodes["Sink"]["lower"]
+        # Upper
         b_j = self.sub_G.nodes[j]["upper"]
+        b_t = self.sub_G.nodes["Sink"]["upper"]
 
-        new_res[2] = max(new_res[2] + service_time + travel_time, a_j)
+        new_res[2] = max(new_res[2] + theta_i + travel_time_ij, a_j)
 
         # time-window feasibility resource
-        if not self.time_windows or new_res[2] <= b_j:
+        if not self.time_windows or (
+            new_res[2] <= b_j
+            and new_res[2] < self.T - a_j - theta_j
+            and a_t <= new_res[2] + travel_time_jt + theta_t <= b_t
+        ):
             new_res[3] = 0
         else:
             new_res[3] = 1
@@ -246,7 +265,7 @@ class SubProblemCSPY(SubProblemBase):
 
         return new_res
 
-    def REF_backward(self, cumulative_res, edge):
+    def REF_backward(self, cumulative_res, edge, **kwargs):
         """
         Resource extension for backward paths.
         """
@@ -257,17 +276,32 @@ class SubProblemCSPY(SubProblemBase):
         # load
         new_res[1] += self.sub_G.nodes[i]["demand"]
         # Get relevant service times (thetas) and travel time
+        # Service times
         theta_i = self.sub_G.nodes[i]["service_time"]
         theta_j = self.sub_G.nodes[j]["service_time"]
-        travel_time = self.sub_G.edges[i, j]["time"]
+        theta_s = self.sub_G.nodes["Source"]["service_time"]
+        # Travel times
+        travel_time_ij = self.sub_G.edges[i, j]["time"]
+        try:
+            travel_time_si = self.sub_G.edges["Source", i]["time"]
+        except KeyError:
+            travel_time_si = 0
         # Lower time windows
         a_i = self.sub_G.nodes[i]["lower"]
+        a_s = self.sub_G.nodes["Source"]["lower"]
         # Upper time windows
         b_i = self.sub_G.nodes[i]["upper"]
-        new_res[2] = max(new_res[2] + theta_j + travel_time, self.T - b_i - theta_i)
+        b_j = self.sub_G.nodes[j]["upper"]
+        b_s = self.sub_G.nodes["Source"]["upper"]
+
+        new_res[2] = max(new_res[2] + theta_j + travel_time_ij, self.T - b_i - theta_i)
 
         # time-window feasibility
-        if not self.time_windows or new_res[2] <= self.T - a_i - theta_i:
+        if not self.time_windows or (
+            new_res[2] <= b_j
+            and new_res[2] < self.T - a_i - theta_i
+            and a_s <= new_res[2] + theta_s + travel_time_si <= b_s
+        ):
             new_res[3] = 0
         else:
             new_res[3] = 1

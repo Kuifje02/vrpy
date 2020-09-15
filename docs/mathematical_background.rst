@@ -62,9 +62,6 @@ subject to flow balance constraints :
     x_{uv} &\in \{ 0,1\} \quad &\forall (u,v) \in A \label{eq4}
 
 
-Why use the `cspy` library?
----------------------------
-
 In other words, the sub problem is a shortest elementary path problem, and additional constraints (such as capacities, time) 
 give rise to a shortest path problem with *resource constraints*, hence the interest of using the *cspy* library.
 
@@ -102,8 +99,3 @@ TO DO
   - ...
 
 
-Bibliography
-------------
-
-.. bibliography:: refs.bib
-   :all:
