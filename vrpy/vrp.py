@@ -505,15 +505,17 @@ class VehicleRoutingProblem:
             duals, relaxed_cost = self.masterproblem.solve_and_dive(
                 time_limit=self._get_time_remaining()
             )
-            if self.hyper_heuristic is not None:
+            if self.hyper_heuristic:
                 self.hyper_heuristic.init(relaxed_cost)
         else:
             duals, relaxed_cost = self.masterproblem.solve(
                 relax=True, time_limit=self._get_time_remaining()
             )
+            print("mastersolve ok")
 
         logger.info("iteration %s, %.6s" % (self._iteration, relaxed_cost))
         pricing_strategy = self._get_next_pricing_strategy(relaxed_cost)
+        print(pricing_strategy)
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
@@ -552,10 +554,10 @@ class VehicleRoutingProblem:
                     )
                     if self._more_routes:
                         break
-
             if self._more_routes:
                 self.routes[-1].graph["heuristic"] = pricing_strategy
                 self.masterproblem.update(self.routes[-1])
+                break
             elif self._pricing_strategy == "Hyper":
                 self.hyper_heuristic.end_time = time()
 
