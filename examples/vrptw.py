@@ -7,10 +7,8 @@ from networkx import (
 )
 from numpy import array
 
-from data import DISTANCES, TRAVEL_TIMES, TIME_WINDOWS_LOWER, TIME_WINDOWS_UPPER
-import sys
+from examples.data import DISTANCES, TRAVEL_TIMES, TIME_WINDOWS_LOWER, TIME_WINDOWS_UPPER
 
-sys.path.append("../")
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph

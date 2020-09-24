@@ -1,9 +1,7 @@
 from networkx import from_numpy_matrix, set_node_attributes, relabel_nodes, DiGraph
 from numpy import array
-from data import DISTANCES, DEMANDS
-import sys
+from examples.data import DISTANCES, DEMANDS
 
-sys.path.append("../")
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph

@@ -1,9 +1,8 @@
 from networkx import from_numpy_matrix, set_node_attributes, relabel_nodes, DiGraph
 from numpy import array
-from data import DISTANCES, DEMANDS, COLLECT
-import sys
 
-sys.path.append("../")
+from examples.data import DISTANCES, DEMANDS, COLLECT
+
 from vrpy import VehicleRoutingProblem
 
 # Transform distance matrix to DiGraph
@@ -19,7 +18,11 @@ G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 
 if __name__ == "__main__":
 
-    prob = VehicleRoutingProblem(G, load_capacity=20, distribution_collection=True,)
+    prob = VehicleRoutingProblem(
+        G,
+        load_capacity=20,
+        distribution_collection=True,
+    )
     prob.solve()
     print(prob.best_value)
     print(prob.best_routes)

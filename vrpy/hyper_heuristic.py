@@ -117,16 +117,17 @@ class _HyperHeuristic:
             pass
         # choose according to MAB
         maxval = max(self.heuristic_points.values())
-        best_heuristics = [i for i, j in self.heuristic_points.items() if j == maxval]
+        best_heuristics = [
+            i for i, j in self.heuristic_points.items() if j == maxval
+        ]
         if len(best_heuristics) == 1:
-            self.current_heuristic = best_heuristics
+            self.current_heuristic = best_heuristics[0]
         else:
             self.current_heuristic = choice(best_heuristics)
         return self.current_heuristic
 
-    def update_scaling_factor(
-        self, no_improvement_count: int, no_improvement_iteration: int
-    ):
+    def update_scaling_factor(self, no_improvement_count: int,
+                              no_improvement_iteration: int):
         """
         Implements Drake et al. (2012)
 

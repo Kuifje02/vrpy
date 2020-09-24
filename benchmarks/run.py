@@ -76,7 +76,8 @@ PERFORMANCE_SOLVER_PARAMS: Dict[str, Dict[str, Union[bool, str]]] = {
         'greedy': True,
         'cspy': False,
         'pricing_strategy': 'Hyper',
-        'time_limit': TIME_LIMIT
+        'time_limit': TIME_LIMIT,
+        'max_iter': 0
     },
     'cvrptw': {
         'dive': False,

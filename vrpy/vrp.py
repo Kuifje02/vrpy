@@ -500,49 +500,38 @@ class VehicleRoutingProblem:
         # Solve restricted relaxed master problem
         if self._dive:
             duals, relaxed_cost = self.masterproblem.solve_and_dive(
-                time_limit=self._get_time_remaining()
-            )
+                time_limit=self._get_time_remaining())
             if self.hyper_heuristic:
                 self.hyper_heuristic.init(relaxed_cost)
         else:
             duals, relaxed_cost = self.masterproblem.solve(
-                relax=True, time_limit=self._get_time_remaining()
-            )
-            print("mastersolve ok")
-
+                relax=True, time_limit=self._get_time_remaining())
         logger.info("iteration %s, %.6s" % (self._iteration, relaxed_cost))
         pricing_strategy = self._get_next_pricing_strategy(relaxed_cost)
-        print(pricing_strategy)
 
         # One subproblem per vehicle type
         for vehicle in range(self._vehicle_types):
             # Solve pricing problem with randomised greedy algorithm
-            if (
-                self._greedy
-                and not self.time_windows
-                and not self.distribution_collection
-                and not self.pickup_delivery
-                and not self.minimize_global_span
-            ):
+            if (self._greedy and not self.time_windows and
+                    not self.distribution_collection and
+                    not self.pickup_delivery and not self.minimize_global_span):
                 subproblem = self._def_subproblem(duals, vehicle, greedy=True)
                 self.routes, self._more_routes = subproblem.solve(n_runs=20)
                 # Add initial_routes
                 if self._more_routes:
-                    for r in (
-                        r
-                        for r in self.routes
-                        if r.graph["name"] not in self.masterproblem.y
-                    ):
+                    for r in (r for r in self.routes
+                              if r.graph["name"] not in self.masterproblem.y):
                         self.masterproblem.update(r)
 
             # Continue searching for columns
             self._more_routes = False
             if not self.minimize_global_span:
                 self._more_routes = self._solve_subproblem_with_heuristic(
-                    pricing_strategy=pricing_strategy, vehicle=vehicle, duals=duals
-                )
+                    pricing_strategy=pricing_strategy,
+                    vehicle=vehicle,
+                    duals=duals)
             else:
-                for route in self._routes[: len(self._routes)]:
+                for route in self._routes[:len(self._routes)]:
                     self._more_routes = self._solve_subproblem_with_heuristic(
                         pricing_strategy=pricing_strategy,
                         vehicle=vehicle,
