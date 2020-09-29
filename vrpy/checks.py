@@ -2,6 +2,7 @@
 """
 import logging
 
+from numpy.random import RandomState
 from networkx import DiGraph, NetworkXError, has_path
 
 logger = logging.getLogger(__name__)
@@ -29,22 +30,21 @@ def check_arguments(num_stops: int = None,
         raise TypeError("Maximum duration must be positive integer.")
     strategies = ["Exact", "BestEdges1", "BestEdges2", "BestPaths", "Hyper"]
     if pricing_strategy not in strategies:
-        raise ValueError(
-            "Pricing strategy %s is not valid. Pick one among %s" %
-            (pricing_strategy, strategies))
+        raise ValueError("Pricing strategy %s is not valid. Pick one among %s" %
+                         (pricing_strategy, strategies))
     if mixed_fleet:
-        if (load_capacity and num_vehicles
-                and len(load_capacity) != len(num_vehicles)):
+        if (load_capacity and num_vehicles and
+                len(load_capacity) != len(num_vehicles)):
             raise ValueError(
                 "Input arguments load_capacity and num_vehicles must have same dimension."
             )
-        if (load_capacity and fixed_cost
-                and len(load_capacity) != len(fixed_cost)):
+        if (load_capacity and fixed_cost and
+                len(load_capacity) != len(fixed_cost)):
             raise ValueError(
                 "Input arguments load_capacity and fixed_cost must have same dimension."
             )
-        if (num_vehicles and fixed_cost
-                and len(num_vehicles) != len(fixed_cost)):
+        if (num_vehicles and fixed_cost and
+                len(num_vehicles) != len(fixed_cost)):
             raise ValueError(
                 "Input arguments num_vehicles and fixed_cost must have same dimension."
             )
@@ -135,8 +135,7 @@ def check_consistency(cspy: bool = None,
 
     # pickup delivery requires cspy=False
     if cspy and pickup_delivery:
-        raise NotImplementedError(
-            "pickup_delivery option requires cspy=False.")
+        raise NotImplementedError("pickup_delivery option requires cspy=False.")
     # pickup delivery requires pricing_stragy="Exact"
     if pickup_delivery and pricing_strategy != "Exact":
         pricing_strategy = "Exact"
@@ -170,3 +169,17 @@ def check_feasibility(load_capacity: list = None,
                     raise ValueError(
                         "Node %s not reachable: duration of path [Source,%s,Sink], %s, is larger than max duration %s."
                         % (v, v, round_trip_duration, duration))
+
+
+def check_seed(seed):
+    """Check whether given seed can be used to seed a numpy.random.RandomState
+    :return: numpy.random.RandomState (seeded if seed given)
+    """
+    if seed is None:
+        return RandomState()
+    elif isinstance(seed, int):
+        return RandomState(seed)
+    elif isinstance(seed, RandomState):
+        return seed
+    else:
+        raise TypeError("{} cannot be used to seed".format(seed))
