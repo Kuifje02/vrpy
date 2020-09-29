@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from time import time
 import argparse
 from itertools import product
@@ -77,15 +76,17 @@ PERFORMANCE_SOLVER_PARAMS: Dict[str, Dict[str, Union[bool, str]]] = {
         'cspy': False,
         'pricing_strategy': 'Hyper',
         'time_limit': TIME_LIMIT,
-        'max_iter': 0
+        'max_iter': 1,
+        'run_exact': 30
     },
     'cvrptw': {
         'dive': False,
         'greedy': True,
         'cspy': False,
         'pricing_strategy': 'BestEdges1',
-        'max_iter': 0,
-        'time_limit': TIME_LIMIT
+        'max_iter': 1,
+        'time_limit': TIME_LIMIT,
+        'run_exact': 30
     }
 }
 
