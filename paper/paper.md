@@ -110,7 +110,7 @@ can be shown ([@bramel1997solving]) that asymptotically, the relative error goes
 
 # Advanced Features
 
-For more advanced users, there are different pricing strategies (approaches for solving subproblems), namely sparsification strategies [@dell2006branch;@santini2018branch], as well as pre-pricing heuristics available that can lead to faster solutions. The heuristics implemented include: a greedy randomized heuristic
+For more advanced users, there are different pricing strategies (approaches for solving subproblems), namely sparsification strategies [@dell2006branch;@santini2018branch], as well as pre-pricing heuristics available that can lead to faster solutions. The heuristics implemented include a greedy randomized heuristic
 (for the CVRP and the CVRP with resource constraints) [@santini2018branch]. Also, a diving heuristic [@sadykov2019primal] can be called to explore part of the branch-and-price tree, instead of solving the restricted master problem as a MIP.
 
 Additionally, we have an experimental feature that uses Hyper-Heuristics for the dynamic selection of
