@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.3.0] - 07/06/2020
+
 ### Added
 
+- JOSS paper
 - Periodic CVRP scheduling option
 - Initial solution for CVRP computed with Greedy Algorithm
 - Diving heuristic (controlled with new paramater in `VehicleRoutingProblem.solve`)
