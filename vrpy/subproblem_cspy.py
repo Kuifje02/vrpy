@@ -11,10 +11,14 @@ from vrpy.subproblem import _SubProblemBase
 logger = logging.getLogger(__name__)
 
 
-class MyREFCallback(REFCallback):
+class _MyREFCallback(REFCallback):
+    """
+    Custom REFs for time, time windows, and/or distribution collection.
+    Based on Righini and Salani (2006).
+    """
 
-    def __init__(self, max_res, sub_G, time_windows,
-              distribution_collection, T, resources):
+    def __init__(self, max_res, sub_G, time_windows, distribution_collection, T,
+                 resources):
         REFCallback.__init__(self)
         # Set attributes for use in REF functions
         self._max_res = max_res
@@ -273,20 +277,21 @@ class _SubProblemCSPY(_SubProblemBase):
                                     REF_callback=self.get_REF())
             alg.run()
             logger.debug("subproblem")
-            logger.debug("cost = %s" % alg.total_cost)
-            logger.debug("resources = %s" % alg.consumed_resources)
-            if alg.total_cost < -(1e-3):
+            logger.debug("cost = %s", alg.total_cost)
+            logger.debug("resources = %s", alg.consumed_resources)
+            if alg.total_cost is not None and alg.total_cost < -(1e-3):
                 more_routes = True
                 self.add_new_route(alg.path)
-                logger.debug("new route %s" % alg.path)
-                logger.debug("reduced cost = %s" % alg.total_cost)
-                logger.debug("real cost = %s" % self.total_cost)
+                logger.debug("new route %s", alg.path)
+                logger.debug("reduced cost = %s", alg.total_cost)
+                logger.debug("real cost = %s", self.total_cost)
                 break
             # If not already solved exactly
             elif not self.exact:
                 # Solve exactly from here on
                 self.exact = True
             # Solved heuristically and exactly and no more routes
+            # Or time out
             else:
                 break
         return self.routes, more_routes
@@ -365,15 +370,11 @@ class _SubProblemCSPY(_SubProblemBase):
             self.sub_G.edges[i, j]["res_cost"][2] = travel_time
 
     def get_REF(self):
-        """
-        Returns custom REFs if time, time windows, and/or distribution collection.
-        Based on Righini and Salani (2006).
-        """
         if self.time_windows or self.distribution_collection:
             # Use custom REF
-            return MyREFCallback(self.max_res, self.sub_G,
-                              self.time_windows, self.distribution_collection, self.T,
-                              self.resources)
+            return _MyREFCallback(self.max_res, self.sub_G, self.time_windows,
+                                  self.distribution_collection, self.T,
+                                  self.resources)
         else:
             # Use default
             return
