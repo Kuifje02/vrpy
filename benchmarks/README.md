@@ -32,3 +32,7 @@ These include:
  - Parallel/series runner
  - CPU number specificiation
  - Exploration or performance mode (default configuration)
+
+## OR-TOOLS
+
+To run tests with ortools, [this code](https://github.com/Kuifje02/ortools) can be used.
