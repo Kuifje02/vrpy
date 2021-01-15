@@ -147,7 +147,7 @@ class VehicleRoutingProblem:
         preassignments=None,
         pricing_strategy="BestEdges1",
         cspy=True,
-        exact=True,
+        exact=False,
         time_limit=None,
         solver="cbc",
         dive=False,
@@ -182,7 +182,7 @@ class VehicleRoutingProblem:
                 True if only cspy's exact algorithm is used to generate columns.
                 Otherwise, heuristics will be used until they produce +ve
                 reduced cost columns, after which the exact algorithm is used.
-                Defaults to True.
+                Defaults to False.
             time_limit (int, optional):
                 Maximum number of seconds allowed for solving (for finding columns).
                 Defaults to None.

@@ -70,9 +70,9 @@ class _MyREFCallback(REFCallback):
         new_res[2] = max(new_res[2] + theta_i + travel_time_ij, a_j)
 
         # time-window feasibility resource
-        if not self._time_windows or (
-                new_res[2] <= b_j and new_res[2] < self._T - a_j - theta_j and
-                a_t <= new_res[2] + travel_time_jt + theta_t <= b_t):
+        if not self._time_windows or (new_res[2] <= b_j):
+            # and new_res[2] < self._T - a_j - theta_j and
+            # a_t <= new_res[2] + travel_time_jt + theta_t <= b_t):
             new_res[3] = 0
         else:
             new_res[3] = 1
@@ -127,9 +127,9 @@ class _MyREFCallback(REFCallback):
                          self._T - b_i - theta_i)
 
         # time-window feasibility
-        if not self._time_windows or (
-                new_res[2] <= b_j and new_res[2] < self._T - a_i - theta_i and
-                a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
+        if not self._time_windows or (new_res[2] <= b_j):
+            # and new_res[2] < self._T - a_i - theta_i and
+            #         a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
             new_res[3] = 0
         else:
             new_res[3] = 1
@@ -223,10 +223,12 @@ class _SubProblemCSPY(_SubProblemBase):
         total_demand = sum(
             [self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
         self.max_res = [
-            floor(len(self.sub_G.nodes()) / 2),  # stop/mono
-            floor(total_demand / 2),  # load
-            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()
-                ]),  # time
+            len(self.sub_G.nodes()),  # stop/mono
+            # floor(len(self.sub_G.nodes()) / 2),  # stop/mono
+            total_demand,  # load
+            # floor(total_demand / 2),  # load
+            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()]
+               ),  # time
             1,  # time windows
             total_demand,  # pickup
             total_demand,  # deliver
@@ -236,18 +238,18 @@ class _SubProblemCSPY(_SubProblemBase):
             edge[2]["res_cost"] = zeros(len(self.resources))
         # Initialize max feasible arrival time
         self.T = 0
+        self.total_cost = None
 
     # @profile
     def solve(self, time_limit):
         """
         Solves the subproblem with cspy.
+        Time limit is reduced by 0.5 seconds as a safety window.
 
         Resolves until:
         1. heuristic algorithm gives a new route (column with -ve reduced cost);
         2. exact algorithm gives a new route;
         3. neither heuristic nor exact give a new route.
-
-        Note : time_limit has no effect for the moment
         """
         if not self.run_subsolve:
             return self.routes, False
@@ -264,21 +266,26 @@ class _SubProblemCSPY(_SubProblemBase):
                 alg = BiDirectional(self.sub_G,
                                     self.max_res,
                                     self.min_res,
-                                    time_limit=time_limit,
+                                    direction="forward",
+                                    time_limit=time_limit -
+                                    0.5 if time_limit else None,
                                     elementary=True,
                                     REF_callback=self.get_REF())
             else:
                 alg = BiDirectional(self.sub_G,
                                     self.max_res,
                                     self.min_res,
-                                    time_limit=time_limit,
-                                    elementary=True,
                                     threshold=-1,
+                                    direction="forward",
+                                    time_limit=time_limit -
+                                    0.5 if time_limit else None,
+                                    elementary=True,
                                     REF_callback=self.get_REF())
             alg.run()
             logger.debug("subproblem")
             logger.debug("cost = %s", alg.total_cost)
             logger.debug("resources = %s", alg.consumed_resources)
+            print(alg.path)
             if alg.total_cost is not None and alg.total_cost < -(1e-3):
                 more_routes = True
                 self.add_new_route(alg.path)
