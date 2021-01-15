@@ -1,5 +1,5 @@
 ###### Requirements without Version Specifiers ######
-cspy
+cspy==1.0.0a0
 networkx
 numpy
 pandas
