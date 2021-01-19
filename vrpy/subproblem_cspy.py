@@ -85,105 +85,105 @@ class _MyREFCallback(REFCallback):
                              new_res[4])
         return new_res
 
-    def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path,
-                cumul_cost):
-        new_res = list(cumul_res)
+    # def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path,
+    #             cumul_cost):
+    #     new_res = list(cumul_res)
 
-        if tail != "Source":
-            i = self._convert_to_original_type(tail)
-        else:
-            i = tail
+    #     if tail != "Source":
+    #         i = self._convert_to_original_type(tail)
+    #     else:
+    #         i = tail
 
-        if head != "Sink":
-            j = self._convert_to_original_type(head)
-        else:
-            j = head
+    #     if head != "Sink":
+    #         j = self._convert_to_original_type(head)
+    #     else:
+    #         j = head
 
-        # self._convert_to_original_type(tail, head)
-        # monotone resource
-        new_res[0] -= 1
-        # load
-        new_res[1] += self._sub_G.nodes[i]["demand"]
-        # Get relevant service times (thetas) and travel time
-        # Service times
-        theta_i = self._sub_G.nodes[i]["service_time"]
-        theta_j = self._sub_G.nodes[j]["service_time"]
-        theta_s = self._sub_G.nodes["Source"]["service_time"]
-        # Travel times
-        travel_time_ij = self._sub_G.edges[i, j]["time"]
-        try:
-            travel_time_si = self._sub_G.edges["Source", i]["time"]
-        except KeyError:
-            travel_time_si = 0
-        # Lower time windows
-        a_i = self._sub_G.nodes[i]["lower"]
-        a_s = self._sub_G.nodes["Source"]["lower"]
-        # Upper time windows
-        b_i = self._sub_G.nodes[i]["upper"]
-        b_j = self._sub_G.nodes[j]["upper"]
-        b_s = self._sub_G.nodes["Source"]["upper"]
+    #     # self._convert_to_original_type(tail, head)
+    #     # monotone resource
+    #     new_res[0] -= 1
+    #     # load
+    #     new_res[1] += self._sub_G.nodes[i]["demand"]
+    #     # Get relevant service times (thetas) and travel time
+    #     # Service times
+    #     theta_i = self._sub_G.nodes[i]["service_time"]
+    #     theta_j = self._sub_G.nodes[j]["service_time"]
+    #     theta_s = self._sub_G.nodes["Source"]["service_time"]
+    #     # Travel times
+    #     travel_time_ij = self._sub_G.edges[i, j]["time"]
+    #     try:
+    #         travel_time_si = self._sub_G.edges["Source", i]["time"]
+    #     except KeyError:
+    #         travel_time_si = 0
+    #     # Lower time windows
+    #     a_i = self._sub_G.nodes[i]["lower"]
+    #     a_s = self._sub_G.nodes["Source"]["lower"]
+    #     # Upper time windows
+    #     b_i = self._sub_G.nodes[i]["upper"]
+    #     b_j = self._sub_G.nodes[j]["upper"]
+    #     b_s = self._sub_G.nodes["Source"]["upper"]
 
-        new_res[2] = max(new_res[2] + theta_j + travel_time_ij,
-                         self._T - b_i - theta_i)
+    #     new_res[2] = max(new_res[2] + theta_j + travel_time_ij,
+    #                      self._T - b_i - theta_i)
 
-        # time-window feasibility
-        if not self._time_windows or (new_res[2] <= b_j):
-            # and new_res[2] < self._T - a_i - theta_i and
-            #         a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
-            new_res[3] = 0
-        else:
-            new_res[3] = 1
+    #     # time-window feasibility
+    #     if not self._time_windows or (new_res[2] <= b_j):
+    #         # and new_res[2] < self._T - a_i - theta_i and
+    #         #         a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
+    #         new_res[3] = 0
+    #     else:
+    #         new_res[3] = 1
 
-        if self._distribution_collection:
-            # Delivery
-            new_res[5] += new_res[5] + self._sub_G.nodes[i]["demand"]
-            # Pickup
-            new_res[4] = max(new_res[5],
-                             new_res[4] + self._sub_G.nodes[i]["collect"])
-        return new_res
+    #     if self._distribution_collection:
+    #         # Delivery
+    #         new_res[5] += new_res[5] + self._sub_G.nodes[i]["demand"]
+    #         # Pickup
+    #         new_res[4] = max(new_res[5],
+    #                          new_res[4] + self._sub_G.nodes[i]["collect"])
+    #     return new_res
 
-    def REF_join(self, fwd_resources, bwd_resources, tail, head, edge_res):
-        """
-        Appropriate joining of forward and backward resources.
-        """
-        fwd_res = list(fwd_resources)
-        bwd_res = list(bwd_resources)
-        final_res = [0] * len(self._resources)
+    # def REF_join(self, fwd_resources, bwd_resources, tail, head, edge_res):
+    #     """
+    #     Appropriate joining of forward and backward resources.
+    #     """
+    #     fwd_res = list(fwd_resources)
+    #     bwd_res = list(bwd_resources)
+    #     final_res = [0] * len(self._resources)
 
-        if tail != "Source":
-            i = self._convert_to_original_type(tail)
-        else:
-            i = tail
+    #     if tail != "Source":
+    #         i = self._convert_to_original_type(tail)
+    #     else:
+    #         i = tail
 
-        if head != "Sink":
-            j = self._convert_to_original_type(head)
-        else:
-            j = head
+    #     if head != "Sink":
+    #         j = self._convert_to_original_type(head)
+    #     else:
+    #         j = head
 
-        # Get relevant service times (thetas) and travel time
-        theta_i = self._sub_G.nodes[i]["service_time"]
-        theta_j = self._sub_G.nodes[j]["service_time"]
-        travel_time = self._sub_G.edges[i, j]["time"]
+    #     # Get relevant service times (thetas) and travel time
+    #     theta_i = self._sub_G.nodes[i]["service_time"]
+    #     theta_j = self._sub_G.nodes[j]["service_time"]
+    #     travel_time = self._sub_G.edges[i, j]["time"]
 
-        # Invert monotone resource
-        bwd_res[0] = self._max_res[0] - bwd_res[0]
-        # Fill in final res
-        # Monotone / stops
-        final_res[0] = fwd_res[0] + bwd_res[0] + 1
-        # Load
-        final_res[1] = fwd_res[1] + bwd_res[1]
-        # time
-        final_res[2] = fwd_res[2] + theta_i + travel_time + theta_j + bwd_res[2]
-        # Time windows
-        if not self._time_windows or final_res[2] <= self._T:
-            final_res[3] = fwd_res[3] + bwd_res[3]
-        else:
-            final_res[3] = 1.0
+    #     # Invert monotone resource
+    #     bwd_res[0] = self._max_res[0] - bwd_res[0]
+    #     # Fill in final res
+    #     # Monotone / stops
+    #     final_res[0] = fwd_res[0] + bwd_res[0] + 1
+    #     # Load
+    #     final_res[1] = fwd_res[1] + bwd_res[1]
+    #     # time
+    #     final_res[2] = fwd_res[2] + theta_i + travel_time + theta_j + bwd_res[2]
+    #     # Time windows
+    #     if not self._time_windows or final_res[2] <= self._T:
+    #         final_res[3] = fwd_res[3] + bwd_res[3]
+    #     else:
+    #         final_res[3] = 1.0
 
-        if self._distribution_collection:
-            final_res[4] = fwd_res[4] + bwd_res[4]
-            final_res[5] = fwd_res[5] + bwd_res[5]
-        return final_res
+    #     if self._distribution_collection:
+    #         final_res[4] = fwd_res[4] + bwd_res[4]
+    #         final_res[5] = fwd_res[5] + bwd_res[5]
+    #     return final_res
 
     def _convert_to_original_type(self, node):
         if "int" in self._original_node_type.__name__:
