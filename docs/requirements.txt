@@ -2,7 +2,7 @@
 cspy
 networkx
 pulp
-sphinxcontrib.bibtex
 sphinx_copybutton
 ###### Requirements with Version Specifiers ######
 
+sphinxcontrib-bibtex<2.0.0 
