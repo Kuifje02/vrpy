@@ -42,6 +42,7 @@ class _SubProblemLP(_SubProblemBase):
         if (
             pulp.value(self.prob.objective) is not None
             and pulp.value(self.prob.objective) < -(10 ** -3)
+            and pulp.LpStatus[self.prob.status] not in ["Infeasible"]
         ) or (exact == False and pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
             more_routes = True
             self._add_new_route()
@@ -72,7 +73,7 @@ class _SubProblemLP(_SubProblemBase):
         logger.debug("new route reduced cost %s" % pulp.value(self.prob.objective))
         logger.debug("new route cost = %s" % self.total_cost)
         # for (i, j) in new_route.edges():
-        #    print(i, j, self.sub_G.edges[i, j])
+        # print(i, j, self.sub_G.edges[i, j])
         # routes_txt = open("routes.txt", "a")
         # routes_txt.write(str(shortest_path(new_route, "Source", "Sink")) + "\n")
 
@@ -84,7 +85,12 @@ class _SubProblemLP(_SubProblemBase):
         elif self.solver == "gurobi":
             gurobi_options = []
             if time_limit is not None:
-                gurobi_options.append(("TimeLimit", time_limit,))
+                gurobi_options.append(
+                    (
+                        "TimeLimit",
+                        time_limit,
+                    )
+                )
             self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     def _formulate(self):
