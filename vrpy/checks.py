@@ -199,3 +199,21 @@ def check_pickup_delivery_time_windows(G: DiGraph, edges: list):
                 "Problem Infeasible, request (%s,%s) cannot be done with given time windows."
                 % (i, j)
             )
+
+
+def check_periodic_num_vehicles(periodic: int = None, num_vehicles: list = []):
+    """
+    The case where periodic is not None and num_vehicles is not None is ambiguous
+    and needs to be more specifically defined.
+    For the moment, if both are activated, num_vehicles is ignored until the final
+    schedule is computed (vrpy/schedule.py)
+    """
+    _num_vehicles = []
+    _num_vehicles_schedule = []
+    if periodic and num_vehicles:
+        # if both are activated, _num_vehicles is None and _num_vehicles_schedule = num_vehicles
+        _num_vehicles_schedule = num_vehicles
+    else:
+        # if either is not active, _num_vehicles = num_vehicles, _num_vehicles_schedule is None
+        _num_vehicles = num_vehicles
+    return _num_vehicles, _num_vehicles_schedule

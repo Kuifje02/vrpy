@@ -19,6 +19,7 @@ from vrpy.checks import (
     check_initial_routes,
     check_vrp,
     check_pickup_delivery_time_windows,
+    check_periodic_num_vehicles,
 )
 from vrpy.preprocessing import get_num_stops_upper_bound
 from vrpy.hyper_heuristic import _HyperHeuristic
@@ -101,6 +102,7 @@ class VehicleRoutingProblem:
         self.drop_penalty = drop_penalty
         self.fixed_cost = fixed_cost
         self.num_vehicles = num_vehicles if num_vehicles is not None else []
+        self._num_vehicles_schedule = None
         self.periodic = periodic
         self.mixed_fleet = mixed_fleet
         self.minimize_global_span = minimize_global_span
@@ -424,6 +426,9 @@ class VehicleRoutingProblem:
         # Check feasibility
         check_feasibility(
             load_capacity=self.load_capacity, G=self.G, duration=self.duration
+        )
+        self.num_vehicles, self._num_vehicles_schedule = check_periodic_num_vehicles(
+            periodic=self.periodic, num_vehicles=self.num_vehicles
         )
         # Lock preassigned routes
         if self._preassignments:
@@ -1109,7 +1114,7 @@ class VehicleRoutingProblem:
                 self.periodic,
                 self.best_routes,
                 self.best_routes_type,
-                self.num_vehicles,
+                self._num_vehicles_schedule,
                 solver,
             )
             schedule.solve(self._get_time_remaining())
