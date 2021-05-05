@@ -1,10 +1,10 @@
 # Examples
 
-- [`cvrp.py`](cvrp.py) - Capacitated vehicle routing
-- [`cvrp_drop.py`](cvrp_drop.py) - Capacitated vehicle routing with dropping penalty
-- [`cvrpsdc.py`](cvrpsdc.py) - Capacitated vehicle routing with distribution and collection
-- [`pdp.py`](pdp.py) - Capacitated vehicle routing with pickup and delivery
-- [`vrptw.py`](vrptw.py) - Vehicle routing with time windows
+-   [`cvrp.py`](cvrp.py) - Capacitated vehicle routing
+-   [`cvrp_drop.py`](cvrp_drop.py) - Capacitated vehicle routing with dropping penalty
+-   [`cvrpsdc.py`](cvrpsdc.py) - Capacitated vehicle routing with distribution and collection
+-   [`pdp.py`](pdp.py) - Capacitated vehicle routing with pickup and delivery
+-   [`vrptw.py`](vrptw.py) - Vehicle routing with time windows
 
 ## Run
 
