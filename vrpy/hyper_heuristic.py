@@ -115,7 +115,7 @@ class _HyperHeuristic:
         self.current_objective_value = objective
 
     def pick_heuristic(self):
-        "Sets the chosen heuristic based on selection points"
+        "Returns the chosen heuristic based on selection points"
         # set performance measure
         if self.performance_measure_type == "relative_improvement":
             # before the number of iterations is high enough
