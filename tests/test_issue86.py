@@ -1,9 +1,5 @@
-from time import time
-
 from networkx import DiGraph
-
 from vrpy import VehicleRoutingProblem
-from vrpy.preprocessing import get_num_stops_upper_bound
 
 
 class TestIssue86:
