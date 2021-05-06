@@ -201,7 +201,7 @@ def check_pickup_delivery_time_windows(G: DiGraph, edges: list):
             )
 
 
-def check_periodic_num_vehicles(periodic: int = None, num_vehicles: list = []):
+def check_periodic_num_vehicles(periodic=None, num_vehicles=[]):
     """
     The case where periodic is not None and num_vehicles is not None is ambiguous
     and needs to be more specifically defined.
