@@ -1,11 +1,8 @@
 import logging
 from math import floor
-
-from numpy import array, zeros
+from numpy import zeros
 from networkx import DiGraph, add_path
-
 from cspy import BiDirectional, REFCallback
-
 from vrpy.subproblem import _SubProblemBase
 
 logger = logging.getLogger(__name__)
@@ -17,8 +14,7 @@ class _MyREFCallback(REFCallback):
     Based on Righini and Salani (2006).
     """
 
-    def __init__(self, max_res, time_windows, distribution_collection, T,
-                 resources):
+    def __init__(self, max_res, time_windows, distribution_collection, T, resources):
         REFCallback.__init__(self)
         # Set attributes for use in REF functions
         self._max_res = max_res
@@ -31,8 +27,7 @@ class _MyREFCallback(REFCallback):
         self._source_id = None
         self._sink_id = None
 
-    def REF_fwd(self, cumul_res, tail, head, edge_res, partial_path,
-                cumul_cost):
+    def REF_fwd(self, cumul_res, tail, head, edge_res, partial_path, cumul_cost):
         new_res = list(cumul_res)
         i, j = tail, head
         # stops / monotone resource
@@ -42,21 +37,21 @@ class _MyREFCallback(REFCallback):
         # time
         # Service times
         theta_i = self._sub_G.nodes[i]["service_time"]
-        theta_j = self._sub_G.nodes[j]["service_time"]
-        theta_t = self._sub_G.nodes[self._sink_id]["service_time"]
+        # theta_j = self._sub_G.nodes[j]["service_time"]
+        # theta_t = self._sub_G.nodes[self._sink_id]["service_time"]
         # Travel times
         travel_time_ij = self._sub_G.edges[i, j]["time"]
-        try:
-            travel_time_jt = self._sub_G.edges[j, self._sink_id]["time"]
-        except KeyError:
-            travel_time_jt = 0
+        # try:
+        #    travel_time_jt = self._sub_G.edges[j, self._sink_id]["time"]
+        # except KeyError:
+        #    travel_time_jt = 0
         # Time windows
         # Lower
         a_j = self._sub_G.nodes[j]["lower"]
-        a_t = self._sub_G.nodes[self._sink_id]["lower"]
+        # a_t = self._sub_G.nodes[self._sink_id]["lower"]
         # Upper
         b_j = self._sub_G.nodes[j]["upper"]
-        b_t = self._sub_G.nodes[self._sink_id]["upper"]
+        # b_t = self._sub_G.nodes[self._sink_id]["upper"]
 
         new_res[2] = max(new_res[2] + theta_i + travel_time_ij, a_j)
 
@@ -75,12 +70,10 @@ class _MyREFCallback(REFCallback):
             # Pickup
             new_res[4] += self._sub_G.nodes[j]["collect"]
             # Delivery
-            new_res[5] = max(new_res[5] + self._sub_G.nodes[j]["demand"],
-                             new_res[4])
+            new_res[5] = max(new_res[5] + self._sub_G.nodes[j]["demand"], new_res[4])
         return new_res
 
-    def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path,
-                cumul_cost):
+    def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path, cumul_cost):
         new_res = list(cumul_res)
         i, j = tail, head
 
@@ -92,24 +85,23 @@ class _MyREFCallback(REFCallback):
         # Service times
         theta_i = self._sub_G.nodes[i]["service_time"]
         theta_j = self._sub_G.nodes[j]["service_time"]
-        theta_s = self._sub_G.nodes[self._source_id]["service_time"]
+        # theta_s = self._sub_G.nodes[self._source_id]["service_time"]
         # Travel times
         travel_time_ij = self._sub_G.edges[i, j]["time"]
-        try:
-            travel_time_si = self._sub_G.edges[self._source_id, i]["time"]
-        except KeyError:
-            travel_time_si = 0
+        # try:
+        #    travel_time_si = self._sub_G.edges[self._source_id, i]["time"]
+        # except KeyError:
+        #    travel_time_si = 0
         # Lower time windows
-        a_i = self._sub_G.nodes[i]["lower"]
-        a_j = self._sub_G.nodes[j]["lower"]
-        a_s = self._sub_G.nodes[self._source_id]["lower"]
+        # a_i = self._sub_G.nodes[i]["lower"]
+        # a_j = self._sub_G.nodes[j]["lower"]
+        # a_s = self._sub_G.nodes[self._source_id]["lower"]
         # Upper time windows
         b_i = self._sub_G.nodes[i]["upper"]
         b_j = self._sub_G.nodes[j]["upper"]
-        b_s = self._sub_G.nodes[self._source_id]["upper"]
+        # b_s = self._sub_G.nodes[self._source_id]["upper"]
 
-        new_res[2] = max(new_res[2] + theta_j + travel_time_ij,
-                         self._T - b_i - theta_i)
+        new_res[2] = max(new_res[2] + theta_j + travel_time_ij, self._T - b_i - theta_i)
 
         # time-window feasibility
         if not self._time_windows or (new_res[2] <= b_j):
@@ -127,8 +119,7 @@ class _MyREFCallback(REFCallback):
             # Delivery
             new_res[5] += new_res[5] + self._sub_G.nodes[i]["demand"]
             # Pickup
-            new_res[4] = max(new_res[5],
-                             new_res[4] + self._sub_G.nodes[i]["collect"])
+            new_res[4] = max(new_res[5], new_res[4] + self._sub_G.nodes[i]["collect"])
         return new_res
 
     def REF_join(self, fwd_resources, bwd_resources, tail, head, edge_res):
@@ -194,13 +185,13 @@ class _SubProblemCSPY(_SubProblemBase):
         # Default lower and upper bounds
         self.min_res = [0] * len(self.resources)
         # Add upper bounds for mono, stops, load and time, and time windows
-        total_demand = sum(
-            [self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
+        total_demand = sum([self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
         self.max_res = [
             floor(len(self.sub_G.nodes()) / 2),  # stop/mono
             total_demand,  # load
-            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()
-                ]),  # time
+            sum(
+                [self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()]
+            ),  # time
             1,  # time windows
             total_demand,  # pickup
             total_demand,  # deliver
@@ -236,24 +227,26 @@ class _SubProblemCSPY(_SubProblemBase):
         my_callback = self.get_REF()
         while True:
             if self.exact:
-                alg = BiDirectional(self.sub_G,
-                                    self.max_res,
-                                    self.min_res,
-                                    direction="both",
-                                    time_limit=time_limit -
-                                    0.5 if time_limit else None,
-                                    elementary=True,
-                                    REF_callback=my_callback)
+                alg = BiDirectional(
+                    self.sub_G,
+                    self.max_res,
+                    self.min_res,
+                    direction="both",
+                    time_limit=time_limit - 0.5 if time_limit else None,
+                    elementary=True,
+                    REF_callback=my_callback,
+                )
             else:
-                alg = BiDirectional(self.sub_G,
-                                    self.max_res,
-                                    self.min_res,
-                                    threshold=-1,
-                                    direction="both",
-                                    time_limit=time_limit -
-                                    0.5 if time_limit else None,
-                                    elementary=True,
-                                    REF_callback=my_callback)
+                alg = BiDirectional(
+                    self.sub_G,
+                    self.max_res,
+                    self.min_res,
+                    threshold=-1,
+                    direction="both",
+                    time_limit=time_limit - 0.5 if time_limit else None,
+                    elementary=True,
+                    REF_callback=my_callback,
+                )
 
             # Pass processed graph
             if my_callback is not None:
@@ -299,10 +292,12 @@ class _SubProblemCSPY(_SubProblemBase):
             # Time windows feasibility
             self.max_res[3] = 0
             # Maximum feasible arrival time
-            self.T = max(self.sub_G.nodes[v]["upper"] +
-                         self.sub_G.nodes[v]["service_time"] +
-                         self.sub_G.edges[v, "Sink"]["time"]
-                         for v in self.sub_G.predecessors("Sink"))
+            self.T = max(
+                self.sub_G.nodes[v]["upper"]
+                + self.sub_G.nodes[v]["service_time"]
+                + self.sub_G.edges[v, "Sink"]["time"]
+                for v in self.sub_G.predecessors("Sink")
+            )
 
         if self.load_capacity and self.distribution_collection:
             self.max_res[4] = self.load_capacity[self.vehicle_type]
@@ -357,9 +352,13 @@ class _SubProblemCSPY(_SubProblemBase):
     def get_REF(self):
         if self.time_windows or self.distribution_collection:
             # Use custom REF
-            return _MyREFCallback(self.max_res, self.time_windows,
-                                  self.distribution_collection, self.T,
-                                  self.resources)
+            return _MyREFCallback(
+                self.max_res,
+                self.time_windows,
+                self.distribution_collection,
+                self.T,
+                self.resources,
+            )
         else:
             # Use default
             return None
