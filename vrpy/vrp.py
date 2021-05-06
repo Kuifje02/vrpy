@@ -1,10 +1,7 @@
 import logging
 from time import time
-from pathlib import Path
 from typing import List, Union
-
 from networkx import DiGraph, shortest_path  # draw_networkx
-
 from vrpy.greedy import _Greedy
 from vrpy.master_solve_pulp import _MasterSolvePulp
 from vrpy.subproblem_lp import _SubProblemLP
@@ -23,7 +20,6 @@ from vrpy.checks import (
 )
 from vrpy.preprocessing import get_num_stops_upper_bound
 from vrpy.hyper_heuristic import _HyperHeuristic
-from csv import DictWriter
 
 logger = logging.getLogger(__name__)
 
