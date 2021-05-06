@@ -30,9 +30,9 @@ python3 -m benchmarks.run -h
 ```
 
 These include:
- -  Parallel/series runner
- -  CPU number specificiation
- -  Exploration or performance mode (default configuration)
+ - Parallel/series runner
+ - CPU number specificiation
+ - Exploration or performance mode (default configuration)
 
 ## OR-TOOLS
 
