@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - cspy 1.0.0
-- node load when simultaneous distribution and collection (#79)
+- node load when simultaneous distribution and collection (#79) is now accurate
 
 ### Fixed
 - issues #79, #82, #84, #86
