@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.4.0] 13/05/2021
+## [v0.4.0] - 13/05/2021
 
 ### Added
 - `num_vehicles` option with `periodic` option
