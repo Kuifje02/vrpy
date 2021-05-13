@@ -292,6 +292,7 @@ class VehicleRoutingProblem:
         First key : route id ; second key : node ; value : load.
         If truck is collecting, load refers to accumulated load on truck.
         If truck is distributing, load refers to accumulated amount that has been unloaded.
+        If simultaneous distribution and collection, load refers to truck load when leaving the node.
         """
         load = {}
         if (
@@ -303,12 +304,17 @@ class VehicleRoutingProblem:
         for i in self.best_routes:
             load[i] = {}
             amount = 0
+            if self.distribution_collection:
+                k = self._best_routes_vehicle_type[i]
+                amount += self.load_capacity[k]
             for v in self.best_routes[i]:
                 amount += self._H.nodes[v]["demand"]
                 if self.distribution_collection:
-                    amount -= self._H.nodes[v]["collect"]
+                    # in this case, load = Q + collect - demand
+                    amount += (
+                        self._H.nodes[v]["collect"] - 2 * self._H.nodes[v]["demand"]
+                    )
                 load[i][v] = amount
-            del load[i]["Source"]
         return load
 
     @property

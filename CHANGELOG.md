@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.4.0] 13/05/2021
+
+### Added
+- `num_vehicles` option with `periodic` option
+
+### Changed
+- cspy 1.0.0
+- node load when simultaneous distribution and collection (#79)
+
+### Fixed
+- issues #79, #82, #84, #86
+
 ## [v0.3.0] - 10/11/2020
 
 ### Added
@@ -14,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JOSS paper
 - Periodic CVRP scheduling option
 - Initial solution for CVRP computed with Greedy Algorithm
-- Diving heuristic (controlled with new paramater in `VehicleRoutingProblem.solve`)
+- Diving heuristic (controlled with new parameter in `VehicleRoutingProblem.solve`)
 - Hyper-heuristic pricing strategy option `pricing_strategy="Hyper"`.
 - Jupyter notebooks with hyper-heuristics experiments (one to be updated soon).
 - Paragraph to the paper with the hyper-heuristic explanation and citations.
