@@ -53,7 +53,8 @@ class _MasterSolvePulp(_MasterProblemBase):
             for r in self.routes:
                 val = pulp.value(self.y[r.graph["name"]])
                 if val > 0.1:
-                    logger.debug("route %s selected %s" % (r.graph["name"], val))
+                    logger.debug("route %s selected %s" %
+                                 (r.graph["name"], val))
         duals = self.get_duals()
         logger.debug("duals : %s" % duals)
         return duals, self.prob.objective.value()
@@ -83,11 +84,9 @@ class _MasterSolvePulp(_MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (
-                node not in ["Source", "Sink"]
-                and "depot_from" not in self.G.nodes[node]
-                and "depot_to" not in self.G.nodes[node]
-            ):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 if not relax:
                     duals[node] = self.prob.constraints[constr_name].pi
@@ -99,23 +98,21 @@ class _MasterSolvePulp(_MasterProblemBase):
             for k in range(len(self.num_vehicles)):
                 if not relax:
                     duals["upper_bound_vehicles"][k] = self.prob.constraints[
-                        "upper_bound_vehicles_%s" % k
-                    ].pi
+                        "upper_bound_vehicles_%s" % k].pi
                 else:
                     duals["upper_bound_vehicles"][k] = relax.constraints[
-                        "upper_bound_vehicles_%s" % k
-                    ].pi
+                        "upper_bound_vehicles_%s" % k].pi
         # global span duals
         if self.minimize_global_span:
             for route in self.routes:
                 if not relax:
-                    duals["makespan_%s" % route.graph["name"]] = self.prob.constraints[
-                        "makespan_%s" % route.graph["name"]
-                    ].pi
+                    duals["makespan_%s" %
+                          route.graph["name"]] = self.prob.constraints[
+                              "makespan_%s" % route.graph["name"]].pi
                 else:
-                    duals["makespan_%s" % route.graph["name"]] = relax.constraints[
-                        "makespan_%s" % route.graph["name"]
-                    ].pi
+                    duals["makespan_%s" %
+                          route.graph["name"]] = relax.constraints[
+                              "makespan_%s" % route.graph["name"]].pi
         return duals
 
     def get_total_cost_and_routes(self, relax: bool):
@@ -123,14 +120,11 @@ class _MasterSolvePulp(_MasterProblemBase):
         for r in self.routes:
             val = pulp.value(self.y[r.graph["name"]])
             if val is not None and val > 0:
-                logger.debug(
-                    "%s cost %s load %s"
-                    % (
-                        shortest_path(r, "Source", "Sink"),
-                        r.graph["cost"],
-                        sum(self.G.nodes[v]["demand"] for v in r.nodes()),
-                    )
-                )
+                logger.debug("%s cost %s load %s" % (
+                    shortest_path(r, "Source", "Sink"),
+                    r.graph["cost"],
+                    sum(self.G.nodes[v]["demand"] for v in r.nodes()),
+                ))
 
                 best_routes.append(r)
         if self.drop_penalty:
@@ -168,16 +162,26 @@ class _MasterSolvePulp(_MasterProblemBase):
 
     def _solve(self, relax: bool, time_limit: Optional[int]):
         # Set variable types
-        for var in self.prob.variables():
-            if relax:
-                var.cat = pulp.LpContinuous
-            else:
+        if not relax:
+            # Set partitioning constraints and artificial variables to integer
+            # (for the periodic case)
+            for node in self.G.nodes():
+                if (node not in ["Source", "Sink"] and
+                        "depot_from" not in self.G.nodes[node] and
+                        "depot_to" not in self.G.nodes[node]):
+                    self.set_covering_constrs[node].sense = pulp.LpConstraintEQ
+                if self.periodic and self.G.nodes[node][
+                        "frequency"] > 1 and node != "Source":
+                    self.dummy[node].cat = pulp.LpInteger
+            # Set route variables to integer
+            for var in self.y.values():
                 var.cat = pulp.LpInteger
-                # Force vehicle bound artificial variable to 0
+            # Force vehicle bound artificial variable to 0
+            for var in self.dummy_bound.values():
                 if "artificial_bound_" in var.name:
                     var.upBound = 0
                     var.lowBound = 0
-        self.prob.writeLP("master.lp")
+        # self.prob.writeLP("master.lp")
         # Solve with appropriate solver
         if self.solver == "cbc":
             self.prob.solve(
@@ -185,16 +189,14 @@ class _MasterSolvePulp(_MasterProblemBase):
                     msg=False,
                     timeLimit=time_limit,
                     options=["startalg", "barrier", "crossover", "0"],
-                )
-            )
+                ))
         elif self.solver == "cplex":
             self.prob.solve(
                 pulp.CPLEX_CMD(
                     msg=False,
                     timeLimit=time_limit,
                     options=["set lpmethod 4", "set barrier crossover -1"],
-                )
-            )
+                ))
         elif self.solver == "gurobi":
             gurobi_options = [
                 ("Method", 2),  # 2 = barrier
@@ -202,7 +204,10 @@ class _MasterSolvePulp(_MasterProblemBase):
             ]
             # Only specify time limit if given (o.w. errors)
             if time_limit is not None:
-                gurobi_options.append(("TimeLimit", time_limit,))
+                gurobi_options.append((
+                    "TimeLimit",
+                    time_limit,
+                ))
             self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     # Private methods for formulating and updating the problem #
@@ -263,39 +268,30 @@ class _MasterSolvePulp(_MasterProblemBase):
         (as well as a penalty is the cost function).
         """
         for node in self.G.nodes():
-            if (
-                node not in ["Source", "Sink"]
-                and "depot_from" not in self.G.nodes[node]
-                and "depot_to" not in self.G.nodes[node]
-            ):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 # Set RHS
-                right_hand_term = (
-                    self.G.nodes[node]["frequency"] if self.periodic else 1
-                )
+                right_hand_term = (self.G.nodes[node]["frequency"]
+                                   if self.periodic else 1)
                 # Save set covering constraints
                 self.set_covering_constrs[node] = pulp.LpConstraintVar(
-                    "visit_node_%s" % node, pulp.LpConstraintGE, right_hand_term
-                )
+                    "visit_node_%s" % node, pulp.LpConstraintGE,
+                    right_hand_term)
 
     def _add_route_selection_variable(self, route):
         self.y[route.graph["name"]] = pulp.LpVariable(
             "y{}".format(route.graph["name"]),
             lowBound=0,
             upBound=1,
-            cat=pulp.LpInteger,
-            e=(
-                pulp.lpSum(
-                    self.set_covering_constrs[r]
-                    for r in route.nodes()
-                    if r not in ["Source", "Sink"]
-                )
-                + pulp.lpSum(
-                    self.vehicle_bound_constrs[k]
-                    for k in range(len(self.num_vehicles))
-                    if route.graph["vehicle_type"] == k
-                )
-                + route.graph["cost"] * self.objective
-            ),
+            cat=pulp.LpContinuous,
+            e=(pulp.lpSum(self.set_covering_constrs[r]
+                          for r in route.nodes()
+                          if r not in ["Source", "Sink"]) +
+               pulp.lpSum(self.vehicle_bound_constrs[k]
+                          for k in range(len(self.num_vehicles))
+                          if route.graph["vehicle_type"] == k) +
+               route.graph["cost"] * self.objective),
         )
 
     def _add_route_selection_variable_for_global_span(self, route):
@@ -304,19 +300,13 @@ class _MasterSolvePulp(_MasterProblemBase):
             lowBound=0,
             upBound=1,
             cat=pulp.LpInteger,
-            e=(
-                pulp.lpSum(
-                    self.set_covering_constrs[r]
-                    for r in route.nodes()
-                    if r not in ["Source", "Sink"]
-                )
-                + pulp.lpSum(
-                    self.vehicle_bound_constrs[k]
-                    for k in range(len(self.num_vehicles))
-                    if route.graph["vehicle_type"] == k
-                )
-                + route.graph["cost"] * self.makespan_constr[route.graph["name"]]
-            ),
+            e=(pulp.lpSum(self.set_covering_constrs[r]
+                          for r in route.nodes()
+                          if r not in ["Source", "Sink"]) +
+               pulp.lpSum(self.vehicle_bound_constrs[k]
+                          for k in range(len(self.num_vehicles))
+                          if route.graph["vehicle_type"] == k) +
+               route.graph["cost"] * self.makespan_constr[route.graph["name"]]),
         )
 
     def _add_vehicle_dummy_variables(self):
@@ -326,7 +316,8 @@ class _MasterSolvePulp(_MasterProblemBase):
                 lowBound=0,
                 upBound=None,
                 cat=pulp.LpContinuous,
-                e=((-1) * self.vehicle_bound_constrs[key] + 1e10 * self.objective),
+                e=((-1) * self.vehicle_bound_constrs[key] +
+                   1e10 * self.objective),
             )
 
     def _add_drop_variables(self):
@@ -341,10 +332,8 @@ class _MasterSolvePulp(_MasterProblemBase):
                     lowBound=0,
                     upBound=1,
                     cat=pulp.LpInteger,
-                    e=(
-                        self.drop_penalty * self.objective
-                        + self.set_covering_constrs[node]
-                    ),
+                    e=(self.drop_penalty * self.objective +
+                       self.set_covering_constrs[node]),
                 )
 
     def _add_artificial_variables(self):
@@ -355,7 +344,7 @@ class _MasterSolvePulp(_MasterProblemBase):
                     "periodic_%s" % node,
                     lowBound=0,
                     upBound=None,
-                    cat=pulp.LpInteger,
+                    cat=pulp.LpContinuous,
                     e=(1e10 * self.objective + self.set_covering_constrs[node]),
                 )
 
@@ -363,8 +352,8 @@ class _MasterSolvePulp(_MasterProblemBase):
         """Adds empty constraints and sets the right hand side"""
         for k in range(len(self.num_vehicles)):
             self.vehicle_bound_constrs[k] = pulp.LpConstraintVar(
-                "upper_bound_vehicles_%s" % k, pulp.LpConstraintLE, self.num_vehicles[k]
-            )
+                "upper_bound_vehicles_%s" % k, pulp.LpConstraintLE,
+                self.num_vehicles[k])
 
     def _add_makespan_variable(self, new_route=None):
         """Defines maximum makespan of each route"""
@@ -387,6 +376,7 @@ class _MasterSolvePulp(_MasterProblemBase):
         """Defines maximum makespan"""
         for route in range(1, self._n_columns):
             self.makespan_constr[route] = pulp.LpConstraintVar(
-                "makespan_%s" % route, pulp.LpConstraintLE, 0,
+                "makespan_%s" % route,
+                pulp.LpConstraintLE,
+                0,
             )
-
