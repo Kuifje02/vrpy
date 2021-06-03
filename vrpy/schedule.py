@@ -13,7 +13,7 @@ class _Schedule:
         time_span (int): Time horizon.
         routes (list): List of best routes previously computed (VehicleRoutingProblem.best_routes).
         route_type (dict): Key: route ID; Value: vehicle_type (VehicleRoutingProblem.best_routes_type).
-        num_vehicles (int, optional): Maximum number of vehicles available. Defaults to None.
+        num_vehicles (list, optional): Maximum number of vehicles available (per day) for each type of vehicle. Defaults to None.
     """
 
     def __init__(
@@ -32,7 +32,10 @@ class _Schedule:
         # y[r][t] = 1 <=> route r is scheduled on day t
         self.y = pulp.LpVariable.dicts(
             "y",
-            (self.routes, [t for t in range(self.time_span)],),
+            (
+                self.routes,
+                [t for t in range(self.time_span)],
+            ),
             lowBound=0,
             upBound=1,
             cat=pulp.LpBinary,
@@ -45,6 +48,7 @@ class _Schedule:
     def solve(self, time_limit):
         """Formulates the scheduling problem as a linear program and solves it."""
 
+        logger.info("Computing schedule.")
         self._formulate()
         self._solve(time_limit)
         # self.prob.writeLP("schedule.lp")
@@ -112,8 +116,14 @@ class _Schedule:
         elif self.solver == "gurobi":
             gurobi_options = []
             if time_limit is not None:
-                gurobi_options.append(("TimeLimit", time_limit,))
+                gurobi_options.append(
+                    (
+                        "TimeLimit",
+                        time_limit,
+                    )
+                )
             self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
+        logger.info("%s" % (pulp.LpStatus[self.prob.status]))
 
     @property
     def routes_per_day(self):
@@ -127,4 +137,6 @@ class _Schedule:
                             day[t] = [r]
                         else:
                             day[t].append(r)
+        else:
+            logger.info("No feasible schedule found.")
         return day

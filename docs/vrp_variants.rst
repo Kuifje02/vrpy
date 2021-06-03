@@ -157,6 +157,10 @@ route numbers scheduled this day.
 	:math:`2` or :math:`2` and :math:`3` but not :math:`1` and :math:`3`. Such *combination* constraints are not taken into account by 
 	*VRPy* (yet).
 	
+.. note::
+
+   If the parameter ``num_vehicles`` is used, it refers to the maximum number of vehicles available per day (and not over the time span).
+	
 CVRP with heterogeneous fleet (HFCVRP)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
