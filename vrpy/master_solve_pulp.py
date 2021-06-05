@@ -176,7 +176,9 @@ class _MasterSolvePulp(_MasterProblemBase):
                     and "depot_from" not in self.G.nodes[node]
                     and "depot_to" not in self.G.nodes[node]
                 ):
-                    self.set_covering_constrs[node].sense = pulp.LpConstraintEQ
+                    for const in self.prob.constraints:
+                        # Modify the self.prob object (the self.set_covering_constrs object cannot be modified (?))
+                        self.prob.constraints[const].sense = pulp.LpConstraintEQ
                 if (
                     self.periodic
                     and self.G.nodes[node]["frequency"] > 1
@@ -191,7 +193,8 @@ class _MasterSolvePulp(_MasterProblemBase):
                 if "artificial_bound_" in var.name:
                     var.upBound = 0
                     var.lowBound = 0
-        # self.prob.writeLP("master.lp")
+            # self.prob.writeLP("master.lp")
+            # print(self.prob)
         # Solve with appropriate solver
         if self.solver == "cbc":
             self.prob.solve(
@@ -291,9 +294,11 @@ class _MasterSolvePulp(_MasterProblemBase):
                 right_hand_term = (
                     self.G.nodes[node]["frequency"] if self.periodic else 1
                 )
+                # Set constraint sign (>= or =)
+                sign = pulp.LpConstraintGE  # if self.relax else pulp.LpConstraintEQ
                 # Save set covering constraints
                 self.set_covering_constrs[node] = pulp.LpConstraintVar(
-                    "visit_node_%s" % node, pulp.LpConstraintGE, right_hand_term
+                    "visit_node_%s" % node, sign, right_hand_term
                 )
 
     def _add_route_selection_variable(self, route):

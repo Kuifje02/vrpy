@@ -9,7 +9,7 @@ class _MasterProblemBase:
         num_vehicles (int, optional): Maximum number of vehicles. Defaults to None.
         periodic (bool, optional): True if vertices are to be visited periodically. Defaults to False.
         minimize_global_span (bool, optional): True if global span (maximum distance) is minimized. Defaults to False.
-        relax (bool, optional): True if variables are continuous. Defaults to True.
+        solver (str): Name of solver to use.
     """
 
     def __init__(
