@@ -235,6 +235,12 @@ It is possible to limit the size of the fleet. For example, if at most :math:`10
 	the number of available vehicles, per vehicle type. The order of the items of the list has to be consistent with the other
 	lists (``cost``, ``load_capacity``, ``fixed_cost``).
 	
+And to enforce exactly ``num_vehicles`` vehicles, one can use the ``use_all_vehicles``:
+
+.. code-block:: python
+
+	>>> prob.use_all_vehicles = True
+	
 Dropping visits
 ^^^^^^^^^^^^^^^
 
