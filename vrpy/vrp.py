@@ -17,6 +17,7 @@ from vrpy.checks import (
     check_vrp,
     check_pickup_delivery_time_windows,
     check_periodic_num_vehicles,
+    check_clarke_wright_compatibility,
 )
 from vrpy.preprocessing import get_num_stops_upper_bound
 from vrpy.hyper_heuristic import _HyperHeuristic
@@ -153,6 +154,7 @@ class VehicleRoutingProblem:
         greedy=False,
         max_iter=None,
         run_exact=1,
+        heuristic_only=False,
     ):
         """Iteratively generates columns with negative reduced cost and solves as MIP.
 
@@ -204,6 +206,9 @@ class VehicleRoutingProblem:
                 if a pricing strategy is selected, this parameter controls the number of
                 iterations after which the exact algorithm is run.
                 Defaults to 1.
+            heuristic_only (bool, optional):
+                True if Clarke & Wright solution is return without entering column generation loop.
+                Defaults to False.
 
         Returns:
             float: Optimal solution of MIP based on generated columns
@@ -219,6 +224,7 @@ class VehicleRoutingProblem:
         self._greedy = greedy
         self._max_iter = max_iter
         self._run_exact = run_exact
+        self._heuristic_only = heuristic_only
         if self._pricing_strategy == "Hyper":
             self.hyper_heuristic = _HyperHeuristic()
 
@@ -232,9 +238,14 @@ class VehicleRoutingProblem:
             self._format()
         # Pre-processing
         self._pre_solve()
-        # Initialization
-        self._initialize(solver)
-        self._solve(dive, solver)
+        if self._heuristic_only:
+            # return solution found with Clarke & Wright heuristic
+            self._solve_with_clarke_wright()
+        else:
+            # Initialization
+            self._initialize(solver)
+            # Column generation procedure
+            self._solve(dive, solver)
 
     @property
     def best_routes_type(self):
@@ -808,6 +819,32 @@ class VehicleRoutingProblem:
                 solver=self._solver,
             )
         return subproblem
+
+    def _solve_with_clarke_wright(self):
+        # return Clarke Wright solution
+        check_clarke_wright_compatibility(
+            self.time_windows,
+            self.pickup_delivery,
+            self.distribution_collection,
+            self.mixed_fleet,
+            self.periodic,
+        )
+        alg = _ClarkeWright(
+            self.G,
+            self.load_capacity,
+            self.duration,
+            self.num_stops,
+        )
+        alg.run()
+        self._best_routes = dict(
+            zip([r for r in range(len(alg.best_routes))], alg.best_routes)
+        )
+        self._best_routes_vehicle_type = dict(
+            zip(
+                [r for r in range(len(alg.best_routes))],
+                [0 for r in range(len(alg.best_routes))],
+            )
+        )
 
     # Preprocessing #
 

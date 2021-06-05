@@ -61,6 +61,24 @@ def test_consistency_parameters():
         prob.solve(cspy=False, pricing_strategy="Exact")
 
 
+def test_heuristic_only_consistency():
+    """Checks is error is raised if heuristic_only is active with wrong arguments"""
+    G = DiGraph()
+    G.add_edge("Source", "Sink", cost=1)
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(G, time_windows=True)
+        prob.solve(heuristic_only=True)
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(G, mixed_fleet=True)
+        prob.solve(heuristic_only=True)
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(G, distribution_collection=True)
+        prob.solve(heuristic_only=True)
+    with pytest.raises(ValueError):
+        prob = VehicleRoutingProblem(G, periodic=True)
+        prob.solve(heuristic_only=True)
+
+
 def test_mixed_fleet_consistency():
     """Checks if mixed fleet arguments are consistent."""
     G = DiGraph()

@@ -126,6 +126,20 @@ class TestsToy:
         prob.solve(cspy=False)
         assert prob.best_value == 67
 
+    ######################
+    # Clarke Wright only #
+    ######################
+
+    def test_clarke_wright(self):
+        "Tests use of initial heuristic only"
+        prob = VehicleRoutingProblem(self.G, num_stops=3)
+        prob.solve(heuristic_only=True)
+        assert prob.best_value == 70
+        assert prob.best_routes[0] in [
+            ["Source", 4, 5, "Sink"],
+            ["Source", 1, 2, 3, "Sink"],
+        ]
+
     #########
     # other #
     #########

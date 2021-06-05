@@ -18,6 +18,7 @@ def check_arguments(
     G: DiGraph = None,
     vehicle_types: int = None,
     num_vehicles: list = None,
+    heuristic_only: bool = None,
 ):
     """Checks if arguments are consistent."""
 
@@ -59,6 +60,21 @@ def check_arguments(
                     "Cost attribute for edge (%s,%s) has dimension %s, should have dimension %s."
                     % (i, j, len(G.edges[i, j]["cost"]), vehicle_types)
                 )
+
+
+def check_clarke_wright_compatibility(
+    time_windows, pickup_delivery, distribution_collection, mixed_fleet, periodic
+):
+    if (
+        time_windows
+        or pickup_delivery
+        or distribution_collection
+        or mixed_fleet
+        or periodic
+    ):
+        raise ValueError(
+            "Clarke & Wright heuristic not compatible with time windows, pickup and delivery, simultaneous distribution and collection, mixed fleet, frequencies."
+        )
 
 
 def check_vrp(G: DiGraph = None):

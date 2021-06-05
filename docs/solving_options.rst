@@ -14,7 +14,17 @@ of nodes starting from the *Source* and ending at the *Sink*.
 
 	>>> prob.solve(initial_solution = [["Source",1,"Sink"],["Source",2,"Sink"]])
 	
+Solving with a heuristic
+~~~~~~~~~~~~~~~~~~~~~~~~
 
+It is possible to return the solution found by the Clarke and Wright algorithm by setting the ``heuristic_only`` argument to *True*.
+	
+.. code-block:: python
+
+	>>> prob.solve(heuristic_only=True)
+	
+Note that this only possible with capacity and/or resource constraints.
+	
 Locking routes
 ~~~~~~~~~~~~~~
 
