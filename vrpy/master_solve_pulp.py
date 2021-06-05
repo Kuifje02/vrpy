@@ -167,16 +167,31 @@ class _MasterSolvePulp(_MasterProblemBase):
 
     def _solve(self, relax: bool, time_limit: Optional[int]):
         # Set variable types
-        for var in self.prob.variables():
-            if relax:
-                var.cat = pulp.LpContinuous
-            else:
+        if not relax:
+            # Set partitioning constraints and artificial variables to integer
+            # (for the periodic case)
+            for node in self.G.nodes():
+                if (
+                    node not in ["Source", "Sink"]
+                    and "depot_from" not in self.G.nodes[node]
+                    and "depot_to" not in self.G.nodes[node]
+                ):
+                    self.set_covering_constrs[node].sense = pulp.LpConstraintEQ
+                if (
+                    self.periodic
+                    and self.G.nodes[node]["frequency"] > 1
+                    and node != "Source"
+                ):
+                    self.dummy[node].cat = pulp.LpInteger
+            # Set route variables to integer
+            for var in self.y.values():
                 var.cat = pulp.LpInteger
-                # Force vehicle bound artificial variable to 0
+            # Force vehicle bound artificial variable to 0
+            for var in self.dummy_bound.values():
                 if "artificial_bound_" in var.name:
                     var.upBound = 0
                     var.lowBound = 0
-        self.prob.writeLP("master.lp")
+        # self.prob.writeLP("master.lp")
         # Solve with appropriate solver
         if self.solver == "cbc":
             self.prob.solve(
@@ -286,7 +301,7 @@ class _MasterSolvePulp(_MasterProblemBase):
             "y{}".format(route.graph["name"]),
             lowBound=0,
             upBound=1,
-            cat=pulp.LpInteger,
+            cat=pulp.LpContinuous,
             e=(
                 pulp.lpSum(
                     self.set_covering_constrs[r]
@@ -359,7 +374,7 @@ class _MasterSolvePulp(_MasterProblemBase):
                     "periodic_%s" % node,
                     lowBound=0,
                     upBound=None,
-                    cat=pulp.LpInteger,
+                    cat=pulp.LpContinuous,
                     e=(1e10 * self.objective + self.set_covering_constrs[node]),
                 )
 
