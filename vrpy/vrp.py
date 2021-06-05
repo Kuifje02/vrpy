@@ -859,6 +859,9 @@ class VehicleRoutingProblem:
             )
             self._initial_routes += alg.best_routes
 
+            # TO DO: Run heuristics from VeRyPy for the CVRP
+            # if not self.num_stops and not self.duration:
+
         # If pickup and delivery, initial routes are Source-pickup-delivery-Sink
         elif self.pickup_delivery:
             for v in self.G.nodes():

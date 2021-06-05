@@ -20,10 +20,7 @@ G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 
 if __name__ == "__main__":
 
-    prob = VehicleRoutingProblem(G,
-                                 load_capacity=6,
-                                 pickup_delivery=True,
-                                 num_stops=6)
+    prob = VehicleRoutingProblem(G, load_capacity=6, pickup_delivery=True, num_stops=6)
     prob.solve(cspy=False)
     print(prob.best_value)
     print(prob.best_routes)

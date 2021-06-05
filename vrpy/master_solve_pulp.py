@@ -65,8 +65,7 @@ class _MasterSolvePulp(_MasterProblemBase):
         return self.get_duals(), self.prob.objective.value()
 
     def update(self, new_route):
-        """Add new column.
-        """
+        """Add new column."""
         if self.minimize_global_span:
             self._add_route_selection_variable_for_global_span(new_route)
         else:
@@ -202,7 +201,12 @@ class _MasterSolvePulp(_MasterProblemBase):
             ]
             # Only specify time limit if given (o.w. errors)
             if time_limit is not None:
-                gurobi_options.append(("TimeLimit", time_limit,))
+                gurobi_options.append(
+                    (
+                        "TimeLimit",
+                        time_limit,
+                    )
+                )
             self.prob.solve(pulp.GUROBI(msg=False, options=gurobi_options))
 
     # Private methods for formulating and updating the problem #
@@ -387,6 +391,7 @@ class _MasterSolvePulp(_MasterProblemBase):
         """Defines maximum makespan"""
         for route in range(1, self._n_columns):
             self.makespan_constr[route] = pulp.LpConstraintVar(
-                "makespan_%s" % route, pulp.LpConstraintLE, 0,
+                "makespan_%s" % route,
+                pulp.LpConstraintLE,
+                0,
             )
-

@@ -7,7 +7,12 @@ from networkx import (
 )
 from numpy import array
 
-from examples.data import DISTANCES, TRAVEL_TIMES, TIME_WINDOWS_LOWER, TIME_WINDOWS_UPPER
+from examples.data import (
+    DISTANCES,
+    TRAVEL_TIMES,
+    TIME_WINDOWS_LOWER,
+    TIME_WINDOWS_UPPER,
+)
 
 from vrpy import VehicleRoutingProblem
 
