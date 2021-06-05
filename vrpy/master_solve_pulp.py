@@ -178,7 +178,8 @@ class _MasterSolvePulp(_MasterProblemBase):
                 ):
                     for const in self.prob.constraints:
                         # Modify the self.prob object (the self.set_covering_constrs object cannot be modified (?))
-                        self.prob.constraints[const].sense = pulp.LpConstraintEQ
+                        if "visit_node" in const:
+                            self.prob.constraints[const].sense = pulp.LpConstraintEQ
                 if (
                     self.periodic
                     and self.G.nodes[node]["frequency"] > 1
