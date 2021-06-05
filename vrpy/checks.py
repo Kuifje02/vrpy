@@ -18,7 +18,7 @@ def check_arguments(
     G: DiGraph = None,
     vehicle_types: int = None,
     num_vehicles: list = None,
-    heuristic_only: bool = None,
+    use_all_vehicles: bool = None,
 ):
     """Checks if arguments are consistent."""
 
@@ -60,6 +60,9 @@ def check_arguments(
                     "Cost attribute for edge (%s,%s) has dimension %s, should have dimension %s."
                     % (i, j, len(G.edges[i, j]["cost"]), vehicle_types)
                 )
+    if use_all_vehicles:
+        if not num_vehicles:
+            logger.warning("num_vehicles = None, use_all_vehicles ignored")
 
 
 def check_clarke_wright_compatibility(

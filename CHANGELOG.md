@@ -7,18 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `heuristic_only` option
+- `use_all_vehicles` option
+
 ## [v0.4.0] - 13/05/2021
 
 ### Added
+
 - `num_vehicles` option with `periodic` option
 
-### Added
-- `heuristic_only` option
 ### Changed
+
 - cspy 1.0.0
 - node load when simultaneous distribution and collection (#79) is now accurate
 
 ### Fixed
+
 - issues #79, #82, #84, #86
 
 ## [v0.3.0] - 10/11/2020

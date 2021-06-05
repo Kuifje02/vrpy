@@ -254,6 +254,13 @@ class TestsToy:
         assert prob.best_value == 240
         assert prob.best_routes == {1: ["Source", 1, 2, 3, "Sink"]}
 
+    def test_num_vehicles_use_all(self):
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, num_vehicles=2, use_all_vehicles=True, drop_penalty=100
+        )
+        prob.solve()
+        assert len(prob.best_routes) == 2
+
     def test_periodic(self):
         self.G.nodes[2]["frequency"] = 2
         prob = VehicleRoutingProblem(self.G, num_stops=2, periodic=2)

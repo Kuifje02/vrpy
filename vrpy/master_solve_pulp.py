@@ -387,8 +387,9 @@ class _MasterSolvePulp(_MasterProblemBase):
     def _add_bound_vehicles(self):
         """Adds empty constraints and sets the right hand side"""
         for k in range(len(self.num_vehicles)):
+            sign = pulp.LpConstraintEQ if self.use_all_vehicles else pulp.LpConstraintLE
             self.vehicle_bound_constrs[k] = pulp.LpConstraintVar(
-                "upper_bound_vehicles_%s" % k, pulp.LpConstraintLE, self.num_vehicles[k]
+                "upper_bound_vehicles_%s" % k, sign, self.num_vehicles[k]
             )
 
     def _add_makespan_variable(self, new_route=None):

@@ -61,6 +61,9 @@ class VehicleRoutingProblem:
         num_vehicles (int, optional):
             Maximum number of vehicles available.
             Defaults to None (in this case num_vehicles is unbounded).
+        use_all_vehicles (bool, optional):
+            True if all vehicles specified by num_vehicles should be used.
+            Defaults to False.
         periodic (int, optional):
             Time span if vertices are to be visited periodically.
             Defaults to None.
@@ -84,6 +87,7 @@ class VehicleRoutingProblem:
         drop_penalty=None,
         fixed_cost=0,
         num_vehicles=None,
+        use_all_vehicles=False,
         periodic=None,
         mixed_fleet=False,
         minimize_global_span=False,
@@ -100,6 +104,7 @@ class VehicleRoutingProblem:
         self.fixed_cost = fixed_cost
         self.num_vehicles = num_vehicles if num_vehicles is not None else []
         self._num_vehicles_schedule = None
+        self.use_all_vehicles = use_all_vehicles
         self.periodic = periodic
         self.mixed_fleet = mixed_fleet
         self.minimize_global_span = minimize_global_span
@@ -423,6 +428,7 @@ class VehicleRoutingProblem:
             G=self.G,
             vehicle_types=self._vehicle_types,
             num_vehicles=self.num_vehicles,
+            use_all_vehicles=self.use_all_vehicles,
         )
         # Setup fixed costs
         if self.fixed_cost:
@@ -473,6 +479,7 @@ class VehicleRoutingProblem:
             self._routes,
             self.drop_penalty,
             self.num_vehicles,
+            self.use_all_vehicles,
             self.periodic,
             self.minimize_global_span,
             solver,
