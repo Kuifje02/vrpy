@@ -106,3 +106,14 @@ def test_feasibility_check():
     with pytest.raises(ValueError):
         prob = VehicleRoutingProblem(G, duration=1)
         prob.solve()
+
+
+def test_locked_routes_check():
+    """Tests if locked routes check."""
+    G = DiGraph()
+    G.add_edge("Source", 1, cost=1)
+    G.add_edge(1, "Sink", cost=1)
+    G.nodes[1]["demand"] = 2
+    prob = VehicleRoutingProblem(G)
+    with pytest.raises(ValueError):
+        prob.solve(preassignments=[[1, 2]])

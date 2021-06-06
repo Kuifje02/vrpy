@@ -18,6 +18,7 @@ from vrpy.checks import (
     check_pickup_delivery_time_windows,
     check_periodic_num_vehicles,
     check_clarke_wright_compatibility,
+    check_preassignments,
 )
 from vrpy.preprocessing import get_num_stops_upper_bound
 from vrpy.hyper_heuristic import _HyperHeuristic
@@ -451,6 +452,7 @@ class VehicleRoutingProblem:
         )
         # Lock preassigned routes
         if self._preassignments:
+            check_preassignments(self._preassignments, self.G)
             self._lock()
         # Remove infeasible arcs
         self._prune_graph()
@@ -965,6 +967,7 @@ class VehicleRoutingProblem:
                 self.G.remove_nodes_from(route[1:-1])
             # Otherwise, keep it and set the costs to 0
             else:
+                logger.info("locking partial route %s" % route)
                 for (i, j) in edges:
                     for k in range(self._vehicle_types):
                         self.G.edges[i, j]["cost"][k] = 0

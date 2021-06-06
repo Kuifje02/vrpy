@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- locked routes checks
+
 ### Changed
 
 ### Fixed
@@ -19,8 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `heuristic_only` option
 - `use_all_vehicles` option
-
-### Changed
 
 ### Fixed
 

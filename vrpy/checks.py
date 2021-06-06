@@ -148,6 +148,23 @@ def check_initial_routes(initial_routes: list = None, G: DiGraph = None):
                 raise KeyError("Edge (%s,%s) has no cost attribute." % (i, j))
 
 
+def check_preassignments(routes: list = None, G: DiGraph = None):
+    """
+    Checks if locked routes are consistent.
+
+    Args:
+        routes (list, optional): Locked routes. Defaults to None.
+        G (DiGraph, optional): Network. Defaults to None.
+    """
+    for route in routes:
+        edges = [(route[k], route[k + 1]) for k in range(len(route) - 1)]
+        for (i, j) in edges:
+            if (i, j) not in G.edges():
+                raise ValueError(
+                    "Edge (%s,%s) in locked route %s is not in graph G." % (i, j, route)
+                )
+
+
 def check_consistency(
     cspy: bool = None,
     pickup_delivery: bool = None,

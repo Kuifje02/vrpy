@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="vrpy",
-    version="0.4.0",
+    version="0.5.0",
     description="A python framework for solving vehicle routing problems",
     license="MIT",
     author="Romain Montagne, David Torres",
