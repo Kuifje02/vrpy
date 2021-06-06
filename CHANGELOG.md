@@ -9,8 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [v0.5.0] - 06/06/2021
+
+### Added
+
 - `heuristic_only` option
 - `use_all_vehicles` option
+
+### Changed
+
+### Fixed
+
+- set covering constraints in last MIP with = sign
 
 ## [v0.4.0] - 13/05/2021
 
@@ -58,7 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pricing strategy names
 
 
-[Unreleased]: https://github.com/Kuifje02/vrpy/compare/0.2.0...master
-[v0.2.0]: https://github.com/Kuifje02/vrpy/compare/0.1.0...0.2.0
-[v0.3.0]: https://github.com/Kuifje02/vrpy/compare/0.2.0...0.3.0
-[v0.4.0]: https://github.com/Kuifje02/vrpy/compare/0.2.0...0.4.0
+[Unreleased]: https://github.com/Kuifje02/vrpy
+[v0.2.0]: https://github.com/Kuifje02/vrpy/releases/tag/v0.2.0
+[v0.3.0]: https://github.com/Kuifje02/vrpy/releases/tag/v0.3.0
+[v0.4.0]: https://github.com/Kuifje02/vrpy/releases/tag/v0.4.0
+[v0.5.0]: https://github.com/Kuifje02/vrpy/releases/tag/v0.5.0
