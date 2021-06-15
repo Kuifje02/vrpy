@@ -380,7 +380,7 @@ class VehicleRoutingProblem:
             return departure
         for i in self.best_routes:
             departure[i] = {}
-            departure[i]["Source"] = self._H.nodes["Source"]["upper"]
+            departure[i]["Source"] = self._H.nodes["Source"]["lower"]
             route = self.best_routes[i]
             for j in range(1, len(route)):
                 tail = route[j - 1]
