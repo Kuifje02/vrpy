@@ -52,3 +52,16 @@ class TestsSolomon:
     def test_subproblem_cspy(self):
         self.prob.solve(**self.solver_args, cspy=True)
         assert round(self.prob.best_value, -1) in [190, 200]
+
+    def test_arrival_departure_times_lp(self):
+        self.prob.solve(**self.solver_args, cspy=False)
+        # Check departure times
+        for k1, v1 in self.prob.departure_time.items():
+            for k2, v2 in v1.items():
+                assert (self.G.nodes[k2]["lower"] <= v2)
+                assert (v2 <= self.G.nodes[k2]["upper"])
+        # Check arrival times
+        for k1, v1 in self.prob.arrival_time.items():
+            for k2, v2 in v1.items():
+                assert (self.G.nodes[k2]["lower"] <= v2)
+                assert (v2 <= self.G.nodes[k2]["upper"])

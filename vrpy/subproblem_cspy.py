@@ -14,7 +14,8 @@ class _MyREFCallback(REFCallback):
     Based on Righini and Salani (2006).
     """
 
-    def __init__(self, max_res, time_windows, distribution_collection, T, resources):
+    def __init__(self, max_res, time_windows, distribution_collection, T,
+                 resources):
         REFCallback.__init__(self)
         # Set attributes for use in REF functions
         self._max_res = max_res
@@ -27,7 +28,8 @@ class _MyREFCallback(REFCallback):
         self._source_id = None
         self._sink_id = None
 
-    def REF_fwd(self, cumul_res, tail, head, edge_res, partial_path, cumul_cost):
+    def REF_fwd(self, cumul_res, tail, head, edge_res, partial_path,
+                cumul_cost):
         new_res = list(cumul_res)
         i, j = tail, head
         # stops / monotone resource
@@ -70,10 +72,12 @@ class _MyREFCallback(REFCallback):
             # Pickup
             new_res[4] += self._sub_G.nodes[j]["collect"]
             # Delivery
-            new_res[5] = max(new_res[5] + self._sub_G.nodes[j]["demand"], new_res[4])
+            new_res[5] = max(new_res[5] + self._sub_G.nodes[j]["demand"],
+                             new_res[4])
         return new_res
 
-    def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path, cumul_cost):
+    def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path,
+                cumul_cost):
         new_res = list(cumul_res)
         i, j = tail, head
 
@@ -94,23 +98,24 @@ class _MyREFCallback(REFCallback):
         #    travel_time_si = 0
         # Lower time windows
         # a_i = self._sub_G.nodes[i]["lower"]
-        # a_j = self._sub_G.nodes[j]["lower"]
+        a_j = self._sub_G.nodes[j]["lower"]
         # a_s = self._sub_G.nodes[self._source_id]["lower"]
         # Upper time windows
         b_i = self._sub_G.nodes[i]["upper"]
         b_j = self._sub_G.nodes[j]["upper"]
         # b_s = self._sub_G.nodes[self._source_id]["upper"]
 
-        new_res[2] = max(new_res[2] + theta_j + travel_time_ij, self._T - b_i - theta_i)
+        new_res[2] = max(new_res[2] + theta_j + travel_time_ij,
+                         self._T - b_i - theta_i)
 
         # time-window feasibility
-        if not self._time_windows or (new_res[2] <= b_j):
+        if not self._time_windows or (new_res[2] <= self._T - a_j - theta_j):
             # and new_res[2] < self._T - a_i - theta_i and
             #         a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
             # if not self._time_windows or (
-            #         new_res[2] <= self._T - a_j and
-            #         new_res[2] < self._T - a_i - theta_i and
-            #         a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
+            #        new_res[2] <= self._T - a_j and
+            #        new_res[2] < self._T - a_i - theta_i and
+            #        a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
             new_res[3] = 0
         else:
             new_res[3] = 1
@@ -119,7 +124,8 @@ class _MyREFCallback(REFCallback):
             # Delivery
             new_res[5] += new_res[5] + self._sub_G.nodes[i]["demand"]
             # Pickup
-            new_res[4] = max(new_res[5], new_res[4] + self._sub_G.nodes[i]["collect"])
+            new_res[4] = max(new_res[5],
+                             new_res[4] + self._sub_G.nodes[i]["collect"])
         return new_res
 
     def REF_join(self, fwd_resources, bwd_resources, tail, head, edge_res):
@@ -185,13 +191,13 @@ class _SubProblemCSPY(_SubProblemBase):
         # Default lower and upper bounds
         self.min_res = [0] * len(self.resources)
         # Add upper bounds for mono, stops, load and time, and time windows
-        total_demand = sum([self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
+        total_demand = sum(
+            [self.sub_G.nodes[v]["demand"] for v in self.sub_G.nodes()])
         self.max_res = [
             floor(len(self.sub_G.nodes()) / 2),  # stop/mono
             total_demand,  # load
-            sum(
-                [self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()]
-            ),  # time
+            sum([self.sub_G.edges[u, v]["time"] for u, v in self.sub_G.edges()
+                ]),  # time
             1,  # time windows
             total_demand,  # pickup
             total_demand,  # deliver
@@ -292,13 +298,14 @@ class _SubProblemCSPY(_SubProblemBase):
             # Time windows feasibility
             self.max_res[3] = 0
             # Maximum feasible arrival time
-            self.T = max(
-                self.sub_G.nodes[v]["upper"]
-                + self.sub_G.nodes[v]["service_time"]
-                + self.sub_G.edges[v, "Sink"]["time"]
-                for v in self.sub_G.predecessors("Sink")
-            )
+            # for v in self.sub_G.nodes():
+            #     print("node = ", v, "lb = ", self.sub_G.nodes[v]["lower"],
+            #           "ub = ", self.sub_G.nodes[v]["upper"])
 
+            self.T = max(self.sub_G.nodes[v]["upper"] +
+                         self.sub_G.nodes[v]["service_time"] +
+                         self.sub_G.edges[v, "Sink"]["time"]
+                         for v in self.sub_G.predecessors("Sink"))
         if self.load_capacity and self.distribution_collection:
             self.max_res[4] = self.load_capacity[self.vehicle_type]
             self.max_res[5] = self.load_capacity[self.vehicle_type]
