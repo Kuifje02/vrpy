@@ -3,7 +3,7 @@
 import logging
 
 from numpy.random import RandomState
-from networkx import DiGraph, NetworkXError, has_path
+from networkx import DiGraph, NetworkXError, has_path, shortest_path_length
 
 logger = logging.getLogger(__name__)
 
@@ -202,15 +202,16 @@ def check_feasibility(
     if duration:
         for v in G.nodes():
             if v not in ["Source", "Sink"]:
-                round_trip_duration = (
-                    G.nodes[v]["service_time"]
-                    + G.edges["Source", v]["time"]
-                    + G.edges[v, "Sink"]["time"]
+                shortest_path_to = shortest_path_length(
+                    G, source="Source", target=v, weight="time"
                 )
-                if round_trip_duration > duration:
+                shortest_path_from = shortest_path_length(
+                    G, source=v, target="Sink", weight="time"
+                )
+                shortest_trip = shortest_path_from + shortest_path_to
+                if shortest_trip > duration:
                     raise ValueError(
-                        "Node %s not reachable: duration of path [Source,%s,Sink], %s, is larger than max duration %s."
-                        % (v, v, round_trip_duration, duration)
+                        "Node %s not reachable with duration constraints" % v
                     )
 
 
