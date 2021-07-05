@@ -82,39 +82,37 @@ class _MasterSolvePulp(_MasterProblemBase):
         duals = {}
         # set covering duals
         for node in self.G.nodes():
-            if (
-                node not in ["Source", "Sink"]
-                and "depot_from" not in self.G.nodes[node]
-                and "depot_to" not in self.G.nodes[node]
-            ):
+            if (node not in ["Source", "Sink"] and
+                    "depot_from" not in self.G.nodes[node] and
+                    "depot_to" not in self.G.nodes[node]):
                 constr_name = "visit_node_%s" % node
                 if not relax:
                     duals[node] = self.prob.constraints[constr_name].pi
                 else:
                     duals[node] = relax.constraints[constr_name].pi
         # num vehicles dual
-        if self.num_vehicles and not self.periodic:
+        if (self.num_vehicles and not self.periodic) or self.use_all_vehicles:
             duals["upper_bound_vehicles"] = {}
             for k in range(len(self.num_vehicles)):
+                sign = 1 if self.use_all_vehicles else -1
                 if not relax:
-                    duals["upper_bound_vehicles"][k] = self.prob.constraints[
-                        "upper_bound_vehicles_%s" % k
-                    ].pi
+                    duals["upper_bound_vehicles"][
+                        k] = sign * self.prob.constraints[
+                            "upper_bound_vehicles_%s" % k].pi
                 else:
-                    duals["upper_bound_vehicles"][k] = relax.constraints[
-                        "upper_bound_vehicles_%s" % k
-                    ].pi
+                    duals["upper_bound_vehicles"][k] = sign * relax.constraints[
+                        "upper_bound_vehicles_%s" % k].pi
         # global span duals
         if self.minimize_global_span:
             for route in self.routes:
                 if not relax:
-                    duals["makespan_%s" % route.graph["name"]] = self.prob.constraints[
-                        "makespan_%s" % route.graph["name"]
-                    ].pi
+                    duals["makespan_%s" %
+                          route.graph["name"]] = self.prob.constraints[
+                              "makespan_%s" % route.graph["name"]].pi
                 else:
-                    duals["makespan_%s" % route.graph["name"]] = relax.constraints[
-                        "makespan_%s" % route.graph["name"]
-                    ].pi
+                    duals["makespan_%s" %
+                          route.graph["name"]] = relax.constraints[
+                              "makespan_%s" % route.graph["name"]].pi
         return duals
 
     def get_total_cost_and_routes(self, relax: bool):

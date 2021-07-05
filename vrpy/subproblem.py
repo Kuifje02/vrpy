@@ -112,24 +112,24 @@ class _SubProblemBase:
         elif pricing_strategy == "Exact":
             # The graph remains as is
             self.sub_G = self.G
-        logger.debug("Pricing strategy %s, %s" % (pricing_strategy, pricing_parameter))
+        logger.debug("Pricing strategy %s, %s" %
+                     (pricing_strategy, pricing_parameter))
 
     def add_reduced_cost_attribute(self):
         """Substracts the dual values to compute reduced cost on each edge."""
         for edge in self.G.edges(data=True):
             edge[2]["weight"] = edge[2]["cost"][self.vehicle_type]
             if self.route:
-                edge[2]["weight"] *= -self.duals[
-                    "makespan_%s" % self.route.graph["name"]
-                ]
+                edge[2]["weight"] *= -self.duals["makespan_%s" %
+                                                 self.route.graph["name"]]
             for v in self.duals:
                 if edge[0] == v:
                     edge[2]["weight"] -= self.duals[v]
         if "upper_bound_vehicles" in self.duals:
             for v in self.G.successors("Source"):
-                self.G.edges["Source", v]["weight"] -= self.duals[
-                    "upper_bound_vehicles"
-                ][self.vehicle_type]
+                self.G.edges["Source",
+                             v]["weight"] += self.duals["upper_bound_vehicles"][
+                                 self.vehicle_type]
 
     def discard_nodes(self):
         """Removes nodes with marginal cost = 0."""
