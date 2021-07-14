@@ -7,7 +7,6 @@ from vrpy.preprocessing import get_num_stops_upper_bound
 
 
 class TestsToy:
-
     def setup(self):
         """
         Creates a toy graph.
@@ -58,10 +57,7 @@ class TestsToy:
         """Tests column generation procedure on toy graph
         with stop, capacity and duration constraints
         """
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     load_capacity=10,
-                                     duration=62)
+        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
         prob.solve(exact=False)
         assert prob.best_value == 85
         assert set(prob.best_routes_duration.values()) == {41, 62}
@@ -82,8 +78,7 @@ class TestsToy:
         assert prob.arrival_time[1]["Sink"] in [41, 62]
 
     def test_cspy_schedule(self):
-        """Tests if final schedule is time-window feasible
-        """
+        """Tests if final schedule is time-window feasible"""
         prob = VehicleRoutingProblem(
             self.G,
             num_stops=3,
@@ -93,13 +88,13 @@ class TestsToy:
         # Check departure times
         for k1, v1 in prob.departure_time.items():
             for k2, v2 in v1.items():
-                assert (self.G.nodes[k2]["lower"] <= v2)
-                assert (v2 <= self.G.nodes[k2]["upper"])
+                assert self.G.nodes[k2]["lower"] <= v2
+                assert v2 <= self.G.nodes[k2]["upper"]
         # Check arrival times
         for k1, v1 in prob.arrival_time.items():
             for k2, v2 in v1.items():
-                assert (self.G.nodes[k2]["lower"] <= v2)
-                assert (v2 <= self.G.nodes[k2]["upper"])
+                assert self.G.nodes[k2]["lower"] <= v2
+                assert v2 <= self.G.nodes[k2]["upper"]
 
     ###############
     # subsolve lp #
@@ -151,13 +146,13 @@ class TestsToy:
         # Check departure times
         for k1, v1 in prob.departure_time.items():
             for k2, v2 in v1.items():
-                assert (self.G.nodes[k2]["lower"] <= v2)
-                assert (v2 <= self.G.nodes[k2]["upper"])
+                assert self.G.nodes[k2]["lower"] <= v2
+                assert v2 <= self.G.nodes[k2]["upper"]
         # Check arrival times
         for k1, v1 in prob.arrival_time.items():
             for k2, v2 in v1.items():
-                assert (self.G.nodes[k2]["lower"] <= v2)
-                assert (v2 <= self.G.nodes[k2]["upper"])
+                assert self.G.nodes[k2]["lower"] <= v2
+                assert v2 <= self.G.nodes[k2]["upper"]
 
     def test_LP_stops_elementarity(self):
         """Tests column generation procedure on toy graph"""
@@ -188,11 +183,9 @@ class TestsToy:
     #########
 
     def test_all(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     time_windows=True,
-                                     duration=63,
-                                     load_capacity=10)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, time_windows=True, duration=63, load_capacity=10
+        )
         prob.solve(cspy=False)
         lp_best = prob.best_value
         prob.solve(cspy=True)
@@ -217,9 +210,7 @@ class TestsToy:
 
     def test_pricing_strategies(self):
         sol = []
-        for strategy in [
-                "Exact", "BestPaths", "BestEdges1", "BestEdges2", "Hyper"
-        ]:
+        for strategy in ["Exact", "BestPaths", "BestEdges1", "BestEdges2", "Hyper"]:
             prob = VehicleRoutingProblem(self.G, num_stops=4)
             prob.solve(pricing_strategy=strategy)
             sol.append(prob.best_value)
@@ -294,22 +285,25 @@ class TestsToy:
         assert set(prob.best_routes_cost.values()) == {30 + 100, 40 + 100}
 
     def test_drop_nodes(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     num_vehicles=1,
-                                     drop_penalty=100)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, num_vehicles=1, drop_penalty=100
+        )
         prob.solve()
         assert prob.best_value == 240
         assert prob.best_routes == {1: ["Source", 1, 2, 3, "Sink"]}
 
     def test_num_vehicles_use_all(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     num_vehicles=2,
-                                     use_all_vehicles=True,
-                                     drop_penalty=100)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, num_vehicles=2, use_all_vehicles=True, drop_penalty=100
+        )
         prob.solve()
         assert len(prob.best_routes) == 2
+        prob.num_vehicles = 3
+        prob.solve()
+        assert len(prob.best_routes) == 3
+        prob.num_vehicles = 4
+        prob.solve()
+        assert len(prob.best_routes) == 4
 
     def test_periodic(self):
         self.G.nodes[2]["frequency"] = 2
@@ -322,10 +316,7 @@ class TestsToy:
                 frequency += 1
         assert frequency == 2
         assert prob.schedule[0] in [[1], [1, 2]]
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=2,
-                                     periodic=2,
-                                     num_vehicles=1)
+        prob = VehicleRoutingProblem(self.G, num_stops=2, periodic=2, num_vehicles=1)
         prob.solve()
         assert prob.schedule == {}
 
