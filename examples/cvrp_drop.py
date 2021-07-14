@@ -32,3 +32,5 @@ if __name__ == "__main__":
     print(prob.best_routes_load)
     print(prob.node_load)
     assert prob.best_value == 8096
+
+    # why doesn't vrpy find 7936 ?
