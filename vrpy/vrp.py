@@ -946,10 +946,16 @@ class VehicleRoutingProblem:
                 G.add_edge(i, j, cost=edge_cost)
                 total_cost += edge_cost
             G.graph["cost"] = total_cost
-            for k in range(len(self.load_capacity)):
-                if sum(self.G.nodes[v]["demand"] for v in r) <= self.load_capacity[k]:
-                    G.graph["vehicle_type"] = k
-                    break
+            if self.load_capacity:
+                for k in range(len(self.load_capacity)):
+                    if (
+                        sum(self.G.nodes[v]["demand"] for v in r)
+                        <= self.load_capacity[k]
+                    ):
+                        G.graph["vehicle_type"] = k
+                        break
+            else:
+                G.graph["vehicle_type"] = 0
             if "vehicle_type" not in G.graph:
                 raise ValueError(
                     "Could not find initial feasible solution. Check loading capacities."
