@@ -46,7 +46,7 @@ class _MasterSolvePulp(_MasterProblemBase):
         logger.debug("master problem relax %s" % relax)
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
-        # self.prob.writeLP("master.lp")
+        self.prob.writeLP("master.lp")
 
         if pulp.LpStatus[self.prob.status] != "Optimal":
             raise Exception("problem " + str(pulp.LpStatus[self.prob.status]))
@@ -209,7 +209,8 @@ class _MasterSolvePulp(_MasterProblemBase):
                 pulp.CPLEX_CMD(
                     msg=False,
                     timeLimit=time_limit,
-                    options=["set lpmethod 4", "set barrier crossover -1"],
+                    # options=["set lpmethod 4", "set barrier crossover -1"], # set barrier crossover -1 is deprecated
+                    options=["set lpmethod 4", "set solutiontype 2"],
                 )
             )
         elif self.solver == "gurobi":
