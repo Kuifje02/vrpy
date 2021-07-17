@@ -933,7 +933,7 @@ class VehicleRoutingProblem:
     def _convert_initial_routes_to_digraphs(self):
         """
         Converts list of initial routes to list of Digraphs.
-        By default, initial routes are computed with vehicle type 0 (the first one in the list).
+        By default, initial routes are computed with the first feasible vehicle type.
         """
         self._routes = []
         self._routes_with_node = {}
@@ -946,7 +946,14 @@ class VehicleRoutingProblem:
                 G.add_edge(i, j, cost=edge_cost)
                 total_cost += edge_cost
             G.graph["cost"] = total_cost
-            G.graph["vehicle_type"] = 0
+            for k in range(len(self.load_capacity)):
+                if sum(self.G.nodes[v]["demand"] for v in r) <= self.load_capacity[k]:
+                    G.graph["vehicle_type"] = k
+                    break
+            if "vehicle_type" not in G.graph:
+                raise ValueError(
+                    "Could not find initial feasible solution. Check loading capacities."
+                )
             self._routes.append(G)
             for v in r[1:-1]:
                 if v in self._routes_with_node:
