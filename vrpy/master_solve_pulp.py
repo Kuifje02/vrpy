@@ -46,7 +46,7 @@ class _MasterSolvePulp(_MasterProblemBase):
         logger.debug("master problem relax %s" % relax)
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
-        self.prob.writeLP("master.lp")
+        # self.prob.writeLP("master.lp")
 
         if pulp.LpStatus[self.prob.status] != "Optimal":
             raise Exception("problem " + str(pulp.LpStatus[self.prob.status]))
