@@ -46,6 +46,7 @@ class _MasterSolvePulp(_MasterProblemBase):
         logger.debug("master problem relax %s" % relax)
         logger.debug("Status: %s" % pulp.LpStatus[self.prob.status])
         logger.debug("Objective: %s" % pulp.value(self.prob.objective))
+        # self.prob.writeLP("master.lp")
 
         if pulp.LpStatus[self.prob.status] != "Optimal":
             raise Exception("problem " + str(pulp.LpStatus[self.prob.status]))
@@ -194,8 +195,6 @@ class _MasterSolvePulp(_MasterProblemBase):
                 if "artificial_bound_" in var.name:
                     var.upBound = 0
                     var.lowBound = 0
-            # self.prob.writeLP("master.lp")
-            # print(self.prob)
         # Solve with appropriate solver
         if self.solver == "cbc":
             self.prob.solve(
@@ -210,7 +209,8 @@ class _MasterSolvePulp(_MasterProblemBase):
                 pulp.CPLEX_CMD(
                     msg=False,
                     timeLimit=time_limit,
-                    options=["set lpmethod 4", "set barrier crossover -1"],
+                    # options=["set lpmethod 4", "set barrier crossover -1"], # set barrier crossover -1 is deprecated
+                    options=["set lpmethod 4", "set solutiontype 2"],
                 )
             )
         elif self.solver == "gurobi":
@@ -360,7 +360,7 @@ class _MasterSolvePulp(_MasterProblemBase):
         drop[v] takes value 1 if and only if node v is dropped.
         """
         for node in self.G.nodes():
-            if self.G.nodes[node]["demand"] > 0 and node != "Source":
+            if node not in ["Source", "Sink"]:
                 self.drop[node] = pulp.LpVariable(
                     "drop_%s" % node,
                     lowBound=0,

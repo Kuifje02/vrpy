@@ -7,7 +7,7 @@ class _MasterProblemBase:
         routes (list): Current routes/variables/columns.
         drop_penalty (int, optional): Value of penalty if node is dropped. Defaults to None.
         num_vehicles (int, optional): Maximum number of vehicles. Defaults to None.
-        use_all_vehicles (bool, optional): True if all vehicles specified by num_vehicles should be used. Defaults to False
+        use_all_vehicles (bool, optional): True if all vehicles specified by num_vehicles should be used. Defaults to False.
         periodic (bool, optional): True if vertices are to be visited periodically. Defaults to False.
         minimize_global_span (bool, optional): True if global span (maximum distance) is minimized. Defaults to False.
         solver (str): Name of solver to use.

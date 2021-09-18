@@ -17,14 +17,20 @@ G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 
 if __name__ == "__main__":
 
-    prob = VehicleRoutingProblem(G,
-                                 load_capacity=15,
-                                 drop_penalty=1000,
-                                 num_vehicles=4)
-    prob.solve()
+    prob = VehicleRoutingProblem(G, load_capacity=15, drop_penalty=1000, num_vehicles=4)
+    prob.solve(
+        preassignments=[  # locking these routes should yield prob.best_value == 7936
+            # [9, 14, 16],
+            # [12, 11, 4, 3, 1],
+            # [7, 13],
+            # [8, 10, 2, 5],
+        ],
+    )
     print(prob.best_value)
     print(prob.best_routes)
     print(prob.best_routes_cost)
     print(prob.best_routes_load)
     print(prob.node_load)
-    assert prob.best_value == 7548
+    assert prob.best_value == 8096
+
+    # why doesn't vrpy find 7936 ?

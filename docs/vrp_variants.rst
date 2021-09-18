@@ -192,6 +192,8 @@ where each item of the list is the maximum load per vehicle type. For example, i
 Note how the dimensions of ``load_capacity`` and ``cost`` are consistent: each list must have as many items as vehicle types, and the
 order of the items of the ``load_capacity`` list is consistent with the order of the ``cost`` list on every edge of the graph.
   
+Once the problem is solved, the type of vehicle per route can be queried with ``prob.best_routes_type``.  
+
 	
 VRP options
 ~~~~~~~~~~~
@@ -254,7 +256,20 @@ will add to the total travel cost each time a node is dropped. For example, if t
 	>>> prob.drop_penalty = 1000
 	
 This problem is sometimes referred to as the `capacitated profitable tour problem` or the `prize collecting tour problem.`
+
+Minimizing the global time span
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to modify the objective function in order to solve a min-max problem. More specifically, the total time span can be minimized
+by setting the ``minimize_global_span`` to ``True``. Of course this assumes edges have a ``time`` argument:
+
+.. code-block:: python
+
+	>>> prob.minimize_global_span = True
 	
+.. note::
+
+   This may lead to poor computation times.
 	
 Other VRPs
 ~~~~~~~~~~
