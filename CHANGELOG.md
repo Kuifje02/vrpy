@@ -9,11 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- locked routes checks
-
 ### Changed
 
 ### Fixed
+
+## [v0.5.1] - 18/09/2021
+
+### Added
+
+- locked routes checks
+
+### Fixed
+
+- issues #102, #103, #105 - #110
 
 ## [v0.5.0] - 06/06/2021
 
@@ -77,3 +85,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v0.3.0]: https://github.com/Kuifje02/vrpy/releases/tag/v0.3.0
 [v0.4.0]: https://github.com/Kuifje02/vrpy/releases/tag/v0.4.0
 [v0.5.0]: https://github.com/Kuifje02/vrpy/releases/tag/v0.5.0
+[v0.5.1]: https://github.com/Kuifje02/vrpy/releases/tag/v0.5.1
