@@ -3,6 +3,7 @@ from math import floor
 from numpy import zeros
 from networkx import DiGraph, add_path
 from cspy import BiDirectional, REFCallback
+
 from vrpy.subproblem import _SubProblemBase
 
 logger = logging.getLogger(__name__)
@@ -14,13 +15,14 @@ class _MyREFCallback(REFCallback):
     Based on Righini and Salani (2006).
     """
 
-    def __init__(self, max_res, time_windows, distribution_collection, T,
-                 resources):
+    def __init__(self, max_res, time_windows, distribution_collection,
+                 pickup_delivery, T, resources):
         REFCallback.__init__(self)
         # Set attributes for use in REF functions
         self._max_res = max_res
         self._time_windows = time_windows
         self._distribution_collection = distribution_collection
+        self._pickup_delivery = pickup_delivery
         self._T = T
         self._resources = resources
         # Set later
@@ -74,6 +76,27 @@ class _MyREFCallback(REFCallback):
             # Delivery
             new_res[5] = max(new_res[5] + self._sub_G.nodes[j]["demand"],
                              new_res[4])
+
+        _partial_path = list(partial_path)
+        if self._pickup_delivery:
+            open_requests = [
+                n for n in _partial_path
+                if "request" in self._sub_G.nodes[n] and
+                self._sub_G.nodes[n]["request"] not in _partial_path
+            ]
+            if len(open_requests) > 0:
+                pickup_node = [
+                    n for n in self._sub_G.nodes()
+                    if "request" in self._sub_G.nodes[n] and
+                    self._sub_G.nodes[n]["request"] == j
+                ]
+                if len(pickup_node) == 1:
+                    pickup_node = pickup_node[0]
+                    if ("request" not in self._sub_G.nodes[j] and
+                            pickup_node not in open_requests):
+                        new_res[6] = 1.0
+                    else:
+                        new_res[6] = 0.0
         return new_res
 
     def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path,
@@ -179,12 +202,8 @@ class _SubProblemCSPY(_SubProblemBase):
         self.exact = exact
         # Resource names
         self.resources = [
-            "stops/mono",
-            "load",
-            "time",
-            "time windows",
-            "collect",
-            "deliver",
+            "stops/mono", "load", "time", "time windows", "collect", "deliver",
+            "pickup_delivery"
         ]
         # Set number of resources as attribute of graph
         self.sub_G.graph["n_res"] = len(self.resources)
@@ -201,6 +220,7 @@ class _SubProblemCSPY(_SubProblemBase):
             1,  # time windows
             total_demand,  # pickup
             total_demand,  # deliver
+            1,  # pickup_delivery
         ]
         # Initialize cspy edge attributes
         for edge in self.sub_G.edges(data=True):
@@ -237,7 +257,7 @@ class _SubProblemCSPY(_SubProblemBase):
                     self.sub_G,
                     self.max_res,
                     self.min_res,
-                    direction="both",
+                    direction="forward",
                     time_limit=time_limit - 0.5 if time_limit else None,
                     elementary=True,
                     REF_callback=my_callback,
@@ -248,7 +268,7 @@ class _SubProblemCSPY(_SubProblemBase):
                     self.max_res,
                     self.min_res,
                     threshold=-1,
-                    direction="both",
+                    direction="forward",
                     time_limit=time_limit - 0.5 if time_limit else None,
                     elementary=True,
                     REF_callback=my_callback,
@@ -309,6 +329,9 @@ class _SubProblemCSPY(_SubProblemBase):
         if self.load_capacity and self.distribution_collection:
             self.max_res[4] = self.load_capacity[self.vehicle_type]
             self.max_res[5] = self.load_capacity[self.vehicle_type]
+        if self.pickup_delivery:
+            # Time windows feasibility
+            self.max_res[6] = 0
 
     def add_new_route(self, path):
         """Create new route as DiGraph and add to pool of columns"""
@@ -357,12 +380,14 @@ class _SubProblemCSPY(_SubProblemBase):
             self.sub_G.edges[i, j]["res_cost"][2] = travel_time
 
     def get_REF(self):
-        if self.time_windows or self.distribution_collection:
+        if (self.time_windows or self.distribution_collection or
+                self.pickup_delivery):
             # Use custom REF
             return _MyREFCallback(
                 self.max_res,
                 self.time_windows,
                 self.distribution_collection,
+                self.pickup_delivery,
                 self.T,
                 self.resources,
             )

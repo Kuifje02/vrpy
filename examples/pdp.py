@@ -20,9 +20,22 @@ G = relabel_nodes(G, {0: "Source", 17: "Sink"})
 
 if __name__ == "__main__":
 
-    prob = VehicleRoutingProblem(G, load_capacity=6, pickup_delivery=True, num_stops=6)
-    prob.solve(cspy=False)
+    prob = VehicleRoutingProblem(G,
+                                 load_capacity=6,
+                                 pickup_delivery=True,
+                                 num_stops=6)
+    prob.solve(cspy=True, exact=True, pricing_strategy="Exact")
     print(prob.best_value)
     print(prob.best_routes)
+    for (u, v) in PICKUPS_DELIVERIES:
+        found = False
+        for route in prob.best_routes.values():
+            if u in route and v in route:
+                found = True
+                break
+        if not found:
+            print((u, v), "Not present")
+            assert False
+
     print(prob.node_load)
     assert prob.best_value == 5980

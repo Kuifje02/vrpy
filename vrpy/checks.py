@@ -33,16 +33,16 @@ def check_arguments(
         raise TypeError("Maximum duration must be positive integer.")
     strategies = ["Exact", "BestEdges1", "BestEdges2", "BestPaths", "Hyper"]
     if pricing_strategy not in strategies:
-        raise ValueError(
-            "Pricing strategy %s is not valid. Pick one among %s"
-            % (pricing_strategy, strategies)
-        )
+        raise ValueError("Pricing strategy %s is not valid. Pick one among %s" %
+                         (pricing_strategy, strategies))
     if mixed_fleet:
-        if load_capacity and num_vehicles and len(load_capacity) != len(num_vehicles):
+        if load_capacity and num_vehicles and len(load_capacity) != len(
+                num_vehicles):
             raise ValueError(
                 "Input arguments load_capacity and num_vehicles must have same dimension."
             )
-        if load_capacity and fixed_cost and len(load_capacity) != len(fixed_cost):
+        if load_capacity and fixed_cost and len(load_capacity) != len(
+                fixed_cost):
             raise ValueError(
                 "Input arguments load_capacity and fixed_cost must have same dimension."
             )
@@ -53,28 +53,21 @@ def check_arguments(
         for (i, j) in G.edges():
             if not isinstance(G.edges[i, j]["cost"], list):
                 raise TypeError(
-                    "Cost attribute for edge (%s,%s) should be of type list"
-                )
+                    "Cost attribute for edge (%s,%s) should be of type list")
             if len(G.edges[i, j]["cost"]) != vehicle_types:
                 raise ValueError(
                     "Cost attribute for edge (%s,%s) has dimension %s, should have dimension %s."
-                    % (i, j, len(G.edges[i, j]["cost"]), vehicle_types)
-                )
+                    % (i, j, len(G.edges[i, j]["cost"]), vehicle_types))
     if use_all_vehicles:
         if not num_vehicles:
             logger.warning("num_vehicles = None, use_all_vehicles ignored")
 
 
-def check_clarke_wright_compatibility(
-    time_windows, pickup_delivery, distribution_collection, mixed_fleet, periodic
-):
-    if (
-        time_windows
-        or pickup_delivery
-        or distribution_collection
-        or mixed_fleet
-        or periodic
-    ):
+def check_clarke_wright_compatibility(time_windows, pickup_delivery,
+                                      distribution_collection, mixed_fleet,
+                                      periodic):
+    if (time_windows or pickup_delivery or distribution_collection or
+            mixed_fleet or periodic):
         raise ValueError(
             "Clarke & Wright heuristic not compatible with time windows, pickup and delivery, simultaneous distribution and collection, mixed fleet, frequencies."
         )
@@ -85,7 +78,8 @@ def check_vrp(G: DiGraph = None):
 
     # if G is not a DiGraph
     if not isinstance(G, DiGraph):
-        raise TypeError("Input graph must be of type networkx.classes.digraph.DiGraph.")
+        raise TypeError(
+            "Input graph must be of type networkx.classes.digraph.DiGraph.")
     for v in ["Source", "Sink"]:
         # If Source or Sink is missing
         if v not in G.nodes():
@@ -126,7 +120,8 @@ def check_initial_routes(initial_routes: list = None, G: DiGraph = None):
 
     for route in initial_routes:
         if route[0] != "Source" or route[-1] != "Sink":
-            raise ValueError("Route %s must start at Source and end at Sink" % route)
+            raise ValueError("Route %s must start at Source and end at Sink" %
+                             route)
     # Check if every node is in at least one route
     for v in G.nodes():
         if v not in ["Source", "Sink"]:
@@ -141,9 +136,8 @@ def check_initial_routes(initial_routes: list = None, G: DiGraph = None):
         edges = list(zip(route[:-1], route[1:]))
         for (i, j) in edges:
             if (i, j) not in G.edges():
-                raise KeyError(
-                    "Edge (%s,%s) in route %s missing in graph." % (i, j, route)
-                )
+                raise KeyError("Edge (%s,%s) in route %s missing in graph." %
+                               (i, j, route))
             if "cost" not in G.edges[i, j]:
                 raise KeyError("Edge (%s,%s) has no cost attribute." % (i, j))
 
@@ -161,8 +155,8 @@ def check_preassignments(routes: list = None, G: DiGraph = None):
         for (i, j) in edges:
             if (i, j) not in G.edges():
                 raise ValueError(
-                    "Edge (%s,%s) in locked route %s is not in graph G." % (i, j, route)
-                )
+                    "Edge (%s,%s) in locked route %s is not in graph G." %
+                    (i, j, route))
 
 
 def check_consistency(
@@ -175,7 +169,8 @@ def check_consistency(
 
     # pickup delivery requires cspy=False
     if cspy and pickup_delivery:
-        raise NotImplementedError("pickup_delivery option requires cspy=False.")
+        pass
+        # raise NotImplementedError("pickup_delivery option requires cspy=False.")
     # pickup delivery requires pricing_stragy="Exact"
     if pickup_delivery and pricing_strategy != "Exact":
         pricing_strategy = "Exact"
@@ -184,35 +179,36 @@ def check_consistency(
     if pickup_delivery:
         request = any("request" in G.nodes[v] for v in G.nodes())
         if not request:
-            raise KeyError("pickup_delivery option expects at least one request.")
+            raise KeyError(
+                "pickup_delivery option expects at least one request.")
 
 
-def check_feasibility(
-    load_capacity: list = None, G: DiGraph = None, duration: int = None
-):
+def check_feasibility(load_capacity: list = None,
+                      G: DiGraph = None,
+                      duration: int = None):
     """Checks basic problem feasibility."""
 
     if load_capacity:
         for v in G.nodes():
             if G.nodes[v]["demand"] > max(load_capacity):
                 raise ValueError(
-                    "Demand %s at node %s larger than max capacity %s."
-                    % (G.nodes[v]["demand"], v, max(load_capacity))
-                )
+                    "Demand %s at node %s larger than max capacity %s." %
+                    (G.nodes[v]["demand"], v, max(load_capacity)))
     if duration:
         for v in G.nodes():
             if v not in ["Source", "Sink"]:
-                shortest_path_to = shortest_path_length(
-                    G, source="Source", target=v, weight="time"
-                )
-                shortest_path_from = shortest_path_length(
-                    G, source=v, target="Sink", weight="time"
-                )
+                shortest_path_to = shortest_path_length(G,
+                                                        source="Source",
+                                                        target=v,
+                                                        weight="time")
+                shortest_path_from = shortest_path_length(G,
+                                                          source=v,
+                                                          target="Sink",
+                                                          weight="time")
                 shortest_trip = shortest_path_from + shortest_path_to
                 if shortest_trip > duration:
                     raise ValueError(
-                        "Node %s not reachable with duration constraints" % v
-                    )
+                        "Node %s not reachable with duration constraints" % v)
 
 
 def check_seed(seed):
@@ -234,8 +230,7 @@ def check_pickup_delivery_time_windows(G: DiGraph, edges: list):
         if (i, j) not in G.edges():
             raise ValueError(
                 "Problem Infeasible, request (%s,%s) cannot be done with given time windows."
-                % (i, j)
-            )
+                % (i, j))
 
 
 def check_periodic_num_vehicles(periodic=None, num_vehicles=[]):
