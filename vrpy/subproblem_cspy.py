@@ -16,7 +16,7 @@ class _MyREFCallback(REFCallback):
     """
 
     def __init__(self, max_res, time_windows, distribution_collection,
-                 pickup_delivery, T, resources):
+                 pickup_delivery, T, resources, pickup_delivery_pairs):
         REFCallback.__init__(self)
         # Set attributes for use in REF functions
         self._max_res = max_res
@@ -25,10 +25,12 @@ class _MyREFCallback(REFCallback):
         self._pickup_delivery = pickup_delivery
         self._T = T
         self._resources = resources
+        self._pickup_delivery_pairs = pickup_delivery_pairs
         # Set later
         self._sub_G = None
         self._source_id = None
         self._sink_id = None
+        self._matched_delivery_to_pickup_nodes = {}
 
     def REF_fwd(self, cumul_res, tail, head, edge_res, partial_path,
                 cumul_cost):
@@ -38,34 +40,22 @@ class _MyREFCallback(REFCallback):
         new_res[0] += 1
         # load
         new_res[1] += self._sub_G.nodes[j]["demand"]
+
         # time
         # Service times
         theta_i = self._sub_G.nodes[i]["service_time"]
-        # theta_j = self._sub_G.nodes[j]["service_time"]
-        # theta_t = self._sub_G.nodes[self._sink_id]["service_time"]
         # Travel times
         travel_time_ij = self._sub_G.edges[i, j]["time"]
-        # try:
-        #    travel_time_jt = self._sub_G.edges[j, self._sink_id]["time"]
-        # except KeyError:
-        #    travel_time_jt = 0
         # Time windows
         # Lower
         a_j = self._sub_G.nodes[j]["lower"]
-        # a_t = self._sub_G.nodes[self._sink_id]["lower"]
         # Upper
         b_j = self._sub_G.nodes[j]["upper"]
-        # b_t = self._sub_G.nodes[self._sink_id]["upper"]
 
         new_res[2] = max(new_res[2] + theta_i + travel_time_ij, a_j)
 
         # time-window feasibility resource
         if not self._time_windows or (new_res[2] <= b_j):
-            # and new_res[2] < self._T - a_j - theta_j and
-            # a_t <= new_res[2] + travel_time_jt + theta_t <= b_t):
-            # if not self._time_windows or (
-            #         new_res[2] <= b_j and new_res[2] < self._T - a_j - theta_j and
-            #         a_t <= new_res[2] + travel_time_jt + theta_t <= b_t):
             new_res[3] = 0
         else:
             new_res[3] = 1
@@ -85,18 +75,19 @@ class _MyREFCallback(REFCallback):
                 self._sub_G.nodes[n]["request"] not in _partial_path
             ]
             if len(open_requests) > 0:
-                pickup_node = [
-                    n for n in self._sub_G.nodes()
-                    if "request" in self._sub_G.nodes[n] and
-                    self._sub_G.nodes[n]["request"] == j
+                pickup_node = None
+                pickup_nodes = [
+                    u for (u, v) in self._pickup_delivery_pairs if v == j
                 ]
-                if len(pickup_node) == 1:
-                    pickup_node = pickup_node[0]
-                    if ("request" not in self._sub_G.nodes[j] and
-                            pickup_node not in open_requests):
-                        new_res[6] = 1.0
-                    else:
-                        new_res[6] = 0.0
+                if len(pickup_nodes) == 1:
+                    pickup_node = pickup_nodes[0]
+                if (pickup_node is not None and
+                        pickup_node not in open_requests):
+                    new_res[6] = 1.0
+                else:
+                    new_res[6] = 0.0
+            elif len(open_requests) != 0 and j == self._sink_id:
+                new_res[6] = 1.0
         return new_res
 
     def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path,
@@ -108,37 +99,24 @@ class _MyREFCallback(REFCallback):
         new_res[0] -= 1
         # load
         new_res[1] += self._sub_G.nodes[i]["demand"]
+
         # Get relevant service times (thetas) and travel time
         # Service times
         theta_i = self._sub_G.nodes[i]["service_time"]
         theta_j = self._sub_G.nodes[j]["service_time"]
-        # theta_s = self._sub_G.nodes[self._source_id]["service_time"]
         # Travel times
         travel_time_ij = self._sub_G.edges[i, j]["time"]
-        # try:
-        #    travel_time_si = self._sub_G.edges[self._source_id, i]["time"]
-        # except KeyError:
-        #    travel_time_si = 0
         # Lower time windows
-        # a_i = self._sub_G.nodes[i]["lower"]
         a_j = self._sub_G.nodes[j]["lower"]
-        # a_s = self._sub_G.nodes[self._source_id]["lower"]
         # Upper time windows
         b_i = self._sub_G.nodes[i]["upper"]
         b_j = self._sub_G.nodes[j]["upper"]
-        # b_s = self._sub_G.nodes[self._source_id]["upper"]
 
         new_res[2] = max(new_res[2] + theta_j + travel_time_ij,
                          self._T - b_i - theta_i)
 
         # time-window feasibility
         if not self._time_windows or (new_res[2] <= self._T - a_j - theta_j):
-            # and new_res[2] < self._T - a_i - theta_i and
-            #         a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
-            # if not self._time_windows or (
-            #        new_res[2] <= self._T - a_j and
-            #        new_res[2] < self._T - a_i - theta_i and
-            #        a_s <= new_res[2] + theta_s + travel_time_si <= b_s):
             new_res[3] = 0
         else:
             new_res[3] = 1
@@ -195,11 +173,12 @@ class _SubProblemCSPY(_SubProblemBase):
     Inherits problem parameters from `SubproblemBase`
     """
 
-    def __init__(self, *args, exact):
+    def __init__(self, *args, exact, pickup_delivery_pairs):
         """Initializes resources."""
         # Pass arguments to base
         super(_SubProblemCSPY, self).__init__(*args)
         self.exact = exact
+        self.pickup_delivery_pairs = pickup_delivery_pairs
         # Resource names
         self.resources = [
             "stops/mono", "load", "time", "time windows", "collect", "deliver",
@@ -251,28 +230,29 @@ class _SubProblemCSPY(_SubProblemBase):
         more_routes = False
 
         my_callback = self.get_REF()
+        direction = "forward" if self.time_windows or self.pickup_delivery else "both"
         while True:
             if self.exact:
                 alg = BiDirectional(
                     self.sub_G,
                     self.max_res,
                     self.min_res,
-                    direction="forward",
+                    direction=direction,
                     time_limit=time_limit - 0.5 if time_limit else None,
                     elementary=True,
                     REF_callback=my_callback,
-                )
+                    pickup_delivery_pairs=self.pickup_delivery_pairs)
             else:
                 alg = BiDirectional(
                     self.sub_G,
                     self.max_res,
                     self.min_res,
                     threshold=-1,
-                    direction="forward",
+                    direction=direction,
                     time_limit=time_limit - 0.5 if time_limit else None,
                     elementary=True,
                     REF_callback=my_callback,
-                )
+                    pickup_delivery_pairs=self.pickup_delivery_pairs)
 
             # Pass processed graph
             if my_callback is not None:
@@ -330,7 +310,6 @@ class _SubProblemCSPY(_SubProblemBase):
             self.max_res[4] = self.load_capacity[self.vehicle_type]
             self.max_res[5] = self.load_capacity[self.vehicle_type]
         if self.pickup_delivery:
-            # Time windows feasibility
             self.max_res[6] = 0
 
     def add_new_route(self, path):
@@ -383,14 +362,10 @@ class _SubProblemCSPY(_SubProblemBase):
         if (self.time_windows or self.distribution_collection or
                 self.pickup_delivery):
             # Use custom REF
-            return _MyREFCallback(
-                self.max_res,
-                self.time_windows,
-                self.distribution_collection,
-                self.pickup_delivery,
-                self.T,
-                self.resources,
-            )
+            return _MyREFCallback(self.max_res, self.time_windows,
+                                  self.distribution_collection,
+                                  self.pickup_delivery, self.T, self.resources,
+                                  self.pickup_delivery_pairs)
         else:
             # Use default
             return None
