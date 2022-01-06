@@ -51,7 +51,7 @@ Once the problem is solved, we can query useful attributes as:
     {1: 9}
 
 ``prob.best_value`` is the overall cost of the solution, ``prob.best_routes`` is a `dict` object where keys represent the route ID, while the values are
-the corresponding path from `Source` to `Sink`. And ``prob.best_routes`` is a `dict` object where the same keys point to the accumulated load on the
+the corresponding path from `Source` to `Sink`. And ``prob.best_routes_load`` is a `dict` object where the same keys point to the accumulated load on the
 vehicle.
 
 
