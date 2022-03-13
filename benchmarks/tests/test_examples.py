@@ -42,35 +42,39 @@ class TestsOrTools:
         # Define VRP
         self.prob = VehicleRoutingProblem(self.G)
 
-    def test_cvrp_dive(self):
+    def test_cvrp_dive_lp(self):
         self.prob.load_capacity = 15
         self.prob.solve(cspy=False, pricing_strategy="BestEdges1", dive=True)
-        sol_lp = self.prob.best_value
-        self.prob.solve(pricing_strategy="BestEdges1", dive=True)
-        sol_cspy = self.prob.best_value
-        assert int(sol_lp) == 6208
-        assert int(sol_cspy) == 6208
+        assert int(self.prob.best_value) == 6208
 
-    def test_vrptw_dive(self):
+    def test_cvrp_dive_cspy(self):
+        self.prob.load_capacity = 15
+        self.prob.solve(pricing_strategy="BestEdges1", dive=True, exact=True)
+        assert int(self.prob.best_value) == 6208
+
+    def test_vrptw_dive_lp(self):
         self.prob.time_windows = True
         self.prob.solve(cspy=False, dive=True)
-        sol_lp = self.prob.best_value
-        self.prob.solve(dive=True)
-        sol_cspy = self.prob.best_value
-        assert int(sol_lp) == 6528
-        assert int(sol_cspy) == 6528
+        assert int(self.prob.best_value) == 6528
 
-    def test_cvrpsdc_dive(self):
+    def test_vrptw_dive_cspy(self):
+        self.prob.time_windows = True
+        self.prob.solve(cspy=True, dive=True)
+        assert int(self.prob.best_value) == 6528
+
+    def test_cvrpsdc_dive_lp(self):
         self.prob.load_capacity = 15
         self.prob.distribution_collection = True
         self.prob.solve(cspy=False, pricing_strategy="BestEdges1", dive=True)
-        sol_lp = self.prob.best_value
-        self.prob.solve(pricing_strategy="BestEdges1", dive=True)
-        sol_cspy = self.prob.best_value
-        assert int(sol_lp) == 6208
-        assert int(sol_cspy) == 6208
+        assert int(self.prob.best_value) == 6208
 
-    def test_pdp_dive(self):
+    def test_cvrpsdc_dive_cspy(self):
+        self.prob.load_capacity = 15
+        self.prob.distribution_collection = True
+        self.prob.solve(pricing_strategy="BestEdges1", dive=True)
+        assert int(self.prob.best_value) == 6208
+
+    def test_pdp_dive_lp(self):
         # Set demands and requests
         for (u, v) in PICKUPS_DELIVERIES:
             self.G.nodes[u]["request"] = v
@@ -83,35 +87,39 @@ class TestsOrTools:
         sol_lp = self.prob.best_value
         assert int(sol_lp) == 5980
 
-    def test_cvrp(self):
+    def test_cvrp_lp(self):
         self.prob.load_capacity = 15
         self.prob.solve(cspy=False, pricing_strategy="BestEdges1")
-        sol_lp = self.prob.best_value
-        self.prob.solve(pricing_strategy="BestEdges1")
-        sol_cspy = self.prob.best_value
-        assert int(sol_lp) == 6208
-        assert int(sol_cspy) == 6208
+        assert int(self.prob.best_value) == 6208
 
-    def test_vrptw(self):
+    def test_cvrp_cspy(self):
+        self.prob.load_capacity = 15
+        self.prob.solve(pricing_strategy="BestEdges1")
+        assert int(self.prob.best_value) == 6208
+
+    def test_vrptw_lp(self):
         self.prob.time_windows = True
         self.prob.solve(cspy=False)
-        sol_lp = self.prob.best_value
-        self.prob.solve()
-        sol_cspy = self.prob.best_value
-        assert int(sol_lp) == 6528
-        assert int(sol_cspy) == 6528
+        assert int(self.prob.best_value) == 6528
 
-    def test_cvrpsdc(self):
+    def test_vrptw_cspy(self):
+        self.prob.time_windows = True
+        self.prob.solve()
+        assert int(self.prob.best_value) == 6528
+
+    def test_cvrpsdc_lp(self):
         self.prob.load_capacity = 15
         self.prob.distribution_collection = True
         self.prob.solve(cspy=False, pricing_strategy="BestEdges1")
-        sol_lp = self.prob.best_value
-        self.prob.solve(pricing_strategy="BestEdges1")
-        sol_cspy = self.prob.best_value
-        assert int(sol_lp) == 6208
-        assert int(sol_cspy) == 6208
+        assert int(self.prob.best_value) == 6208
 
-    def test_pdp(self):
+    def test_cvrpsdc_cspy(self):
+        self.prob.load_capacity = 15
+        self.prob.distribution_collection = True
+        self.prob.solve(pricing_strategy="BestEdges1")
+        assert int(self.prob.best_value) == 6208
+
+    def test_pdp_lp(self):
         # Set demands and requests
         for (u, v) in PICKUPS_DELIVERIES:
             self.G.nodes[u]["request"] = v

@@ -125,17 +125,14 @@ class _HyperHeuristic:
             pass
         # choose according to MAB
         maxval = max(self.heuristic_points.values())
-        best_heuristics = [
-            i for i, j in self.heuristic_points.items() if j == maxval
-        ]
+        best_heuristics = [i for i, j in self.heuristic_points.items() if j == maxval]
         if len(best_heuristics) == 1:
             self.current_heuristic = best_heuristics[0]
         else:
             self.current_heuristic = self.random_state.choice(best_heuristics)
         return self.current_heuristic
 
-    def update_scaling_factor(self, no_improvement_count: int,
-                              no_improvement_iteration: int):
+    def update_scaling_factor(self, no_improvement_count: int):
         """
         Implements Drake et al. (2012)
 
@@ -180,8 +177,8 @@ class _HyperHeuristic:
 
         elif self.performance_measure_type == "weighted_average":
             self._current_performance_wgtavr(
-                active_columns=active_columns,
-                new_objective_value=new_objective_value)
+                active_columns=active_columns, new_objective_value=new_objective_value
+            )
         else:
             raise ValueError("performence_measure not set correctly!")
         self.set_current_objective(objective=new_objective_value)
@@ -220,13 +217,11 @@ class _HyperHeuristic:
             x *= 0.9
         return x
 
-    def update_parameters(self, iteration: int, no_improvement_count: int,
-                          no_improvement_iteration: int):
+    def update_parameters(self, iteration: int, no_improvement_count: int):
         "Updates the high-level parameters"
         # measure time and add to weighted average
         self.iteration = iteration
-        self.update_scaling_factor(no_improvement_count,
-                                   no_improvement_iteration)
+        self.update_scaling_factor(no_improvement_count)
         # compute average of runtimes
         if self.performance_measure_type == "relative_improvement":
             self._update_params_relimp()
@@ -245,40 +240,48 @@ class _HyperHeuristic:
     def _current_performance_relimp(self, produced_column: bool = False):
         #   time measure
         if self.iteration > self.start_computing_average + 1:
-            self.d = max((self.average_runtime - self.last_runtime) /
-                         self.average_runtime * 100, 0)
-            logger.debug("Resolve count %s, improvement %s", produced_column,
-                         self.d)
+            self.d = max(
+                (self.average_runtime - self.last_runtime) / self.average_runtime * 100,
+                0,
+            )
+            logger.debug("Resolve count %s, improvement %s", produced_column, self.d)
             if self.d > self.d_max:
                 self.d_max = self.d
                 logger.debug(
                     "Column produced, average runtime %s and last runtime %s",
-                    self.average_runtime, self.last_runtime)
+                    self.average_runtime,
+                    self.last_runtime,
+                )
             else:
                 self.d = 0
 
-    def _current_performance_wgtavr(self,
-                                    new_objective_value: float = None,
-                                    active_columns: dict = None):
+    def _current_performance_wgtavr(
+        self, new_objective_value: float = None, active_columns: dict = None
+    ):
         self.active_columns = active_columns
         # insert new runtime into sorted list
         bisect.insort(self.runtime_dist, self.last_runtime)
         self.objective_decrease[self.current_heuristic] += max(
-            self.current_objective_value - new_objective_value, 0)
+            self.current_objective_value - new_objective_value, 0
+        )
         self.total_objective_decrease += max(
-            self.current_objective_value - new_objective_value, 0)
+            self.current_objective_value - new_objective_value, 0
+        )
         # update quality values
         for heuristic in self.heuristic_options:
             if self.iterations[heuristic] > 0:
                 self._update_exp(heuristic)
-                index = bisect.bisect(self.runtime_dist,
-                                      self.last_runtime_dict[heuristic])
-                self.norm_runtime[heuristic] = (len(self.runtime_dist) -
-                                                index) / len(self.runtime_dist)
+                index = bisect.bisect(
+                    self.runtime_dist, self.last_runtime_dict[heuristic]
+                )
+                self.norm_runtime[heuristic] = (len(self.runtime_dist) - index) / len(
+                    self.runtime_dist
+                )
                 if self.total_objective_decrease > 0:
                     self.norm_objective_decrease[heuristic] = (
-                        self.objective_decrease[heuristic] /
-                        self.total_objective_decrease)
+                        self.objective_decrease[heuristic]
+                        / self.total_objective_decrease
+                    )
 
     def _update_params_relimp(self):
         "Updates params for relative improvements performance measure"
@@ -288,9 +291,10 @@ class _HyperHeuristic:
         if reduced_n == 0:
             self.average_runtime = self.last_runtime
         else:
-            self.average_runtime = (self.average_runtime * (reduced_n - 1) /
-                                    (reduced_n) + 1 /
-                                    (reduced_n) * self.last_runtime)
+            self.average_runtime = (
+                self.average_runtime * (reduced_n - 1) / (reduced_n)
+                + 1 / (reduced_n) * self.last_runtime
+            )
         heuristic = self.current_heuristic
         # store old values
         old_q = self.q[heuristic]
@@ -298,19 +302,22 @@ class _HyperHeuristic:
         stagnated = old_q == 0 and old_n > 3
         # average of improvements
         self.r[heuristic] = self.r[heuristic] * old_n / (old_n + 1) + 1 / (
-            old_n + 1) * self.reward(self.d, stagnated=stagnated)
+            old_n + 1
+        ) * self.reward(self.d, stagnated=stagnated)
         self.q[heuristic] = (old_q + self.r[heuristic]) / (old_n + 1)
         # compute heuristic points MAB-style
         for heuristic in self.heuristic_options:
             if self.iterations[heuristic] != 0:
                 self._update_exp(heuristic)
                 self.heuristic_points[heuristic] = (
-                    self.theta * self.q[heuristic] +
-                    self.scaling_factor * self.exp[heuristic])
+                    self.theta * self.q[heuristic]
+                    + self.scaling_factor * self.exp[heuristic]
+                )
 
     def _update_exp(self, heuristic):
-        self.exp[heuristic] = sqrt(2 * log(sum(self.iterations.values())) /
-                                   self.iterations[heuristic])
+        self.exp[heuristic] = sqrt(
+            2 * log(sum(self.iterations.values())) / self.iterations[heuristic]
+        )
 
     def _update_params_wgtavr(self):
         "Updates params for Weighted average performance measure"
@@ -326,10 +333,11 @@ class _HyperHeuristic:
                 if sum_exp != 0:
                     norm_spread = self.exp[heuristic] / sum_exp
                 self.q[heuristic] = (
-                    self.weight_col_basic * active_i / active +
-                    self.weight_runtime * norm_runtime +
-                    self.weight_obj * self.norm_objective_decrease[heuristic] +
-                    self.weight_col_total * active_i / total_added)
+                    self.weight_col_basic * active_i / active
+                    + self.weight_runtime * norm_runtime
+                    + self.weight_obj * self.norm_objective_decrease[heuristic]
+                    + self.weight_col_total * active_i / total_added
+                )
                 self.heuristic_points[heuristic] = self.theta * self.q[
-                    heuristic] + self.weight_spread * norm_spread * (1 -
-                                                                     self.theta)
+                    heuristic
+                ] + self.weight_spread * norm_spread * (1 - self.theta)
