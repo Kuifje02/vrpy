@@ -248,12 +248,14 @@ class _SubProblemCSPY(_SubProblemBase):
         )
         # Run only twice: Once with `elementary=False` check if route already
         # exists.
+        thr = min(self.G.edges[i, j]["weight"] for (i, j) in self.G.edges())
+        logger.info(f"threshold={thr}")
         for elementary in [False, True]:
             alg = BiDirectional(
                 self.sub_G,
                 self.max_res,
                 self.min_res,
-                threshold=-1e-3,
+                threshold=thr,
                 direction=direction,
                 time_limit=time_limit - 0.5 if time_limit else None,
                 elementary=elementary,
@@ -273,6 +275,7 @@ class _SubProblemCSPY(_SubProblemBase):
 
             if alg.total_cost is not None and alg.total_cost < -(1e-3):
                 new_route = self.create_new_route(alg.path)
+                logger.info(alg.path)
                 if not any(
                     list(new_route.edges()) == list(r.edges()) for r in self.routes
                 ):

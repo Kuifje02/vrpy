@@ -1,9 +1,8 @@
-from networkx import DiGraph, read_gpickle
+from networkx import DiGraph
 from vrpy import VehicleRoutingProblem
 
 
-class TestIssue101:
-
+class TestIssue101_small:
     def setup(self):
         self.G = DiGraph()
         self.G.add_edge("Source", 1, cost=5)
@@ -19,9 +18,7 @@ class TestIssue101:
         self.G.nodes[2]["service_time"] = 5
         self.G.nodes[1]["demand"] = 8
         self.G.nodes[2]["demand"] = 8
-        self.prob = VehicleRoutingProblem(self.G,
-                                          load_capacity=10,
-                                          time_windows=True)
+        self.prob = VehicleRoutingProblem(self.G, load_capacity=10, time_windows=True)
 
     def test_cspy(self):
         self.prob.solve()
