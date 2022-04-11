@@ -214,6 +214,8 @@ class _SubProblemCSPY(_SubProblemBase):
         # Initialize max feasible arrival time
         self.T = 0
         self.total_cost = None
+        self._avg_path_len = 1
+        self._iters = 1
 
     # @profile
     def solve(self, time_limit):
@@ -248,9 +250,18 @@ class _SubProblemCSPY(_SubProblemBase):
         )
         # Run only twice: Once with `elementary=False` check if route already
         # exists.
-        thr = min(self.G.edges[i, j]["weight"] for (i, j) in self.G.edges())
-        logger.info(f"threshold={thr}")
-        for elementary in [False, True]:
+
+        s = [False, True] if not self.distribution_collection else [True]
+        for elementary in s:
+            if elementary:
+                # Use threshold if non-elementary (safe-guard against large
+                # instances)
+                thr = self._avg_path_len * min(
+                    self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()
+                )
+                logger.info(f"threshold={thr}")
+            else:
+                thr = None
             alg = BiDirectional(
                 self.sub_G,
                 self.max_res,
@@ -276,6 +287,7 @@ class _SubProblemCSPY(_SubProblemBase):
             if alg.total_cost is not None and alg.total_cost < -(1e-3):
                 new_route = self.create_new_route(alg.path)
                 logger.info(alg.path)
+                path_len = len(alg.path)
                 if not any(
                     list(new_route.edges()) == list(r.edges()) for r in self.routes
                 ):
@@ -284,6 +296,11 @@ class _SubProblemCSPY(_SubProblemBase):
                     self.total_cost = new_route.graph["cost"]
                     logger.debug("reduced cost = %s", alg.total_cost)
                     logger.debug("real cost = %s", self.total_cost)
+                    if path_len > 2:
+                        self._avg_path_len += (
+                            path_len - self._avg_path_len
+                        ) / self._iters
+                        self._iters += 1
                     break
                 else:
                     logger.info("Route already found, finding elementary one")
