@@ -192,9 +192,10 @@ class _MasterSolvePulp(_MasterProblemBase):
             # Set route variables to integer
             for var in self.y.values():
                 # Disallow routes that visit multiple nodes
-                # if "non" in var.name:
-                #     var.upBound = 0
-                #     var.lowBound = 0
+                if "non" in var.name:
+                    print(var.name)
+                    var.upBound = 0
+                    var.lowBound = 0
                 var.cat = pulp.LpInteger
             # Force vehicle bound artificial variable to 0
             for var in self.dummy_bound.values():
