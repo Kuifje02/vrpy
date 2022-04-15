@@ -1,3 +1,4 @@
+import sys
 import logging
 from time import time
 from typing import List, Union
@@ -5,12 +6,14 @@ from typing import List, Union
 from networkx import DiGraph, shortest_path  # draw_networkx
 
 from vrpy.greedy import _Greedy
-from vrpy.master_solve_pulp import _MasterSolvePulp
+from vrpy.schedule import _Schedule
 from vrpy.subproblem_lp import _SubProblemLP
 from vrpy.subproblem_cspy import _SubProblemCSPY
+from vrpy.hyper_heuristic import _HyperHeuristic
+from vrpy.master_solve_pulp import _MasterSolvePulp
 from vrpy.subproblem_greedy import _SubProblemGreedy
+from vrpy.preprocessing import get_num_stops_upper_bound
 from vrpy.clarke_wright import _ClarkeWright, _RoundTrip
-from vrpy.schedule import _Schedule
 from vrpy.checks import (
     check_arguments,
     check_consistency,
@@ -22,12 +25,10 @@ from vrpy.checks import (
     check_clarke_wright_compatibility,
     check_preassignments,
 )
-from vrpy.preprocessing import get_num_stops_upper_bound
-from vrpy.hyper_heuristic import _HyperHeuristic
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 
 class VehicleRoutingProblem:
@@ -122,8 +123,8 @@ class VehicleRoutingProblem:
         self._solver: str = None
         self._time_limit: int = None
         self._pricing_strategy: str = None
-        self._exact: bool = None
         self._cspy: bool = None
+        self._elementary: bool = None
         self._dive: bool = None
         self._greedy: bool = None
         self._max_iter: int = None
@@ -141,7 +142,6 @@ class VehicleRoutingProblem:
         self._initial_routes = []
         self._preassignments = []
         self._dropped_nodes = []
-        self._pickup_delivery_pairs = []
         # Parameters for final solution
         self._best_value = None
         self._best_routes = []
@@ -156,7 +156,7 @@ class VehicleRoutingProblem:
         preassignments=None,
         pricing_strategy="BestEdges1",
         cspy=True,
-        exact=False,
+        elementary=False,
         time_limit=None,
         solver="cbc",
         dive=False,
@@ -188,10 +188,12 @@ class VehicleRoutingProblem:
             cspy (bool, optional):
                 True if cspy is used for subproblem.
                 Defaults to True.
-            exact (bool, optional):
-                True if only cspy's exact algorithm is used to generate columns.
-                Otherwise, heuristics will be used until they produce +ve
-                reduced cost columns, after which the exact algorithm is used.
+            elementary (bool, optional):
+                True if only cspy's elementary algorithm is to be used.
+                Otherwise, a mix is used: only use elementary when a route is
+                repeated. In this case, also a threshold is used to avoid
+                running for too long. If dive=True then this is also forced to
+                be True.
                 Defaults to False.
             time_limit (int, optional):
                 Maximum number of seconds allowed for solving (for finding columns).
@@ -227,8 +229,8 @@ class VehicleRoutingProblem:
         self._solver = solver
         self._time_limit = time_limit
         self._pricing_strategy = pricing_strategy
-        self._exact = exact
         self._cspy = cspy
+        self._elementary = elementary if not dive else True
         self._dive = False
         self._greedy = greedy
         self._max_iter = max_iter
@@ -236,15 +238,6 @@ class VehicleRoutingProblem:
         self._heuristic_only = heuristic_only
         if self._pricing_strategy == "Hyper":
             self.hyper_heuristic = _HyperHeuristic()
-
-        # Extract pairs of (pickup, delivery) nodes from graph
-        if self.pickup_delivery:
-            self._pickup_delivery_pairs = [
-                (i, self.G.nodes[i]["request"])
-                for i in self.G.nodes()
-                if "request" in self.G.nodes[i]
-            ]
-
         self._start_time = time()
         if preassignments:
             self._preassignments = preassignments
@@ -568,6 +561,7 @@ class VehicleRoutingProblem:
 
         # TODO: parallel
         # One subproblem per vehicle type
+
         for vehicle in range(self._vehicle_types):
             # Solve pricing problem with randomised greedy algorithm
             if (
@@ -828,8 +822,7 @@ class VehicleRoutingProblem:
                 self.distribution_collection,
                 pricing_strategy,
                 pricing_parameter,
-                exact=self._exact,
-                pickup_delivery_pairs=self._pickup_delivery_pairs,
+                elementary=self._elementary,
             )
         else:
             # As LP

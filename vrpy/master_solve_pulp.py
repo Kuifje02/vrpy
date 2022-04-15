@@ -193,7 +193,6 @@ class _MasterSolvePulp(_MasterProblemBase):
             for var in self.y.values():
                 # Disallow routes that visit multiple nodes
                 if "non" in var.name:
-                    print(var.name)
                     var.upBound = 0
                     var.lowBound = 0
                 var.cat = pulp.LpInteger

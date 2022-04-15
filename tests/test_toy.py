@@ -7,7 +7,6 @@ from vrpy.preprocessing import get_num_stops_upper_bound
 
 
 class TestsToy:
-
     def setup(self):
         """
         Creates a toy graph.
@@ -42,7 +41,7 @@ class TestsToy:
             ["Source", 4, 5, "Sink"],
         ]
         assert set(prob.best_routes_cost.values()) == {30, 40}
-        prob.solve(exact=False)
+        prob.solve()
         assert prob.best_value == 70
 
     def test_cspy_stops_capacity(self):
@@ -58,11 +57,8 @@ class TestsToy:
         """Tests column generation procedure on toy graph
         with stop, capacity and duration constraints
         """
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     load_capacity=10,
-                                     duration=62)
-        prob.solve(exact=False)
+        prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
+        prob.solve()
         assert prob.best_value == 85
         assert set(prob.best_routes_duration.values()) == {41, 62}
         assert prob.node_load[1]["Sink"] in [5, 10]
@@ -187,11 +183,9 @@ class TestsToy:
     #########
 
     def test_all(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     time_windows=True,
-                                     duration=63,
-                                     load_capacity=10)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, time_windows=True, duration=63, load_capacity=10
+        )
         prob.solve(cspy=False)
         lp_best = prob.best_value
         prob.solve(cspy=True)
@@ -216,9 +210,7 @@ class TestsToy:
 
     def test_pricing_strategies(self):
         sol = []
-        for strategy in [
-                "Exact", "BestPaths", "BestEdges1", "BestEdges2", "Hyper"
-        ]:
+        for strategy in ["Exact", "BestPaths", "BestEdges1", "BestEdges2", "Hyper"]:
             prob = VehicleRoutingProblem(self.G, num_stops=4)
             prob.solve(pricing_strategy=strategy)
             sol.append(prob.best_value)
@@ -271,22 +263,22 @@ class TestsToy:
         prob.solve(pricing_strategy="Exact", cspy=False)
         assert prob.best_value == 65
 
-    def test_pick_up_delivery_cspy(self):
-        self.G.nodes[2]["request"] = 5
-        self.G.nodes[2]["demand"] = 10
-        self.G.nodes[3]["demand"] = 10
-        self.G.nodes[3]["request"] = 4
-        self.G.nodes[4]["demand"] = -10
-        self.G.nodes[5]["demand"] = -10
-        self.G.add_edge(2, 5, cost=10)
-        self.G.remove_node(1)
-        prob = VehicleRoutingProblem(
-            self.G,
-            load_capacity=15,
-            pickup_delivery=True,
-        )
-        prob.solve(pricing_strategy="Exact", cspy=True)
-        assert prob.best_value == 65
+    # def test_pick_up_delivery_cspy(self):
+    #     self.G.nodes[2]["request"] = 5
+    #     self.G.nodes[2]["demand"] = 10
+    #     self.G.nodes[3]["demand"] = 10
+    #     self.G.nodes[3]["request"] = 4
+    #     self.G.nodes[4]["demand"] = -10
+    #     self.G.nodes[5]["demand"] = -10
+    #     self.G.add_edge(2, 5, cost=10)
+    #     self.G.remove_node(1)
+    #     prob = VehicleRoutingProblem(
+    #         self.G,
+    #         load_capacity=15,
+    #         pickup_delivery=True,
+    #     )
+    #     prob.solve(pricing_strategy="Exact", cspy=True)
+    #     assert prob.best_value == 65
 
     def test_distribution_collection(self):
         self.G.nodes[1]["collect"] = 12
@@ -310,20 +302,17 @@ class TestsToy:
         assert set(prob.best_routes_cost.values()) == {30 + 100, 40 + 100}
 
     def test_drop_nodes(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     num_vehicles=1,
-                                     drop_penalty=100)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, num_vehicles=1, drop_penalty=100
+        )
         prob.solve()
         assert prob.best_value == 240
         assert prob.best_routes == {1: ["Source", 1, 2, 3, "Sink"]}
 
     def test_num_vehicles_use_all(self):
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=3,
-                                     num_vehicles=2,
-                                     use_all_vehicles=True,
-                                     drop_penalty=100)
+        prob = VehicleRoutingProblem(
+            self.G, num_stops=3, num_vehicles=2, use_all_vehicles=True, drop_penalty=100
+        )
         prob.solve()
         assert len(prob.best_routes) == 2
         prob.num_vehicles = 3
@@ -344,10 +333,7 @@ class TestsToy:
                 frequency += 1
         assert frequency == 2
         assert prob.schedule[0] in [[1], [1, 2]]
-        prob = VehicleRoutingProblem(self.G,
-                                     num_stops=2,
-                                     periodic=2,
-                                     num_vehicles=1)
+        prob = VehicleRoutingProblem(self.G, num_stops=2, periodic=2, num_vehicles=1)
         prob.solve()
         assert prob.schedule == {}
 

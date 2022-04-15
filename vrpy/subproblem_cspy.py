@@ -21,25 +21,20 @@ class _MyREFCallback(REFCallback):
         max_res,
         time_windows,
         distribution_collection,
-        pickup_delivery,
         T,
         resources,
-        pickup_delivery_pairs,
     ):
         REFCallback.__init__(self)
         # Set attributes for use in REF functions
         self._max_res = max_res
         self._time_windows = time_windows
         self._distribution_collection = distribution_collection
-        self._pickup_delivery = pickup_delivery
         self._T = T
         self._resources = resources
-        self._pickup_delivery_pairs = pickup_delivery_pairs
         # Set later
         self._sub_G = None
         self._source_id = None
         self._sink_id = None
-        self._matched_delivery_to_pickup_nodes = {}
 
     def REF_fwd(self, cumul_res, tail, head, edge_res, partial_path, cumul_cost):
         new_res = list(cumul_res)
@@ -74,25 +69,6 @@ class _MyREFCallback(REFCallback):
             # Delivery
             new_res[5] = max(new_res[5] + self._sub_G.nodes[j]["demand"], new_res[4])
 
-        _partial_path = list(partial_path)
-        if self._pickup_delivery:
-            open_requests = [
-                n
-                for n in _partial_path
-                if "request" in self._sub_G.nodes[n]
-                and self._sub_G.nodes[n]["request"] not in _partial_path
-            ]
-            if len(open_requests) > 0:
-                pickup_node = None
-                pickup_nodes = [u for (u, v) in self._pickup_delivery_pairs if v == j]
-                if len(pickup_nodes) == 1:
-                    pickup_node = pickup_nodes[0]
-                if pickup_node is not None and pickup_node not in open_requests:
-                    new_res[6] = 1.0
-                else:
-                    new_res[6] = 0.0
-            elif len(open_requests) != 0 and j == self._sink_id:
-                new_res[6] = 1.0
         return new_res
 
     def REF_bwd(self, cumul_res, tail, head, edge_res, partial_path, cumul_cost):
@@ -175,12 +151,11 @@ class _SubProblemCSPY(_SubProblemBase):
     Inherits problem parameters from `SubproblemBase`
     """
 
-    def __init__(self, *args, exact, pickup_delivery_pairs):
+    def __init__(self, *args, elementary):
         """Initializes resources."""
         # Pass arguments to base
         super(_SubProblemCSPY, self).__init__(*args)
-        # self.exact = exact
-        self.pickup_delivery_pairs = pickup_delivery_pairs
+        self.elementary = elementary
         # Resource names
         self.resources = [
             "stops/mono",
@@ -189,7 +164,6 @@ class _SubProblemCSPY(_SubProblemBase):
             "time windows",
             "collect",
             "deliver",
-            "pickup_delivery",
         ]
         # Set number of resources as attribute of graph
         self.sub_G.graph["n_res"] = len(self.resources)
@@ -206,7 +180,6 @@ class _SubProblemCSPY(_SubProblemBase):
             1,  # time windows
             total_demand,  # pickup
             total_demand,  # deliver
-            1,  # pickup_delivery
         ]
         # Initialize cspy edge attributes
         for edge in self.sub_G.edges(data=True):
@@ -214,7 +187,9 @@ class _SubProblemCSPY(_SubProblemBase):
         # Initialize max feasible arrival time
         self.T = 0
         self.total_cost = None
+        # Average length of a path
         self._avg_path_len = 1
+        # Iteration counter
         self._iters = 1
 
     # @profile
@@ -223,10 +198,10 @@ class _SubProblemCSPY(_SubProblemBase):
         Solves the subproblem with cspy.
         Time limit is reduced by 0.5 seconds as a safety window.
 
-        Resolves until:
-        1. heuristic algorithm gives a new route (column with -ve reduced cost);
-        2. exact algorithm gives a new route;
-        3. neither heuristic nor exact give a new route.
+        Resolves at most twice:
+        1. using elementary = False,
+        2. using elementary = True, and threshold, if a route has already been
+        found previously.
         """
         if not self.run_subsolve:
             return self.routes, False
@@ -251,7 +226,11 @@ class _SubProblemCSPY(_SubProblemBase):
         # Run only twice: Once with `elementary=False` check if route already
         # exists.
 
-        s = [False, True] if not self.distribution_collection else [True]
+        s = (
+            [False, True]
+            if (not self.distribution_collection and not self.elementary)
+            else [True]
+        )
         for elementary in s:
             if elementary:
                 # Use threshold if non-elementary (safe-guard against large
@@ -259,9 +238,11 @@ class _SubProblemCSPY(_SubProblemBase):
                 thr = self._avg_path_len * min(
                     self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()
                 )
-                logger.info(f"threshold={thr}")
             else:
                 thr = None
+            logger.debug(
+                f"Solving subproblem using elementary={elementary}, threshold={thr}, direction={direction}"
+            )
             alg = BiDirectional(
                 self.sub_G,
                 self.max_res,
@@ -286,7 +267,7 @@ class _SubProblemCSPY(_SubProblemBase):
 
             if alg.total_cost is not None and alg.total_cost < -(1e-3):
                 new_route = self.create_new_route(alg.path)
-                logger.info(alg.path)
+                logger.debug(alg.path)
                 path_len = len(alg.path)
                 if not any(
                     list(new_route.edges()) == list(r.edges()) for r in self.routes
@@ -326,10 +307,6 @@ class _SubProblemCSPY(_SubProblemBase):
             # Time windows feasibility
             self.max_res[3] = 0
             # Maximum feasible arrival time
-            # for v in self.sub_G.nodes():
-            #     print("node = ", v, "lb = ", self.sub_G.nodes[v]["lower"],
-            #           "ub = ", self.sub_G.nodes[v]["upper"])
-
             self.T = max(
                 self.sub_G.nodes[v]["upper"]
                 + self.sub_G.nodes[v]["service_time"]
@@ -396,10 +373,8 @@ class _SubProblemCSPY(_SubProblemBase):
                 self.max_res,
                 self.time_windows,
                 self.distribution_collection,
-                self.pickup_delivery,
                 self.T,
                 self.resources,
-                self.pickup_delivery_pairs,
             )
         else:
             # Use default

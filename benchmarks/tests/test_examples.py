@@ -49,7 +49,7 @@ class TestsOrTools:
 
     def test_cvrp_dive_cspy(self):
         self.prob.load_capacity = 15
-        self.prob.solve(pricing_strategy="BestEdges1", dive=True, exact=True)
+        self.prob.solve(pricing_strategy="BestEdges1", dive=True)
         assert int(self.prob.best_value) == 6208
 
     def test_vrptw_dive_lp(self):

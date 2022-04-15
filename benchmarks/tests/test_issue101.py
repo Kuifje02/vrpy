@@ -12,10 +12,8 @@ class TestIssue101_large:
     #     self.prob.solve(cspy=False, solver="gurobi")
     #     self.prob.check_arrival_time()
     #     self.prob.check_departure_time()
-    #     assert self.prob.best_value == 1832.5756999999999
 
     def test_cspy(self):
         self.prob.solve(pricing_strategy="Exact")
         self.prob.check_arrival_time()
         self.prob.check_departure_time()
-        assert self.prob.best_value == 1832.5756999999999

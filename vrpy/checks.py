@@ -175,8 +175,7 @@ def check_consistency(
 
     # pickup delivery requires cspy=False
     if cspy and pickup_delivery:
-        pass
-        # raise NotImplementedError("pickup_delivery option requires cspy=False.")
+        raise NotImplementedError("pickup_delivery option requires cspy=False.")
     # pickup delivery requires pricing_stragy="Exact"
     if pickup_delivery and pricing_strategy != "Exact":
         pricing_strategy = "Exact"
