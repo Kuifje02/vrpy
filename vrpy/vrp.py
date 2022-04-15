@@ -403,9 +403,8 @@ class VehicleRoutingProblem:
             for j in range(1, len(route)):
                 tail = route[j - 1]
                 head = route[j]
-                departure[i][head] = min(
-                    arrival[i][head] + self._H.nodes[head]["service_time"],
-                    self._H.nodes[head]["upper"],
+                departure[i][head] = (
+                    arrival[i][head] + self._H.nodes[head]["service_time"]
                 )
         return departure
 
@@ -414,7 +413,9 @@ class VehicleRoutingProblem:
         for k1, v1 in self.departure_time.items():
             for k2, v2 in v1.items():
                 assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
+                # Upper TW should not be checked as lower + service_time > upper
+                # in many cases. Also not enforced at the subproblem level.
+                # assert v2 <= self.G.nodes[k2]["upper"]
 
     @property
     def schedule(self):

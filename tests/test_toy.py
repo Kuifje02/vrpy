@@ -85,16 +85,10 @@ class TestsToy:
             time_windows=True,
         )
         prob.solve()
-        # Check departure times
-        for k1, v1 in prob.departure_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
-        # Check arrival times
-        for k1, v1 in prob.arrival_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
+        assert prob.departure_time[1]["Source"] == 0
+        assert prob.arrival_time[1]["Sink"] in [41, 62]
+        prob.check_arrival_time()
+        prob.check_departure_time()
 
     ###############
     # subsolve lp #
@@ -143,16 +137,8 @@ class TestsToy:
             time_windows=True,
         )
         prob.solve(cspy=False)
-        # Check departure times
-        for k1, v1 in prob.departure_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
-        # Check arrival times
-        for k1, v1 in prob.arrival_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
+        prob.check_arrival_time()
+        prob.check_departure_time()
 
     def test_LP_stops_elementarity(self):
         """Tests column generation procedure on toy graph"""
