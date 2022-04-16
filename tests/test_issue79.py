@@ -3,6 +3,7 @@ from vrpy import VehicleRoutingProblem
 
 
 class TestIssue79:
+
     def setup(self):
         G = DiGraph()
         G.add_edge("Source", 8, cost=0)
@@ -24,12 +25,19 @@ class TestIssue79:
         G.nodes[6]["collect"] = 1
         G.nodes[2]["collect"] = 1
         G.nodes[5]["collect"] = 2
-        self.prob = VehicleRoutingProblem(
-            G, load_capacity=15, distribution_collection=True
-        )
+        self.prob = VehicleRoutingProblem(G,
+                                          load_capacity=15,
+                                          distribution_collection=True)
 
-    def test_node_load(self):
+    def test_node_load_cspy(self):
         self.prob.solve()
+        assert self.prob.node_load[1][8] == 8
+        assert self.prob.node_load[1][6] == 5
+        assert self.prob.node_load[1][2] == 5
+        assert self.prob.node_load[1][5] == 5
+
+    def test_node_load_lp(self):
+        self.prob.solve(cspy=False)
         assert self.prob.node_load[1][8] == 8
         assert self.prob.node_load[1][6] == 5
         assert self.prob.node_load[1][2] == 5

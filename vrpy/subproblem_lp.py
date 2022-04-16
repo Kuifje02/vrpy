@@ -41,7 +41,7 @@ class _SubProblemLP(_SubProblemBase):
         logger.debug("Objective %s" % pulp.value(self.prob.objective))
         if (
             pulp.value(self.prob.objective) is not None
-            and pulp.value(self.prob.objective) < -(10 ** -3)
+            and pulp.value(self.prob.objective) < -(10**-3)
             and pulp.LpStatus[self.prob.status] not in ["Infeasible"]
         ) or (exact == False and pulp.LpStatus[self.prob.status] in ["Optimal", ""]):
             more_routes = True

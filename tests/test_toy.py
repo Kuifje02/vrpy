@@ -41,7 +41,7 @@ class TestsToy:
             ["Source", 4, 5, "Sink"],
         ]
         assert set(prob.best_routes_cost.values()) == {30, 40}
-        prob.solve(exact=False)
+        prob.solve()
         assert prob.best_value == 70
 
     def test_cspy_stops_capacity(self):
@@ -58,7 +58,7 @@ class TestsToy:
         with stop, capacity and duration constraints
         """
         prob = VehicleRoutingProblem(self.G, num_stops=3, load_capacity=10, duration=62)
-        prob.solve(exact=False)
+        prob.solve()
         assert prob.best_value == 85
         assert set(prob.best_routes_duration.values()) == {41, 62}
         assert prob.node_load[1]["Sink"] in [5, 10]
@@ -85,16 +85,10 @@ class TestsToy:
             time_windows=True,
         )
         prob.solve()
-        # Check departure times
-        for k1, v1 in prob.departure_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
-        # Check arrival times
-        for k1, v1 in prob.arrival_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
+        assert prob.departure_time[1]["Source"] == 0
+        assert prob.arrival_time[1]["Sink"] in [41, 62]
+        prob.check_arrival_time()
+        prob.check_departure_time()
 
     ###############
     # subsolve lp #
@@ -143,16 +137,8 @@ class TestsToy:
             time_windows=True,
         )
         prob.solve(cspy=False)
-        # Check departure times
-        for k1, v1 in prob.departure_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
-        # Check arrival times
-        for k1, v1 in prob.arrival_time.items():
-            for k2, v2 in v1.items():
-                assert self.G.nodes[k2]["lower"] <= v2
-                assert v2 <= self.G.nodes[k2]["upper"]
+        prob.check_arrival_time()
+        prob.check_departure_time()
 
     def test_LP_stops_elementarity(self):
         """Tests column generation procedure on toy graph"""
@@ -246,7 +232,7 @@ class TestsToy:
         prob.solve(preassignments=routes)
         assert prob.best_value == 70
 
-    def test_pick_up_delivery(self):
+    def test_pick_up_delivery_lp(self):
         self.G.nodes[2]["request"] = 5
         self.G.nodes[2]["demand"] = 10
         self.G.nodes[3]["demand"] = 10
@@ -262,6 +248,23 @@ class TestsToy:
         )
         prob.solve(pricing_strategy="Exact", cspy=False)
         assert prob.best_value == 65
+
+    # def test_pick_up_delivery_cspy(self):
+    #     self.G.nodes[2]["request"] = 5
+    #     self.G.nodes[2]["demand"] = 10
+    #     self.G.nodes[3]["demand"] = 10
+    #     self.G.nodes[3]["request"] = 4
+    #     self.G.nodes[4]["demand"] = -10
+    #     self.G.nodes[5]["demand"] = -10
+    #     self.G.add_edge(2, 5, cost=10)
+    #     self.G.remove_node(1)
+    #     prob = VehicleRoutingProblem(
+    #         self.G,
+    #         load_capacity=15,
+    #         pickup_delivery=True,
+    #     )
+    #     prob.solve(pricing_strategy="Exact", cspy=True)
+    #     assert prob.best_value == 65
 
     def test_distribution_collection(self):
         self.G.nodes[1]["collect"] = 12

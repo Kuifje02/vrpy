@@ -53,9 +53,6 @@ def test_consistency_parameters():
     G = DiGraph()
     G.add_edge("Source", "Sink", cost=1)
     prob = VehicleRoutingProblem(G, pickup_delivery=True)
-    # pickup delivery requires cspy=False
-    with pytest.raises(NotImplementedError):
-        prob.solve()
     # pickup delivery expects at least one request
     with pytest.raises(KeyError):
         prob.solve(cspy=False, pricing_strategy="Exact")
@@ -88,9 +85,10 @@ def test_mixed_fleet_consistency():
         prob.solve()
     G.edges["Source", "Sink"]["cost"] = [1, 2]
     with pytest.raises(ValueError):
-        prob = VehicleRoutingProblem(
-            G, mixed_fleet=True, load_capacity=[2, 4], fixed_cost=[4]
-        )
+        prob = VehicleRoutingProblem(G,
+                                     mixed_fleet=True,
+                                     load_capacity=[2, 4],
+                                     fixed_cost=[4])
         prob.solve()
 
 

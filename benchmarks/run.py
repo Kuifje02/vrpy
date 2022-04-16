@@ -4,7 +4,9 @@ from logging import getLogger
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import List, Dict, Union
+
 from networkx import DiGraph
+
 from benchmarks.augerat_dataset import AugeratDataSet
 from benchmarks.solomon_dataset import SolomonDataSet
 from benchmarks.utils.csv_table import CsvTable
@@ -202,7 +204,7 @@ def _run_single_problem(path_to_instance: Path, **kwargs):
 
 
 def main():
-    """ Run parallel or series"""
+    """Run parallel or series"""
     if SERIES:
         run_series()
     else:

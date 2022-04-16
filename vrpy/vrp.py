@@ -1,14 +1,19 @@
+import sys
 import logging
 from time import time
 from typing import List, Union
+
 from networkx import DiGraph, shortest_path  # draw_networkx
+
 from vrpy.greedy import _Greedy
-from vrpy.master_solve_pulp import _MasterSolvePulp
+from vrpy.schedule import _Schedule
 from vrpy.subproblem_lp import _SubProblemLP
 from vrpy.subproblem_cspy import _SubProblemCSPY
+from vrpy.hyper_heuristic import _HyperHeuristic
+from vrpy.master_solve_pulp import _MasterSolvePulp
 from vrpy.subproblem_greedy import _SubProblemGreedy
+from vrpy.preprocessing import get_num_stops_upper_bound
 from vrpy.clarke_wright import _ClarkeWright, _RoundTrip
-from vrpy.schedule import _Schedule
 from vrpy.checks import (
     check_arguments,
     check_consistency,
@@ -20,12 +25,10 @@ from vrpy.checks import (
     check_clarke_wright_compatibility,
     check_preassignments,
 )
-from vrpy.preprocessing import get_num_stops_upper_bound
-from vrpy.hyper_heuristic import _HyperHeuristic
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 
 class VehicleRoutingProblem:
@@ -120,8 +123,8 @@ class VehicleRoutingProblem:
         self._solver: str = None
         self._time_limit: int = None
         self._pricing_strategy: str = None
-        self._exact: bool = None
         self._cspy: bool = None
+        self._elementary: bool = None
         self._dive: bool = None
         self._greedy: bool = None
         self._max_iter: int = None
@@ -153,7 +156,7 @@ class VehicleRoutingProblem:
         preassignments=None,
         pricing_strategy="BestEdges1",
         cspy=True,
-        exact=False,
+        elementary=False,
         time_limit=None,
         solver="cbc",
         dive=False,
@@ -185,10 +188,12 @@ class VehicleRoutingProblem:
             cspy (bool, optional):
                 True if cspy is used for subproblem.
                 Defaults to True.
-            exact (bool, optional):
-                True if only cspy's exact algorithm is used to generate columns.
-                Otherwise, heuristics will be used until they produce +ve
-                reduced cost columns, after which the exact algorithm is used.
+            elementary (bool, optional):
+                True if only cspy's elementary algorithm is to be used.
+                Otherwise, a mix is used: only use elementary when a route is
+                repeated. In this case, also a threshold is used to avoid
+                running for too long. If dive=True then this is also forced to
+                be True.
                 Defaults to False.
             time_limit (int, optional):
                 Maximum number of seconds allowed for solving (for finding columns).
@@ -224,8 +229,8 @@ class VehicleRoutingProblem:
         self._solver = solver
         self._time_limit = time_limit
         self._pricing_strategy = pricing_strategy
-        self._exact = exact
         self._cspy = cspy
+        self._elementary = elementary if not dive else True
         self._dive = False
         self._greedy = greedy
         self._max_iter = max_iter
@@ -233,7 +238,6 @@ class VehicleRoutingProblem:
         self._heuristic_only = heuristic_only
         if self._pricing_strategy == "Hyper":
             self.hyper_heuristic = _HyperHeuristic()
-
         self._start_time = time()
         if preassignments:
             self._preassignments = preassignments
@@ -367,16 +371,20 @@ class VehicleRoutingProblem:
             for j in range(1, len(route)):
                 tail = route[j - 1]
                 head = route[j]
-                arrival[i][head] = min(
-                    max(
-                        arrival[i][tail]
-                        + self._H.nodes[tail]["service_time"]
-                        + self._H.edges[tail, head]["time"],
-                        self._H.nodes[head]["lower"],
-                    ),
-                    self._H.nodes[head]["upper"],
+                arrival[i][head] = max(
+                    arrival[i][tail]
+                    + self._H.nodes[tail]["service_time"]
+                    + self._H.edges[tail, head]["time"],
+                    self._H.nodes[head]["lower"],
                 )
         return arrival
+
+    def check_arrival_time(self):
+        # Check arrival times
+        for k1, v1 in self.arrival_time.items():
+            for k2, v2 in v1.items():
+                assert self.G.nodes[k2]["lower"] <= v2
+                assert v2 <= self.G.nodes[k2]["upper"]
 
     @property
     def departure_time(self):
@@ -395,11 +403,19 @@ class VehicleRoutingProblem:
             for j in range(1, len(route)):
                 tail = route[j - 1]
                 head = route[j]
-                departure[i][head] = min(
-                    arrival[i][head] + self._H.nodes[head]["service_time"],
-                    self._H.nodes[head]["upper"],
+                departure[i][head] = (
+                    arrival[i][head] + self._H.nodes[head]["service_time"]
                 )
         return departure
+
+    def check_departure_time(self):
+        # Check departure times
+        for k1, v1 in self.departure_time.items():
+            for k2, v2 in v1.items():
+                assert self.G.nodes[k2]["lower"] <= v2
+                # Upper TW should not be checked as lower + service_time > upper
+                # in many cases. Also not enforced at the subproblem level.
+                # assert v2 <= self.G.nodes[k2]["upper"]
 
     @property
     def schedule(self):
@@ -508,6 +524,7 @@ class VehicleRoutingProblem:
                 self._best_value,
                 self._best_routes_as_graphs,
             ) = self.masterproblem.get_total_cost_and_routes(relax=False)
+
         self._post_process(solver)
 
     def _column_generation(self):
@@ -543,7 +560,9 @@ class VehicleRoutingProblem:
         logger.info("iteration %s, %.6s" % (self._iteration, relaxed_cost))
         pricing_strategy = self._get_next_pricing_strategy(relaxed_cost)
 
+        # TODO: parallel
         # One subproblem per vehicle type
+
         for vehicle in range(self._vehicle_types):
             # Solve pricing problem with randomised greedy algorithm
             if (
@@ -593,7 +612,6 @@ class VehicleRoutingProblem:
             self._no_improvement += 1
         else:
             self._no_improvement = 0
-            self._no_improvement_iteration = self._iteration
         if not self._dive:
             self._lower_bound.append(relaxed_cost)
 
@@ -674,7 +692,7 @@ class VehicleRoutingProblem:
                 alpha,
             )
             self.routes, self._more_routes = subproblem.solve(
-                self._get_time_remaining(),
+                self._get_time_remaining()
             )
             more_columns = self._more_routes
             if more_columns:
@@ -695,7 +713,6 @@ class VehicleRoutingProblem:
             )
             self.routes, self._more_routes = subproblem.solve(
                 self._get_time_remaining(),
-                # exact=False,
             )
             more_columns = self._more_routes
             if more_columns:
@@ -717,7 +734,7 @@ class VehicleRoutingProblem:
             self._pricing_strategy == "Hyper"
             and self._no_improvement != self._run_exact
         ):
-            self._no_improvement_iteration = self._iteration
+            self._no_improvement = self._iteration
             if self._iteration == 0:
                 pricing_strategy = "BestPaths"
                 self.hyper_heuristic.init(relaxed_cost)
@@ -726,7 +743,7 @@ class VehicleRoutingProblem:
                 self._update_hyper_heuristic(relaxed_cost)
                 pricing_strategy = self.hyper_heuristic.pick_heuristic()
         elif self._no_improvement == self._run_exact:
-            self._no_improvement = 0
+            # self._no_improvement = 0
             pricing_strategy = "Exact"
         else:
             pricing_strategy = self._pricing_strategy
@@ -740,9 +757,7 @@ class VehicleRoutingProblem:
             active_columns=best_paths_freq,
         )
         self.hyper_heuristic.move_acceptance()
-        self.hyper_heuristic.update_parameters(
-            self._iteration, self._no_improvement, self._no_improvement_iteration
-        )
+        self.hyper_heuristic.update_parameters(self._iteration, self._no_improvement)
 
     def _get_time_remaining(self, mip: bool = False):
         """
@@ -808,7 +823,7 @@ class VehicleRoutingProblem:
                 self.distribution_collection,
                 pricing_strategy,
                 pricing_parameter,
-                exact=self._exact,
+                elementary=self._elementary,
             )
         else:
             # As LP
@@ -1051,7 +1066,7 @@ class VehicleRoutingProblem:
             self._remove_infeasible_arcs_time_windows()
 
     def _set_zero_attributes(self):
-        """ Sets attr = 0 if missing """
+        """Sets attr = 0 if missing"""
 
         for v in self.G.nodes():
             for attribute in [
@@ -1076,14 +1091,14 @@ class VehicleRoutingProblem:
                     self.G.nodes[v][attribute] = 1
 
     def _set_time_to_zero_if_missing(self):
-        """ Sets time = 0 if missing """
+        """Sets time = 0 if missing"""
         for (i, j) in self.G.edges():
             for attribute in ["time"]:
                 if attribute not in self.G.edges[i, j]:
                     self.G.edges[i, j][attribute] = 0
 
     def _readjust_sink_time_windows(self):
-        """ Readjusts Sink time windows """
+        """Readjusts Sink time windows"""
 
         if self.G.nodes["Sink"]["upper"] == 0:
             self.G.nodes["Sink"]["upper"] = max(

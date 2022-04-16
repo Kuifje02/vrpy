@@ -7,6 +7,7 @@ import pulp
 from vrpy.masterproblem import _MasterProblemBase
 from vrpy.restricted_master_heuristics import _DivingHeuristic
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,11 +51,13 @@ class _MasterSolvePulp(_MasterProblemBase):
 
         if pulp.LpStatus[self.prob.status] != "Optimal":
             raise Exception("problem " + str(pulp.LpStatus[self.prob.status]))
-        if relax:
-            for r in self.routes:
-                val = pulp.value(self.y[r.graph["name"]])
-                if val > 0.1:
-                    logger.debug("route %s selected %s" % (r.graph["name"], val))
+        # This logging takes time
+        # if relax:
+        #     for r in self.routes:
+        #         val = pulp.value(self.y[r.graph["name"]])
+        #         if val > 0.1:
+        #             logger.debug("route %s selected %s" %
+        #                          (r.graph["name"], val))
         duals = self.get_duals()
         logger.debug("duals : %s" % duals)
         return duals, self.prob.objective.value()
@@ -123,16 +126,13 @@ class _MasterSolvePulp(_MasterProblemBase):
         for r in self.routes:
             val = pulp.value(self.y[r.graph["name"]])
             if val is not None and val > 0:
-                logger.debug(
-                    "%s cost %s load %s"
-                    % (
-                        shortest_path(r, "Source", "Sink"),
-                        r.graph["cost"],
-                        sum(self.G.nodes[v]["demand"] for v in r.nodes()),
-                    )
-                )
-
                 best_routes.append(r)
+                # This logging takes time
+                # logger.debug("%s cost %s load %s" % (
+                #     shortest_path(r, "Source", "Sink"),
+                #     r.graph["cost"],
+                #     sum(self.G.nodes[v]["demand"] for v in r.nodes()),
+                # ))
         if self.drop_penalty:
             self.dropped_nodes = [
                 v for v in self.drop if pulp.value(self.drop[v]) > 0.5
@@ -178,7 +178,9 @@ class _MasterSolvePulp(_MasterProblemBase):
                     and "depot_to" not in self.G.nodes[node]
                 ):
                     for const in self.prob.constraints:
-                        # Modify the self.prob object (the self.set_covering_constrs object cannot be modified (?))
+                        # Modify the self.prob object (the
+                        # self.set_covering_constrs object cannot be modified
+                        # (?))
                         if "visit_node" in const:
                             self.prob.constraints[const].sense = pulp.LpConstraintEQ
                 if (
@@ -189,6 +191,10 @@ class _MasterSolvePulp(_MasterProblemBase):
                     self.dummy[node].cat = pulp.LpInteger
             # Set route variables to integer
             for var in self.y.values():
+                # Disallow routes that visit multiple nodes
+                if "non" in var.name:
+                    var.upBound = 0
+                    var.lowBound = 0
                 var.cat = pulp.LpInteger
             # Force vehicle bound artificial variable to 0
             for var in self.dummy_bound.values():
@@ -303,17 +309,20 @@ class _MasterSolvePulp(_MasterProblemBase):
                 )
 
     def _add_route_selection_variable(self, route):
+        # Added path with the raw path as using `nx.add_path` then
+        # `graph.nodes()`
+        # removes repeated nodes, so the coefficients are not correct.
+        if "path" in route.graph:
+            nodes = [n for n in route.graph["path"] if n not in ["Source", "Sink"]]
+        else:
+            nodes = [n for n in route.nodes() if n not in ["Source", "Sink"]]
         self.y[route.graph["name"]] = pulp.LpVariable(
             "y{}".format(route.graph["name"]),
             lowBound=0,
             upBound=1,
             cat=pulp.LpContinuous,
             e=(
-                pulp.lpSum(
-                    self.set_covering_constrs[r]
-                    for r in route.nodes()
-                    if r not in ["Source", "Sink"]
-                )
+                pulp.lpSum(self.set_covering_constrs[n] for n in nodes)
                 + pulp.lpSum(
                     self.vehicle_bound_constrs[k]
                     for k in range(len(self.num_vehicles))

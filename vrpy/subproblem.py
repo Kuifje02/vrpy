@@ -198,7 +198,7 @@ class _SubProblemBase:
         4. Remove all edges that do not belong to these paths
         """
         # Normalize weights
-        max_weight = max([self.G.edges[i, j]["weight"] for (i, j) in self.G.edges()])
+        max_weight = max(self.G.edges[i, j]["weight"] for (i, j) in self.G.edges())
         min_weight = min(self.G.edges[i, j]["weight"] for (i, j) in self.G.edges())
         for edge in self.G.edges(data=True):
             edge[2]["pos_weight"] = (

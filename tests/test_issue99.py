@@ -3,7 +3,7 @@ from numpy import array
 from vrpy import VehicleRoutingProblem
 
 
-class TestIssue79:
+class TestIssue99:
     def setup(self):
 
         distance_ = [
@@ -247,6 +247,12 @@ class TestIssue79:
         # Define VRP
         self.prob = VehicleRoutingProblem(G_, load_capacity=100)
 
-    def test_node_load(self):
-        self.prob.solve()
+    def test_lp(self):
+        self.prob.solve(cspy=False)
+        print(self.prob.best_routes)
+        assert self.prob.best_value == 829
+
+    def test_cspy(self):
+        self.prob.solve(cspy=True)
+        print(self.prob.best_routes)
         assert self.prob.best_value == 829
