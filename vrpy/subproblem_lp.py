@@ -209,20 +209,34 @@ class _SubProblemLP(_SubProblemBase):
 
     def _add_max_duration(self):
         # Add maximum duration constraints
-        self.prob += (
-            pulp.lpSum(
-                [
-                    (
-                        self.sub_G.edges[i, j]["time"]
-                        + self.sub_G.nodes[i]["service_time"]
-                    )
-                    * self.x[(i, j)]
-                    for (i, j) in self.sub_G.edges()
-                ]
+        if self.time_windows:
+            self.prob += (
+                pulp.lpSum(
+                    [
+                        max(
+                            self.sub_G.edges[i, j]["time"]
+                            + self.sub_G.nodes[i]["service_time"],
+                            self.sub_G.nodes[j]["lower"],
+                        )
+                        * self.x[(i, j)]
+                        for (i, j) in self.sub_G.edges()
+                    ]
+                )
+                <= self.duration,
+                "max_duration_{}".format(self.duration),
             )
-            <= self.duration,
-            "max_duration_{}".format(self.duration),
-        )
+        else:
+            self.prob += (
+                pulp.lpSum(
+                    [
+                        self.sub_G.edges[i, j]["time"]
+                        + self.sub_G.nodes[i]["service_time"] * self.x[(i, j)]
+                        for (i, j) in self.sub_G.edges()
+                    ]
+                )
+                <= self.duration,
+                "max_duration_{}".format(self.duration),
+            )
 
     def _add_elementarity(self):
         """Ensures a node is visited at most once."""

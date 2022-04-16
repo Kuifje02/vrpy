@@ -3,7 +3,7 @@
 import logging
 
 from numpy.random import RandomState
-from networkx import DiGraph, NetworkXError, has_path, shortest_path_length
+from networkx import DiGraph, NetworkXError, has_path, shortest_path_length, astar_path
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +213,25 @@ def check_feasibility(
                     raise ValueError(
                         "Node %s not reachable with duration constraints" % v
                     )
+                # Check time-windows
+                if "lower" in G.nodes[v]:
+                    shortest_path_to = astar_path(
+                        G, source="Source", target=v, weight="time"
+                    )
+                    shortest_path_from = astar_path(
+                        G, source=v, target="Sink", weight="time"
+                    )
+                    shortest_p = shortest_path_to[:-1] + shortest_path_from
+                    dur = 0
+                    for j in range(1, len(shortest_p)):
+                        tail = shortest_p[j - 1]
+                        head = shortest_p[j]
+                        dur += max(G.edges[tail, head]["time"], G.nodes[head]["lower"])
+                        if dur > duration or G.nodes[v]["lower"] > duration:
+                            raise ValueError(
+                                "Node %s not reachable with duration and time-window constraints"
+                                % v
+                            )
 
 
 def check_seed(seed):

@@ -344,15 +344,9 @@ class VehicleRoutingProblem:
         duration = {}
         if not self.duration and not self.time_windows:
             return duration
-        for route in self.best_routes:
-            edges = list(zip(self.best_routes[route][:-1], self.best_routes[route][1:]))
-            # Travel times
-            duration[route] = sum(self._H.edges[i, j]["time"] for (i, j) in edges)
-            # Service times
-            duration[route] += sum(
-                self._H.nodes[v]["service_time"] for v in self.best_routes[route]
-            )
-
+        arrival = self.arrival_time  # need arrival times
+        for i in self.best_routes:
+            duration[i] = arrival[i]["Sink"]
         return duration
 
     @property
