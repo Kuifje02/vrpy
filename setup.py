@@ -8,7 +8,7 @@ setuptools.setup(
     author="Romain Montagne, David Torres",
     author_email="r.montagne@hotmail.fr",
     keywords=["vehicle routing problem", "vrp", "column generation"],
-    long_description=open("README.rst", "r").read(),
+    long_description=open("README.md", "r").read(),
     long_description_content_type="text/x-rst",
     url="https://github.com/Kuifje02/vrpy",
     packages=setuptools.find_packages(),
