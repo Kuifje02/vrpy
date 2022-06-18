@@ -824,6 +824,7 @@ class VehicleRoutingProblem:
                 pricing_strategy,
                 pricing_parameter,
                 elementary=self._elementary,
+                dive=self._dive,
             )
         else:
             # As LP

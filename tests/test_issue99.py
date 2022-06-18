@@ -247,8 +247,20 @@ class TestIssue99:
         # Define VRP
         self.prob = VehicleRoutingProblem(G_, load_capacity=100)
 
+    def test_lp_initial_routes(self):
+        r = [
+            ["Source", 5, 8, "Sink"],
+            ["Source", 12, 9, "Sink"],
+            ["Source", 11, 1, 7, 10, "Sink"],
+            ["Source", 4, 2, "Sink"],
+            ["Source", 3, 6, "Sink"],
+        ]
+        self.prob.solve(cspy=False, pricing_strategy="Exact", initial_routes=r)
+        print(self.prob.best_routes)
+        assert self.prob.best_value == 829
+
     def test_lp(self):
-        self.prob.solve(cspy=False)
+        self.prob.solve(cspy=False, pricing_strategy="Exact")
         print(self.prob.best_routes)
         assert self.prob.best_value == 829
 

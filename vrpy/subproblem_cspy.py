@@ -151,11 +151,12 @@ class _SubProblemCSPY(_SubProblemBase):
     Inherits problem parameters from `SubproblemBase`
     """
 
-    def __init__(self, *args, elementary):
+    def __init__(self, *args, elementary, dive):
         """Initializes resources."""
         # Pass arguments to base
         super(_SubProblemCSPY, self).__init__(*args)
         self.elementary = elementary
+        self.dive = dive
         # Resource names
         self.resources = [
             "stops/mono",
@@ -228,7 +229,11 @@ class _SubProblemCSPY(_SubProblemBase):
 
         s = (
             [False, True]
-            if (not self.distribution_collection and not self.elementary)
+            if (
+                not self.distribution_collection
+                and not self.elementary
+                and not self.dive
+            )
             else [True]
         )
         for elementary in s:
@@ -284,7 +289,7 @@ class _SubProblemCSPY(_SubProblemBase):
                         self._iters += 1
                     break
                 else:
-                    logger.info("Route already found, finding elementary one")
+                    logger.debug("Route already found, finding elementary one")
             else:
                 break
         return self.routes, more_routes
