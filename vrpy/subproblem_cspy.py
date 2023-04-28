@@ -1,9 +1,11 @@
 import logging
 from math import floor
 
-from numpy import zeros
-from networkx import DiGraph, add_path
+import networkx as nx
+from numpy import zeros, unique
+
 from cspy import BiDirectional, REFCallback
+
 
 from vrpy.subproblem import _SubProblemBase
 
@@ -216,12 +218,12 @@ class _SubProblemCSPY(_SubProblemBase):
         my_callback = self.get_REF()
         direction = (
             "forward"
-            if (
-                self.time_windows
-                or self.pickup_delivery
-                or self.distribution_collection
-            )
-            else "both"
+            # if (
+            #     self.time_windows
+            #     or self.pickup_delivery
+            #     or self.distribution_collection
+            # )
+            # else "both"
         )
         # Run only twice: Once with `elementary=False` check if route already
         # exists.
@@ -241,7 +243,7 @@ class _SubProblemCSPY(_SubProblemBase):
             else:
                 thr = None
             logger.debug(
-                f"Solving subproblem using elementary={elementary}, threshold={thr}, direction={direction}"
+                f"Solving subproblem using elementary={elementary}, threshold={thr}, direction={direction}, max_res={self.max_res}, min_res={self.min_res}"
             )
             alg = BiDirectional(
                 self.sub_G,
@@ -252,6 +254,7 @@ class _SubProblemCSPY(_SubProblemBase):
                 time_limit=time_limit - 0.5 if time_limit else None,
                 elementary=elementary,
                 REF_callback=my_callback,
+                two_cycle_elimination=True
                 # pickup_delivery_pairs=self.pickup_delivery_pairs,
             )
 
@@ -268,6 +271,7 @@ class _SubProblemCSPY(_SubProblemBase):
             if alg.total_cost is not None and alg.total_cost < -(1e-3):
                 new_route = self.create_new_route(alg.path)
                 logger.debug(alg.path)
+
                 path_len = len(alg.path)
                 if not any(
                     list(new_route.edges()) == list(r.edges()) for r in self.routes
@@ -323,8 +327,8 @@ class _SubProblemCSPY(_SubProblemBase):
         """Create new route as DiGraph and add to pool of columns"""
         e = "elem" if len(set(path)) == len(path) else "non-elem"
         route_id = "{}_{}".format(len(self.routes) + 1, e)
-        new_route = DiGraph(name=route_id, path=path)
-        add_path(new_route, path)
+        new_route = nx.DiGraph(name=route_id, path=path)
+        nx.add_path(new_route, path)
         total_cost = 0
         for (i, j) in new_route.edges():
             edge_cost = self.sub_G.edges[i, j]["cost"][self.vehicle_type]
@@ -376,6 +380,4 @@ class _SubProblemCSPY(_SubProblemBase):
                 self.T,
                 self.resources,
             )
-        else:
-            # Use default
-            return None
+        return None

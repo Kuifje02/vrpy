@@ -3,6 +3,7 @@ import logging
 from time import time
 from typing import List, Union
 
+import numpy as np
 from networkx import DiGraph, shortest_path  # draw_networkx
 
 from vrpy.greedy import _Greedy
@@ -950,8 +951,24 @@ class VehicleRoutingProblem:
         Converts list of initial routes to list of Digraphs.
         By default, initial routes are computed with the first feasible vehicle type.
         """
+
+        def _check_candidate(k):
+            if (
+                sum(self.G.nodes[v]["demand"] for v in r) <= self.load_capacity[k]
+            ) and types_used[k] + 1 <= vehicles_available[k]:
+                G.graph["vehicle_type"] = k
+                types_used[k] += 1
+                return True
+            return False
+
         self._routes = []
         self._routes_with_node = {}
+        types_used = np.zeros(self._vehicle_types)
+
+        if not self.num_vehicles:
+            vehicles_available = np.array([len(self.G.nodes) - 2] * self._vehicle_types)
+        else:
+            vehicles_available = np.array(self.num_vehicles)
         for route_id, r in enumerate(self._initial_routes, start=1):
             total_cost = 0
             G = DiGraph(name=route_id)
@@ -962,13 +979,32 @@ class VehicleRoutingProblem:
                 total_cost += edge_cost
             G.graph["cost"] = total_cost
             if self.load_capacity:
-                for k in range(len(self.load_capacity)):
-                    if (
-                        sum(self.G.nodes[v]["demand"] for v in r)
-                        <= self.load_capacity[k]
-                    ):
-                        G.graph["vehicle_type"] = k
-                        break
+                if self.mixed_fleet:
+                    # Check vehicle_types but first try the ones that are not
+                    # already assigned to a route.
+                    diff = vehicles_available - types_used
+                    candidates = np.argwhere(diff == np.amax(diff)).flatten().tolist()
+                    vehicle_type_found = False
+                    for k in candidates:
+                        vehicle_type_found = _check_candidate(k)
+                        if vehicle_type_found:
+                            break
+                    # In case this is not enough, now try the rest
+                    if not vehicle_type_found:
+                        candidates = [
+                            k for k in range(self._vehicle_types) if k not in candidates
+                        ]
+                        for k in candidates:
+                            vehicle_type_found = _check_candidate(k)
+                            if vehicle_type_found:
+                                break
+                else:
+                    for k in range(self._vehicle_types):
+                        if (
+                            sum(self.G.nodes[v]["demand"] for v in r)
+                            <= self.load_capacity[k]
+                        ):
+                            G.graph["vehicle_type"] = k
             else:
                 G.graph["vehicle_type"] = 0
             if "vehicle_type" not in G.graph:
