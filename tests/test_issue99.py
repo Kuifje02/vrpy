@@ -1,4 +1,4 @@
-from networkx import from_numpy_matrix, set_node_attributes, relabel_nodes, DiGraph
+from networkx import from_numpy_array, set_node_attributes, relabel_nodes, DiGraph
 from numpy import array
 from vrpy import VehicleRoutingProblem
 
@@ -236,7 +236,7 @@ class TestIssue99:
 
         # Transform distance matrix to DiGraph
         A_ = array(distance_, dtype=[("cost", int)])
-        G_ = from_numpy_matrix(A_, create_using=DiGraph())
+        G_ = from_numpy_array(A_, create_using=DiGraph())
 
         # Set demand
         set_node_attributes(G_, values=demands, name="demand")
